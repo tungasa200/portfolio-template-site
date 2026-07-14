@@ -47,7 +47,23 @@ gitignored and must never be committed.**
    optimize photos. Set `R2_PUBLIC_HOSTNAME` to it. **Not needed until
    Phase 4** (the upload flow doesn't exist yet) — leave blank until then.
 
-## 3. Vercel — ⬜ not yet done for this project
+## 3. Resend (contact-form email notifications) — ⬜ needs your API key
+
+1. Sign up at [resend.com](https://resend.com) (free tier, no card).
+2. Dashboard → API Keys → create one → set `RESEND_API_KEY`.
+3. Sending address: `RESEND_FROM_EMAIL` defaults to Resend's sandbox address
+   `onboarding@resend.dev`, which works immediately but **only delivers to
+   the email you signed up to Resend with** — fine for local dev, not for
+   real tenants. Before going live, verify a domain (Dashboard → Domains →
+   Add Domain, add the DNS records it gives you) and set
+   `RESEND_FROM_EMAIL` to an address on it.
+4. For local testing to actually land somewhere you can check: the seeded
+   `dev` tenant's `SiteSettings.contactEmail` is the placeholder
+   `dev@example.com` — update it (via `prisma/seed.ts` or a one-off
+   `prisma studio` edit) to your own Resend signup email first, or sandbox
+   mode will silently drop the notification.
+
+## 4. Vercel — ⬜ not yet done for this project
 
 1. Import this repo as a Vercel project (or connect it from an existing
    local clone with `vercel link`).
@@ -72,6 +88,8 @@ another machine:
    credentials already exist (steps 1–2 above are done) — retrieve them
    from the Neon/Cloudflare dashboards again, or copy them from the other
    machine's `.env` out-of-band (password manager, not git/chat).
+   `RESEND_API_KEY` is retrievable again from the Resend dashboard (API
+   Keys) if lost.
    `app_runtime`'s password specifically isn't shown in the Neon dashboard
    (it's a role this project created, not one Neon generated for you) — copy
    it from the other machine's `.env`, or reset it from the Neon SQL editor

@@ -6,6 +6,36 @@ session (on any machine) to know where things actually stand.
 
 ## Done
 
+**Contact form → email notification (Resend)**
+- `submitContactForm` (`src/lib/actions/contact.ts`) now sends a real email
+  to the tenant's `SiteSettings.contactEmail` via Resend
+  (`src/lib/email/resend.ts`) whenever someone submits `/contact` — DB write
+  stays first/authoritative (full message kept as backup, your choice), the
+  email is best-effort with `replyTo` set to the visitor's address.
+- The form's `ATTACHMENT` field (rendered since Phase 2, never wired) is now
+  read from `FormData`, validated (≤10MB, JPG/PNG/PDF), and attached
+  directly to the email — no R2 involved, that's a separate/larger Phase 4
+  item. `next.config.ts` raises the Server Actions body-size cap from
+  Next.js's 1MB default to 11MB so this doesn't silently break above 1MB.
+- Admin panel does not yet show these messages anywhere real (Messages
+  inbox is still just the Phase 4b mockup) — email is the only notification
+  channel right now.
+- Verified against real Neon + Resend (2026-07-14): submitted the actual
+  form via `submitContactForm` with a real attachment, confirmed the
+  `ContactSubmission` row (read back through `forTenant()` — an unscoped
+  read now correctly returns nothing, RLS working as expected), confirmed a
+  bad attachment type is rejected with a friendly error, and confirmed the
+  email itself physically arrived with the attachment.
+- Needs your Resend API key in `.env` on any other machine — see
+  [external-services.md](./external-services.md#3-resend-contact-form-email-notifications--needs-your-api-key).
+
+**Phase 4b — Admin UI design (in progress)**
+- No production code yet — mockup-first per your request, since (unlike
+  the public site) there's no existing visual design for admin. Iterating
+  on a clickable Artifact prototype (dashboard, site settings,
+  project/exhibition editors, message inbox) before porting anything into
+  `src/app/admin/(dashboard)/...`.
+
 **Phase 4a — Auth.js + RLS foundation**
 - Auth.js (NextAuth v5) wired: `src/lib/auth/auth.ts` (Credentials provider,
   JWT sessions, `bcryptjs` password check), `src/lib/auth/tenant-context.ts`
