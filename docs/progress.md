@@ -31,10 +31,54 @@ session (on any machine) to know where things actually stand.
 
 **Phase 4b — Admin UI design (in progress)**
 - No production code yet — mockup-first per your request, since (unlike
-  the public site) there's no existing visual design for admin. Iterating
-  on a clickable Artifact prototype (dashboard, site settings,
-  project/exhibition editors, message inbox) before porting anything into
-  `src/app/admin/(dashboard)/...`.
+  the public site) there's no existing visual design for admin. Working
+  design file: **`design/admin-mockup.html`** — a self-contained clickable
+  HTML/JS prototype (open it directly in a browser, or paste into an
+  Artifact to get a shareable link). Not the same `.dc.html` Claude Design
+  format as `Photographer Portfolio.dc.html` — plain HTML/CSS/vanilla JS.
+- Settled design decisions so far (all reflected in the mockup, not yet in
+  real code):
+  - Dark sidebar nav shell (not a top tab bar — tried and reverted).
+  - Photo/Work stay exactly 2 fixed gallery-type boards, not a
+    user-defined N-board CMS (an earlier, larger ask for that was
+    explicitly descoped). Each board's *display name* and *URL path* are
+    both user-editable (inline ✏️ next to the title / next to the address),
+    validated against reserved words and cross-board collisions on rename.
+    A path that stops resolving should redirect to home, not 404 — no
+    redirect-mapping system planned.
+  - Third fixed section **About** (`/about`) — static page, rich-text
+    editor with a visual/HTML-source toggle (real implementation needs an
+    editor library that supports raw HTML, e.g. Tiptap with a source-view
+    extension — not WYSIWYG-only).
+  - **Item model, identical for both boards**: name + a single date
+    (`<input type="month">`, never a typed range) + photos. No
+    category/venue, no per-photo caption. Thumbnail = whichever photo is
+    ⭐ (first) in the item's photo list, not a separate field.
+  - **Detail page unified to 3 tabs for both boards** (previously Photo
+    was 2-tab, Work was 3-tab in the original design):
+    INDEX (per-item on/off toggle, same rich editor as About) / GRID VIEW /
+    FULLSCREEN VIEW, where GRID and FULLSCREEN share the exact same photo
+    set (confirmed against `design/Photographer Portfolio.dc.html`'s
+    work-detail markup).
+  - "+ NEW" opens the full item editor directly (no intermediate modal —
+    tried, then removed) with name/URL/page-title all updating live as
+    you type; the item isn't added to the list until "저장하기" actually
+    succeeds (name required).
+  - Dashboard (Home) has instant-apply page-visibility toggles, reading/
+    writing the same `NavItem.isVisible` state as Settings' own list — the
+    two must stay in sync (mockup fixed a real bug here: toggling used to
+    only change CSS, not the underlying data).
+  - Card grids must pixel-match the real `PhotoGrid` component
+    (`src/components/site/PhotoGrid.tsx`) exactly — gap, aspect ratio, tag
+    position, serif+mono type pairing.
+- Still open: Site Settings full field list, Messages inbox detail
+  interactions, actual porting plan into `src/app/admin/(dashboard)/...`.
+- Process note: this phase had a real correction mid-stream — a screen was
+  built without re-reading `design/Photographer Portfolio.dc.html`'s
+  detail-page markup first, and missed the INDEX-tab structure entirely.
+  Re-verify against that file (and `prisma/schema.prisma`) before extending
+  this mockup further, per-screen, every time — don't rely on what was
+  already covered earlier in a session.
 
 **Phase 4a — Auth.js + RLS foundation**
 - Auth.js (NextAuth v5) wired: `src/lib/auth/auth.ts` (Credentials provider,

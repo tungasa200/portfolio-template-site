@@ -1,0 +1,1286 @@
+<title>내 사이트 관리 — Dev Tenant Portfolio</title>
+<style>
+  :root {
+    --paper: oklch(0.99 0.002 90);
+    --panel: oklch(1 0 0);
+    --panel-2: oklch(0.96 0.002 90);
+    --ink: oklch(0.18 0 0);
+    --muted: oklch(0.45 0 0);
+    --faint: oklch(0.6 0 0);
+    --line: oklch(0.85 0 0);
+    --line-soft: oklch(0.91 0 0);
+    --accent: oklch(0.68 0.15 65);
+    --accent-ink: oklch(0.18 0 0);
+    --accent-soft: oklch(0.95 0.04 70);
+    --ok: oklch(0.5 0.11 150);
+    --ok-bg: oklch(0.94 0.05 150);
+    --danger: oklch(0.55 0.17 25);
+    --danger-bg: oklch(0.94 0.05 30);
+    --sidebar-bg: oklch(0.17 0 0);
+    --sidebar-ink: oklch(0.94 0 0);
+    --sidebar-muted: oklch(0.94 0 0 / 0.55);
+    --sidebar-line: oklch(1 0 0 / 0.1);
+    --sidebar-hover: oklch(1 0 0 / 0.07);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 1px 3px oklch(0.18 0 0 / 0.06), 0 10px 30px oklch(0.18 0 0 / 0.08);
+    --sidebar-w: 250px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: oklch(0.19 0.002 90); --panel: oklch(0.24 0.002 90); --panel-2: oklch(0.28 0.002 90);
+      --ink: oklch(0.95 0 0); --muted: oklch(0.72 0 0); --faint: oklch(0.58 0 0);
+      --line: oklch(0.36 0 0); --line-soft: oklch(0.3 0 0);
+      --accent: oklch(0.75 0.13 65); --accent-ink: oklch(0.16 0 0); --accent-soft: oklch(0.3 0.05 65);
+      --ok: oklch(0.72 0.13 150); --ok-bg: oklch(0.28 0.06 150);
+      --danger: oklch(0.68 0.15 25); --danger-bg: oklch(0.3 0.08 25);
+      --sidebar-bg: oklch(0.1 0 0); --sidebar-ink: oklch(0.94 0 0);
+      --shadow: 0 1px 3px oklch(0 0 0 / 0.3), 0 10px 30px oklch(0 0 0 / 0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: oklch(0.19 0.002 90); --panel: oklch(0.24 0.002 90); --panel-2: oklch(0.28 0.002 90);
+    --ink: oklch(0.95 0 0); --muted: oklch(0.72 0 0); --faint: oklch(0.58 0 0);
+    --line: oklch(0.36 0 0); --line-soft: oklch(0.3 0 0);
+    --accent: oklch(0.75 0.13 65); --accent-ink: oklch(0.16 0 0); --accent-soft: oklch(0.3 0.05 65);
+    --ok: oklch(0.72 0.13 150); --ok-bg: oklch(0.28 0.06 150);
+    --danger: oklch(0.68 0.15 25); --danger-bg: oklch(0.3 0.08 25);
+    --sidebar-bg: oklch(0.1 0 0); --sidebar-ink: oklch(0.94 0 0);
+    --shadow: 0 1px 3px oklch(0 0 0 / 0.3), 0 10px 30px oklch(0 0 0 / 0.4);
+  }
+  :root[data-theme="light"] {
+    --paper: oklch(0.99 0.002 90); --panel: oklch(1 0 0); --panel-2: oklch(0.96 0.002 90);
+    --ink: oklch(0.18 0 0); --muted: oklch(0.45 0 0); --faint: oklch(0.6 0 0);
+    --line: oklch(0.85 0 0); --line-soft: oklch(0.91 0 0);
+    --accent: oklch(0.68 0.15 65); --accent-ink: oklch(0.18 0 0); --accent-soft: oklch(0.95 0.04 70);
+    --ok: oklch(0.5 0.11 150); --ok-bg: oklch(0.94 0.05 150);
+    --danger: oklch(0.55 0.17 25); --danger-bg: oklch(0.94 0.05 30);
+    --sidebar-bg: oklch(0.17 0 0); --sidebar-ink: oklch(0.94 0 0);
+    --shadow: 0 1px 3px oklch(0.18 0 0 / 0.06), 0 10px 30px oklch(0.18 0 0 / 0.08);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; overflow-x: hidden; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  button { font-family: inherit; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  h1, h2, h3 { text-wrap: balance; margin: 0; }
+  p { margin: 0; }
+
+  /* ---------- shell ---------- */
+  .shell { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: var(--sidebar-w); min-width: var(--sidebar-w);
+    background: var(--sidebar-bg); color: var(--sidebar-ink);
+    display: flex; flex-direction: column; padding: 22px 16px;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .sidebar-brand { display: flex; align-items: center; gap: 11px; padding: 4px 8px 20px; margin-bottom: 6px; border-bottom: 1px solid var(--sidebar-line); }
+  .brand-dot { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; flex-shrink: 0; }
+  .brand-name { font-weight: 700; font-size: 15px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .brand-sub { font-size: 12.5px; color: var(--sidebar-muted); margin-top: 1px; }
+
+  .nav-list { display: flex; flex-direction: column; gap: 2px; margin-top: 14px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 10px;
+    color: var(--sidebar-muted); text-decoration: none; cursor: pointer; border: none; background: none;
+    font-size: 15.5px; font-weight: 600; text-align: left; width: 100%;
+  }
+  .nav-item:hover { background: var(--sidebar-hover); color: var(--sidebar-ink); }
+  .nav-item.active { background: var(--accent); color: var(--accent-ink); }
+  .nav-icon { width: 19px; height: 19px; flex-shrink: 0; opacity: 0.95; }
+  .nav-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nav-badge { background: var(--accent); color: var(--accent-ink); border-radius: 100px; font-size: 11.5px; font-weight: 800; padding: 2px 8px; }
+  .nav-item.active .nav-badge { background: var(--accent-ink); color: var(--accent); }
+
+  .sidebar-view-site {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    margin-top: 16px; padding: 11px; border-radius: 10px; border: 1px solid var(--sidebar-line);
+    color: var(--sidebar-ink); text-decoration: none; font-size: 14px; font-weight: 600;
+  }
+  .sidebar-view-site:hover { background: var(--sidebar-hover); }
+
+  .sidebar-foot { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--sidebar-line); }
+  .user-chip { display: flex; align-items: center; gap: 10px; padding: 8px; }
+  .user-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--sidebar-hover); display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700; flex-shrink: 0; }
+  .user-email { font-size: 12.5px; color: var(--sidebar-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ---------- main ---------- */
+  .main { flex: 1; min-width: 0; }
+  .page { max-width: 980px; margin: 0 auto; padding: 40px 32px 90px; }
+  .page-head { margin-bottom: 26px; }
+  .page-eyebrow { font-size: 14px; color: var(--muted); margin-bottom: 6px; font-family: ui-monospace, "SF Mono", monospace; }
+  .path-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .path-row .page-eyebrow { margin-bottom: 0; }
+  .path-edit-btn { width: 24px; height: 24px; border-radius: 50%; border: none; background: none; color: var(--faint); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+  .path-edit-btn:hover { background: var(--panel-2); color: var(--ink); }
+  .path-input {
+    font-family: ui-monospace, "SF Mono", monospace; font-size: 14px; border: none; border-bottom: 2px solid var(--accent);
+    background: transparent; color: var(--ink); padding: 0 2px; width: 220px;
+  }
+  .path-input:focus { outline: none; }
+  .path-error { font-size: 12.5px; color: var(--danger); margin-bottom: 6px; }
+  .page-title-row { display: flex; align-items: center; gap: 10px; }
+  .page-title { font-size: 28px; font-weight: 700; }
+  .page-desc { font-size: 15.5px; color: var(--muted); margin-top: 8px; max-width: 56ch; }
+  .rename-btn {
+    width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel);
+    display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; font-size: 14px;
+  }
+  .rename-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .title-input {
+    font-size: 28px; font-weight: 700; font-family: inherit; border: none; border-bottom: 2px solid var(--accent);
+    background: transparent; color: var(--ink); padding: 0 2px; width: 260px; max-width: 60vw;
+  }
+  .title-input:focus { outline: none; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ---------- buttons ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 20px; border-radius: 100px;
+    font-size: 15.5px; font-weight: 700; cursor: pointer;
+    border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  }
+  .btn:hover { border-color: var(--ink); }
+  .btn-primary { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-danger-outline { border-color: var(--danger); color: var(--danger); background: none; }
+  .btn-danger-outline:hover { background: var(--danger-bg); }
+  .btn-lg { padding: 15px 26px; font-size: 16.5px; }
+  .btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+
+  /* ---------- cards / sections ---------- */
+  .section-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; margin-bottom: 20px; }
+  .section-card h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .section-card .section-desc { font-size: 14.5px; color: var(--muted); margin-bottom: 18px; }
+
+  .hello-strip { display: flex; align-items: center; justify-content: space-between; gap: 20px; background: var(--panel-2); border-radius: var(--radius); padding: 22px 26px; margin-bottom: 24px; }
+  .hello-strip h1 { font-size: 22px; }
+  .hello-strip p { font-size: 14.5px; color: var(--muted); margin-top: 4px; }
+
+  /* ---------- home preview ---------- */
+  .home-preview-frame { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--panel); box-shadow: var(--shadow); margin-bottom: 22px; }
+  .browser-chrome { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
+  .browser-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
+  .browser-url { margin-left: 8px; font-size: 12.5px; color: var(--faint); background: var(--panel); border-radius: 100px; padding: 4px 12px; }
+  .hero-preview-body { padding: 40px; display: flex; justify-content: center; }
+  .hero-photo-wrap { position: relative; width: 260px; }
+  .hero-photo { width: 260px; height: 260px; border: 1px solid var(--ink); position: relative; overflow: hidden; background: repeating-linear-gradient(135deg, var(--panel-2) 0px, var(--panel-2) 12px, var(--panel) 12px, var(--panel) 24px); display: flex; align-items: center; justify-content: center; }
+  .hero-photo span.tag { font-size: 11px; letter-spacing: 0.04em; color: var(--faint); background: var(--panel); border: 1px solid var(--ink); padding: 4px 10px; }
+  .hero-edit-btn { position: absolute; bottom: 12px; right: 12px; display: flex; align-items: center; gap: 6px; background: var(--ink); color: var(--paper); border: none; border-radius: 100px; padding: 9px 15px; font-size: 13.5px; font-weight: 700; cursor: pointer; box-shadow: var(--shadow); }
+  .hero-edit-btn:hover { opacity: 0.9; }
+
+  /* ---------- form ---------- */
+  .field { margin-bottom: 20px; }
+  .field label { display: block; font-size: 15px; font-weight: 700; margin-bottom: 7px; }
+  .field .field-help { font-size: 13.5px; color: var(--muted); font-weight: 400; margin-top: 6px; }
+  input[type="text"], input[type="email"], textarea {
+    font-family: inherit; font-size: 16px; color: var(--ink);
+    background: var(--panel); border: 1.5px solid var(--line); border-radius: var(--radius-sm);
+    padding: 13px 14px; width: 100%;
+  }
+  input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  textarea { resize: vertical; min-height: 110px; line-height: 1.7; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .url-hint { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--faint); margin-top: 8px; }
+  .url-hint code { background: var(--panel-2); padding: 2px 7px; border-radius: 5px; }
+
+  /* ---------- toggle row ---------- */
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 18px; background: var(--panel-2); border-radius: var(--radius-sm); }
+  .toggle-row-text strong { font-size: 15.5px; display: block; }
+  .toggle-row-text span { font-size: 13.5px; color: var(--muted); }
+  .switch { position: relative; width: 50px; height: 28px; border-radius: 100px; background: var(--line); border: none; cursor: pointer; flex-shrink: 0; }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--panel); transition: left 0.15s ease; box-shadow: 0 1px 3px oklch(0 0 0 / 0.3); }
+  .switch.on { background: var(--ok); }
+  .switch.on::after { left: 25px; }
+
+  /* ---------- site grid ----------
+     Mirrors the real public-site PhotoGrid component exactly
+     (src/components/site/PhotoGrid.tsx): grid-cols-3 gap-4, aspect-[4/3]
+     photo, tag badge bottom-4 left-[18px], border-t body row with title
+     (serif, text-xl) and meta (mono, 11px) on one baseline — same size,
+     same proportions, every item. Edit button / draft flag are admin-only
+     overlays layered on top, not part of the real card. */
+  .site-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .site-card { border: 1px solid var(--ink); background: var(--panel); position: relative; }
+  .site-card-photo { aspect-ratio: 4/3; position: relative; overflow: hidden; background: repeating-linear-gradient(135deg, var(--panel-2) 0px, var(--panel-2) 14px, var(--panel) 14px, var(--panel) 28px); }
+  .site-card-edit { position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; border-radius: 50%; background: var(--paper); border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--shadow); }
+  .site-card-edit:hover { background: var(--accent); border-color: var(--accent); }
+  .site-card-body { padding: 20px 22px; border-top: 1px solid var(--ink); display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .site-card-title { font-family: Georgia, "Noto Serif KR", "Times New Roman", serif; font-size: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .site-card-meta { font-size: 11px; letter-spacing: 0.03em; color: var(--muted); font-family: ui-monospace, "SF Mono", monospace; flex-shrink: 0; }
+  .site-card-draft-flag { position: absolute; top: 10px; left: 10px; background: var(--panel); border: 1px solid var(--faint); color: var(--muted); font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 100px; z-index: 2; }
+
+  /* ---------- editor ---------- */
+  .editor-header { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+  .back-btn { display: flex; align-items: center; gap: 6px; border: none; background: none; color: var(--muted); font-size: 15px; font-weight: 600; cursor: pointer; padding: 6px 0; }
+  .back-btn:hover { color: var(--ink); }
+
+  .photo-manager-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .photo-tile { position: relative; aspect-ratio: 4/3; border: 1.5px solid var(--line); border-radius: var(--radius-sm); background: repeating-linear-gradient(135deg, var(--panel-2) 0px, var(--panel-2) 10px, var(--panel) 10px, var(--panel) 20px); overflow: hidden; display: flex; flex-direction: column; }
+  .photo-tile.is-primary { border-color: var(--accent); border-width: 2px; }
+  .photo-tile-badge { position: absolute; top: 8px; left: 8px; background: var(--accent); color: var(--accent-ink); font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 100px; z-index: 1; }
+  .photo-tile-order { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; z-index: 1; }
+  .photo-tile-actions { margin-top: auto; display: flex; gap: 6px; padding: 6px; justify-content: flex-end; }
+  .photo-tile-mini-btn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; flex-shrink: 0; }
+  .photo-tile-mini-btn:hover { border-color: var(--ink); }
+  .photo-tile-mini-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .photo-tile-mini-btn.remove:hover { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); }
+  .photo-tile-add { aspect-ratio: 4/3; border: 1.5px dashed var(--line); border-radius: var(--radius-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--muted); cursor: pointer; background: none; }
+  .photo-tile-add:hover { border-color: var(--accent); color: var(--ink); background: var(--accent-soft); }
+  .photo-tile-add .plus-circle { width: 40px; height: 40px; border-radius: 50%; background: var(--panel-2); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+
+  .single-upload { width: 180px; aspect-ratio: 4/3; border: 1.5px dashed var(--line); border-radius: var(--radius-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--muted); cursor: pointer; }
+  .single-upload:hover { border-color: var(--accent); color: var(--ink); background: var(--accent-soft); }
+
+  /* ---------- reorder list ---------- */
+  .reorder-list { display: flex; flex-direction: column; gap: 10px; }
+  .reorder-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: var(--panel-2); border-radius: var(--radius-sm); }
+  .reorder-arrows { display: flex; flex-direction: column; gap: 2px; }
+  .arrow-btn { width: 26px; height: 22px; border: 1px solid var(--line); background: var(--panel); border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 12px; }
+  .arrow-btn:hover { border-color: var(--ink); color: var(--ink); }
+  .reorder-main { flex: 1; min-width: 0; }
+  .reorder-main strong { font-size: 15.5px; display: block; }
+  .reorder-main span { font-size: 13.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+  .reorder-main input[type="text"] { padding: 8px 10px; font-size: 14.5px; }
+  .add-row-btn { display: flex; align-items: center; gap: 8px; padding: 13px 16px; border: 1.5px dashed var(--line); border-radius: var(--radius-sm); color: var(--muted); background: none; cursor: pointer; font-size: 15px; font-weight: 600; width: 100%; justify-content: center; }
+  .add-row-btn:hover { border-color: var(--accent); color: var(--ink); background: var(--accent-soft); }
+  .icon-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink); flex-shrink: 0; }
+  .icon-btn:hover { border-color: var(--ink); }
+
+  /* ---------- rich-text editor (About page + both boards' INDEX tab) ---------- */
+  .rich-editor { border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; }
+  .rich-editor .editor-canvas { min-height: 160px; padding: 20px 22px; }
+  .editor-toolbar { display: flex; align-items: center; gap: 2px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
+  .editor-tool { width: 32px; height: 32px; border-radius: 6px; border: none; background: none; color: var(--ink); cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+  .editor-tool:hover { background: var(--panel); }
+  .editor-tool-divider { width: 1px; height: 18px; background: var(--line); margin: 0 6px; }
+  .editor-canvas {
+    padding: 32px 40px; min-height: 320px; font-size: 16.5px; line-height: 1.85; color: var(--ink);
+  }
+  .editor-canvas:focus { outline: none; }
+  .editor-canvas h2 { font-family: Georgia, "Noto Serif KR", "Times New Roman", serif; font-size: 24px; margin: 0 0 14px; }
+  .editor-canvas p { margin: 0 0 14px; }
+  .editor-canvas p:last-child { margin-bottom: 0; }
+  .editor-tool-code { font-family: ui-monospace, "SF Mono", monospace; font-size: 12px; font-weight: 700; margin-left: auto; }
+  .editor-tool-code.active { background: var(--ink); color: var(--paper); }
+  .editor-code-view {
+    width: 100%; min-height: 320px; border: none; resize: vertical;
+    padding: 32px 40px; font-family: ui-monospace, "SF Mono", monospace; font-size: 13.5px; line-height: 1.7;
+    color: var(--ink); background: var(--panel-2); box-sizing: border-box;
+  }
+  .editor-code-view:focus { outline: none; }
+
+  /* ---------- messages ---------- */
+  .msg-section-label { font-size: 13.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin: 26px 0 12px; }
+  .msg-section-label:first-child { margin-top: 0; }
+  .msg-card { display: flex; gap: 14px; align-items: flex-start; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 10px; cursor: pointer; background: var(--panel); }
+  .msg-card:hover { border-color: var(--ink); }
+  .msg-card.is-new { border-color: var(--accent); background: var(--accent-soft); }
+  .msg-avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--panel-2); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; flex-shrink: 0; }
+  .msg-card.is-new .msg-avatar { background: var(--accent); color: var(--accent-ink); }
+  .msg-card-body { flex: 1; min-width: 0; }
+  .msg-card-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+  .msg-card-name { font-size: 16px; font-weight: 700; }
+  .msg-card-date { font-size: 13px; color: var(--faint); flex-shrink: 0; }
+  .msg-card-snippet { font-size: 14.5px; color: var(--muted); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .new-pill { display: inline-block; background: var(--accent); color: var(--accent-ink); font-size: 11.5px; font-weight: 800; padding: 2px 9px; border-radius: 100px; margin-left: 8px; vertical-align: middle; }
+  .msg-detail-card { border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; background: var(--panel); }
+  .msg-detail-top { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; border-bottom: 1px solid var(--line-soft); margin-bottom: 20px; }
+  .msg-detail-name { font-size: 20px; font-weight: 700; }
+  .msg-detail-email { font-size: 14.5px; color: var(--muted); margin-top: 4px; }
+  .msg-detail-date { font-size: 13.5px; color: var(--faint); }
+  .msg-detail-body { font-size: 16px; line-height: 1.8; white-space: pre-wrap; margin-bottom: 24px; }
+  .msg-detail-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .empty-note { padding: 60px 20px; text-align: center; color: var(--muted); font-size: 15px; }
+
+  /* ---------- toast ---------- */
+  .toast { position: fixed; bottom: 26px; left: calc(50% + var(--sidebar-w) / 2); transform: translateX(-50%) translateY(10px); background: var(--ink); color: var(--paper); padding: 14px 22px; border-radius: 100px; font-size: 15px; font-weight: 600; box-shadow: var(--shadow); opacity: 0; transition: all 0.2s ease; pointer-events: none; z-index: 50; display: flex; align-items: center; gap: 8px; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 860px) {
+    .shell { flex-direction: column; }
+    .sidebar { width: 100%; min-width: 0; height: auto; position: relative; flex-direction: row; flex-wrap: wrap; align-items: center; }
+    .sidebar-brand { border-bottom: none; margin-bottom: 0; padding: 4px; }
+    .nav-list { flex-direction: row; margin-top: 0; flex-wrap: wrap; }
+    .sidebar-foot { margin-top: 0; padding-top: 0; border-top: none; }
+    .field-row, .site-grid { grid-template-columns: 1fr; }
+    .photo-manager-grid { grid-template-columns: repeat(2, 1fr); }
+    .page { padding: 24px 16px 80px; }
+    .toast { left: 50%; }
+  }
+</style>
+
+<div class="shell">
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-dot">D</div>
+      <div>
+        <div class="brand-name">Dev Tenant Portfolio</div>
+        <div class="brand-sub">사이트 관리</div>
+      </div>
+    </div>
+
+    <div class="nav-list" id="nav-list-el"></div>
+
+    <a class="sidebar-view-site" href="#" onclick="return false;">내 사이트 보기 ↗</a>
+
+    <div class="sidebar-foot">
+      <div class="user-chip">
+        <div class="user-avatar">A</div>
+        <div class="user-email">admin@dev.local</div>
+      </div>
+      <button class="nav-item" data-nav="home" style="opacity:.8; margin-top:2px;">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M6.4 2.4H3.6a1 1 0 0 0-1 1v9.2a1 1 0 0 0 1 1h2.8M10.4 11.2l3.2-3.2-3.2-3.2M13.4 8H6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="nav-label">로그아웃</span>
+      </button>
+    </div>
+  </nav>
+
+  <main class="main">
+    <!-- ============ HOME ============ -->
+    <section class="view active" id="view-home">
+      <div class="page">
+        <div class="section-card" style="display:flex; gap:24px; flex-wrap:wrap; margin-bottom:24px;">
+          <div style="flex:1; min-width:160px;">
+            <div style="font-size:34px; font-weight:700;">6</div>
+            <div style="font-size:14.5px; color:var(--muted);" id="home-stat-projects">사진 프로젝트 공개 중</div>
+          </div>
+          <div style="flex:1; min-width:160px;">
+            <div style="font-size:34px; font-weight:700;">4</div>
+            <div style="font-size:14.5px; color:var(--muted);" id="home-stat-exhibitions">작업 공개 중</div>
+          </div>
+          <div style="flex:1; min-width:160px;">
+            <div style="font-size:34px; font-weight:700; color:var(--accent-ink); background:var(--accent); display:inline-block; padding:0 10px; border-radius:8px;">2</div>
+            <div style="font-size:14.5px; color:var(--muted); margin-top:6px;">새로 온 메시지 · <a href="#" data-nav="messages" style="color:var(--ink); font-weight:700; text-decoration:underline;">확인하기</a></div>
+          </div>
+        </div>
+
+        <h2 style="font-size:18px; font-weight:700; margin-bottom:10px;">대표 이미지</h2>
+        <div class="home-preview-frame">
+          <div class="browser-chrome">
+            <div class="browser-dot"></div><div class="browser-dot"></div><div class="browser-dot"></div>
+            <div class="browser-url">dev.myportfolio.com</div>
+          </div>
+          <div class="hero-preview-body">
+            <div class="hero-photo-wrap">
+              <div class="hero-photo"><span class="tag">대표 사진 (1600×1600)</span></div>
+              <button class="hero-edit-btn" data-nav="settings">✏️ 대표 사진 바꾸기</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card" style="margin-top:24px;">
+          <h2>Quick Menu</h2>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:20px;">
+            <button class="btn" id="home-add-project-btn" data-open-project="new">+ 새 프로젝트 추가</button>
+            <button class="btn" id="home-add-exhibition-btn" data-open-exhibition="new">+ 새 항목 추가</button>
+            <button class="btn" id="home-about-btn" data-nav="about">소개 페이지 수정</button>
+            <button class="btn" data-nav="settings">사이트 정보 수정</button>
+          </div>
+        </div>
+
+        <div class="section-card" style="margin-top:20px;">
+          <h2>페이지 노출</h2>
+          <div class="reorder-list" id="home-visibility-list" style="margin-top:20px;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PHOTO LIST (renameable board) ============ -->
+    <section class="view" id="view-projects">
+      <div class="page">
+        <div class="page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+          <div>
+            <div class="path-row">
+              <span class="page-eyebrow" id="projects-eyebrow">dev.myportfolio.com/photo</span>
+              <button class="path-edit-btn" title="주소 바꾸기" onclick="startRenamePath('projects')">✏️</button>
+            </div>
+            <div class="page-title-row">
+              <h1 class="page-title" id="projects-title-display">사진</h1>
+              <button class="rename-btn" title="이 게시판 이름 바꾸기" onclick="startRename('projects')">✏️</button>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="projects-add-btn" data-open-project="new">+ NEW</button>
+        </div>
+        <div class="site-grid" id="projects-grid"></div>
+      </div>
+    </section>
+
+    <!-- ============ PROJECT EDITOR ============ -->
+    <section class="view" id="view-project-editor">
+      <div class="page">
+        <div class="editor-header">
+          <button class="back-btn" data-nav="projects">← <span id="back-to-projects-label">사진</span> 목록으로</button>
+        </div>
+        <div class="page-head">
+          <h1 class="page-title" id="project-editor-title">Nord Audio</h1>
+        </div>
+
+        <div class="section-card">
+          <h2>사진</h2>
+          <div class="section-desc">별 표시 ⭐가 목록에서 보이는 대표 사진이에요. 사진을 추가하거나 지울 수 있어요.</div>
+          <div class="photo-manager-grid" id="project-photo-grid"></div>
+        </div>
+
+        <div class="section-card">
+          <h2>기본 정보</h2>
+          <div class="field-row">
+            <div class="field">
+              <label>프로젝트 이름</label>
+              <input type="text" id="pe-name" value="Nord Audio" />
+            </div>
+            <div class="field">
+              <label>날짜</label>
+              <input type="month" id="pe-date" />
+            </div>
+          </div>
+          <div class="url-hint">🔗 주소: <code id="pe-url-hint">/photo/nord-audio</code> (이름을 바꾸면 자동으로 바뀌어요)</div>
+        </div>
+
+        <div class="section-card">
+          <div class="toggle-row">
+            <div class="toggle-row-text">
+              <strong>INDEX 탭</strong>
+              <span>켜면 상세 페이지에 소개 글을 위한 INDEX 탭이 추가돼요.</span>
+            </div>
+            <button class="switch" id="pe-index-enabled" onclick="toggleIndexTab('pe')"></button>
+          </div>
+          <div id="pe-index-section" style="margin-top:18px; display:none;">
+            <div class="rich-editor">
+              <div class="editor-toolbar">
+                <button class="editor-tool" title="굵게"><strong>B</strong></button>
+                <button class="editor-tool" title="기울임"><em>I</em></button>
+                <button class="editor-tool" title="밑줄" style="text-decoration:underline;">U</button>
+                <span class="editor-tool-divider"></span>
+                <button class="editor-tool" title="목록">≡</button>
+                <button class="editor-tool" title="링크 삽입">🔗</button>
+                <span class="editor-tool-divider"></span>
+                <button class="editor-tool editor-tool-code" id="pe-index-code-toggle" title="HTML 코드로 보기">&lt;/&gt;</button>
+              </div>
+              <div class="editor-canvas" id="pe-index-canvas" contenteditable="true"></div>
+              <textarea class="editor-code-view" id="pe-index-code-view" spellcheck="false" style="display:none;"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="toggle-row">
+            <div class="toggle-row-text">
+              <strong>🌐 내 사이트에 공개하기</strong>
+              <span>켜두면 방문자가 바로 볼 수 있어요. 꺼두면 나만 볼 수 있는 임시 저장 상태예요.</span>
+            </div>
+            <button class="switch on" id="pe-published"></button>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:28px;">
+          <button class="btn btn-danger-outline" id="delete-project">이 프로젝트 삭제하기</button>
+          <button class="btn btn-primary btn-lg" id="save-project">저장하기</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ WORK LIST (renameable board) ============ -->
+    <section class="view" id="view-exhibitions">
+      <div class="page">
+        <div class="page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+          <div>
+            <div class="path-row">
+              <span class="page-eyebrow" id="exhibitions-eyebrow">dev.myportfolio.com/work</span>
+              <button class="path-edit-btn" title="주소 바꾸기" onclick="startRenamePath('exhibitions')">✏️</button>
+            </div>
+            <div class="page-title-row">
+              <h1 class="page-title" id="exhibitions-title-display">작업</h1>
+              <button class="rename-btn" title="이 게시판 이름 바꾸기" onclick="startRename('exhibitions')">✏️</button>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="exhibitions-add-btn" data-open-exhibition="new">+ NEW</button>
+        </div>
+        <div class="site-grid" id="exhibitions-grid"></div>
+      </div>
+    </section>
+
+    <!-- ============ EXHIBITION EDITOR ============ -->
+    <section class="view" id="view-exhibition-editor">
+      <div class="page">
+        <div class="editor-header">
+          <button class="back-btn" data-nav="exhibitions">← <span id="back-to-exhibitions-label">작업</span> 목록으로</button>
+        </div>
+        <div class="page-head">
+          <h1 class="page-title" id="exhibition-editor-title">Surface Tension</h1>
+        </div>
+
+        <div class="section-card">
+          <h2>사진</h2>
+          <div class="section-desc">별 표시 ⭐가 목록에서 보이는 대표 사진이에요.</div>
+          <div class="photo-manager-grid" id="exhibition-photo-grid"></div>
+        </div>
+
+        <div class="section-card">
+          <h2>기본 정보</h2>
+          <div class="field-row">
+            <div class="field">
+              <label>작업 이름</label>
+              <input type="text" id="ee-name" value="Surface Tension" />
+            </div>
+            <div class="field">
+              <label>날짜</label>
+              <input type="month" id="ee-date" />
+            </div>
+          </div>
+          <div class="url-hint">🔗 주소: <code id="ee-url-hint">/work/surface-tension</code></div>
+        </div>
+
+        <div class="section-card">
+          <div class="toggle-row">
+            <div class="toggle-row-text">
+              <strong>INDEX 탭</strong>
+              <span>켜면 상세 페이지에 소개 글을 위한 INDEX 탭이 추가돼요.</span>
+            </div>
+            <button class="switch" id="ee-index-enabled" onclick="toggleIndexTab('ee')"></button>
+          </div>
+          <div id="ee-index-section" style="margin-top:18px; display:none;">
+            <div class="rich-editor">
+              <div class="editor-toolbar">
+                <button class="editor-tool" title="굵게"><strong>B</strong></button>
+                <button class="editor-tool" title="기울임"><em>I</em></button>
+                <button class="editor-tool" title="밑줄" style="text-decoration:underline;">U</button>
+                <span class="editor-tool-divider"></span>
+                <button class="editor-tool" title="목록">≡</button>
+                <button class="editor-tool" title="링크 삽입">🔗</button>
+                <span class="editor-tool-divider"></span>
+                <button class="editor-tool editor-tool-code" id="ee-index-code-toggle" title="HTML 코드로 보기">&lt;/&gt;</button>
+              </div>
+              <div class="editor-canvas" id="ee-index-canvas" contenteditable="true"></div>
+              <textarea class="editor-code-view" id="ee-index-code-view" spellcheck="false" style="display:none;"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="toggle-row">
+            <div class="toggle-row-text">
+              <strong>🌐 내 사이트에 공개하기</strong>
+              <span>켜두면 방문자가 바로 볼 수 있어요.</span>
+            </div>
+            <button class="switch on" id="ee-published"></button>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:28px;">
+          <button class="btn btn-danger-outline" id="delete-exhibition">이 작업 삭제하기</button>
+          <button class="btn btn-primary btn-lg" id="save-exhibition">저장하기</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ABOUT (static page, rich-text editor) ============ -->
+    <section class="view" id="view-about">
+      <div class="page">
+        <div class="page-head">
+          <div class="path-row">
+            <span class="page-eyebrow" id="about-eyebrow">dev.myportfolio.com/about</span>
+            <button class="path-edit-btn" title="주소 바꾸기" onclick="startRenamePath('about')">✏️</button>
+          </div>
+          <div class="page-title-row">
+            <h1 class="page-title" id="about-title-display">소개</h1>
+            <button class="rename-btn" title="이 페이지 이름 바꾸기" onclick="startRename('about')">✏️</button>
+          </div>
+        </div>
+
+        <div class="section-card" style="padding:0; overflow:hidden;">
+          <div class="editor-toolbar">
+            <button class="editor-tool" title="굵게"><strong>B</strong></button>
+            <button class="editor-tool" title="기울임"><em>I</em></button>
+            <button class="editor-tool" title="밑줄" style="text-decoration:underline;">U</button>
+            <span class="editor-tool-divider"></span>
+            <button class="editor-tool" title="제목">H</button>
+            <button class="editor-tool" title="인용"><span>&ldquo;&rdquo;</span></button>
+            <span class="editor-tool-divider"></span>
+            <button class="editor-tool" title="목록">≡</button>
+            <button class="editor-tool" title="링크 삽입">🔗</button>
+            <button class="editor-tool" title="사진 삽입">🖼</button>
+            <span class="editor-tool-divider"></span>
+            <button class="editor-tool editor-tool-code" id="about-code-toggle" title="HTML 코드로 보기">&lt;/&gt;</button>
+          </div>
+          <div class="editor-canvas" id="about-editor-canvas" contenteditable="true">
+            <h2>안녕하세요, 사진작가 Dev입니다.</h2>
+            <p>서울을 기반으로 뷰티, 테크, 라이프스타일 브랜드와 함께 일하는 사진작가입니다. 사물의 질감과 빛을 절제된 방식으로 담아내는 작업을 주로 합니다.</p>
+            <p>2019년부터 지금까지 30여 개의 브랜드 캠페인과 4번의 개인전을 진행했습니다. 새로운 작업 문의는 언제든 환영합니다.</p>
+          </div>
+          <textarea class="editor-code-view" id="about-code-view" spellcheck="false" style="display:none;"></textarea>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; margin-top:20px;">
+          <button class="btn btn-primary btn-lg" id="save-about">저장하기</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ MESSAGES ============ -->
+    <section class="view" id="view-messages">
+      <div class="page" style="max-width: 900px;">
+        <div class="page-head">
+          <div class="page-eyebrow">문의</div>
+          <h1 class="page-title">받은 메시지</h1>
+          <p class="page-desc">방문자가 연락처 페이지에서 보낸 메시지예요.</p>
+        </div>
+        <div id="msg-list-wrap"></div>
+        <div id="msg-detail-wrap" style="margin-top:20px;"></div>
+      </div>
+    </section>
+
+    <!-- ============ SETTINGS ============ -->
+    <section class="view" id="view-settings">
+      <div class="page">
+        <div class="page-head">
+          <div class="page-eyebrow">사이트 설정</div>
+          <h1 class="page-title">내 사이트 정보</h1>
+          <p class="page-desc">사이트 이름, 연락처, 메뉴 같은 기본 정보를 관리해요.</p>
+        </div>
+
+        <div class="section-card">
+          <h2>기본 정보</h2>
+          <div class="field-row">
+            <div class="field">
+              <label>사이트 이름</label>
+              <input type="text" value="Dev Tenant Portfolio" />
+            </div>
+            <div class="field">
+              <label>사진작가 이름</label>
+              <input type="text" value="Dev Photographer" />
+            </div>
+            <div class="field">
+              <label>연락처 이메일</label>
+              <input type="email" value="dev@example.com" />
+            </div>
+            <div class="field">
+              <label>하단 문구 <span style="font-weight:400; color:var(--muted);">(선택)</span></label>
+              <input type="text" placeholder="© 2026 All rights reserved" />
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <h2>메뉴 순서</h2>
+          <div class="section-desc">방문자가 왼쪽에서 보는 메뉴예요. 이름 자체를 바꾸려면 각 게시판 화면 안의 ✏️를 이용해주세요 — 여기서는 순서와 표시 여부만 관리해요.</div>
+          <div class="reorder-list" id="nav-list"></div>
+        </div>
+
+        <div class="section-card">
+          <h2>SNS 링크</h2>
+          <div class="reorder-list" id="social-list"></div>
+          <button class="add-row-btn" style="margin-top:10px;">＋ SNS 링크 추가</button>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; margin-top:28px;">
+          <button class="btn btn-primary btn-lg" id="save-settings">저장하기</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast">✓ 저장되었습니다</div>
+
+<script>
+  // Two fixed gallery-type boards (photo/work) whose *display name* is
+  // user-editable — not a generic N-board CMS. boardTitles is the single
+  // source of truth for both the sidebar label and each board's own page
+  // heading, mirroring how the real implementation would read NavItem.label
+  // (already free-text in the schema) for both.
+  const boardTitles = { projects: "사진", exhibitions: "작업", about: "소개" };
+
+  // URL path per board -- also user-editable, not just the display name.
+  // Real implementation: every board (photo/work/about alike) resolves
+  // through one generic dynamic route (e.g. src/app/s/[tenant]/[path]/...)
+  // that looks up which board a given tenant's path maps to, rather than
+  // fixed /photo, /work folders -- decided specifically so path-editing
+  // doesn't need special-casing against hardcoded route folders. Reserved
+  // words + cross-board collisions must be checked on every rename (both
+  // here and for real, server-side).
+  const boardPaths = { projects: "photo", exhibitions: "work", about: "about" };
+  const RESERVED_PATHS = new Set(["contact", "admin", "api", "s"]);
+
+  // Reorderable in step with Settings -> 메뉴 순서 (navItemsData below);
+  // "messages"/"settings" are admin-only sections with no public nav
+  // equivalent, so they always stay pinned after the site-nav items rather
+  // than participating in the reorder.
+  let NAV_ITEMS = [
+    { id: "home", boardKey: null, fixedLabel: "홈", navDataLabel: "HOME", icon: "M2 8.5 8 3l6 5.5M3.5 7.5V13a.5.5 0 0 0 .5.5h3v-4h2v4h3a.5.5 0 0 0 .5-.5V7.5" },
+    { id: "projects", boardKey: "projects", navDataLabel: "PHOTO", icon: "M1.8 3.2h12.4v9.6H1.8zM4.4 9.6l2.2-2.4 1.8 1.8 2-2.6 1.8 2" },
+    { id: "exhibitions", boardKey: "exhibitions", navDataLabel: "WORK", icon: "M2.2 2.2h8.6v8.6H2.2z" },
+    { id: "about", boardKey: "about", navDataLabel: "ABOUT", icon: "M3.2 1.8h7.2l2.4 2.4v9.4a.6.6 0 0 1-.6.6H3.2a.6.6 0 0 1-.6-.6V2.4a.6.6 0 0 1 .6-.6ZM4.8 7.4h6.4M4.8 9.8h6.4M4.8 5h3.2" },
+    { id: "messages", boardKey: null, fixedLabel: "메시지", icon: "M1.8 3.4h12.4v9.2H1.8zM2.4 4.2 8 8.4l5.6-4.2", badgeId: "nav-badge-messages" },
+    { id: "settings", boardKey: null, fixedLabel: "설정", icon: "M8 5.8a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4Z" },
+  ];
+
+  // Unified item shape for both boards -- no category/venue, no period
+  // range, no per-photo label. dateValue is a single "YYYY-MM" (from a
+  // month picker, so it's always formatted the same way). indexEnabled/
+  // indexContent back the detail page's optional INDEX tab (rich text,
+  // same editor as the About page). Thumbnail = whichever photo is
+  // first/⭐ in the photo manager, not a separate field.
+  const projects = [
+    { id: "p1", name: "Project Name", slug: "project-name", dateValue: "2026-01", published: true, photos: 4, indexEnabled: false, indexContent: "" },
+    { id: "p2", name: "Nord Audio", slug: "nord-audio", dateValue: "2025-09", published: true, photos: 4, indexEnabled: true, indexContent: "<p>Nord Audio와 3일간 진행한 제품 촬영 프로젝트입니다.</p>" },
+    { id: "p3", name: "Still Water Co.", slug: "still-water-co", dateValue: "2025-06", published: true, photos: 4, indexEnabled: false, indexContent: "" },
+    { id: "p4", name: "Field Apparel", slug: "field-apparel", dateValue: "2025-02", published: true, photos: 4, indexEnabled: false, indexContent: "" },
+    { id: "p5", name: "Home & Form", slug: "home-and-form", dateValue: "2024-10", published: false, photos: 4, indexEnabled: false, indexContent: "" },
+    { id: "p6", name: "Line Accessories", slug: "line-accessories", dateValue: "2024-03", published: true, photos: 4, indexEnabled: false, indexContent: "" },
+  ];
+  const exhibitions = [
+    { id: "e1", name: "Art Work Name", slug: "art-work-name", dateValue: "2026-04", published: true, photos: 4, indexEnabled: true,
+      indexContent: "<p>A series examining domestic objects removed from use, photographed as still, isolated forms.</p>" },
+    { id: "e2", name: "Surface Tension", slug: "surface-tension", dateValue: "2025-11", published: true, photos: 4, indexEnabled: true,
+      indexContent: "<p>Studies of material surfaces under controlled light — concrete, glass, and skin treated with the same visual attention, blurring the line between the industrial and the organic.</p>" },
+    { id: "e3", name: "Objects at Rest", slug: "objects-at-rest", dateValue: "2025-05", published: true, photos: 4, indexEnabled: true,
+      indexContent: "<p>A quiet catalogue of everyday tools arranged without hierarchy.</p>" },
+    { id: "e4", name: "Quiet Material", slug: "quiet-material", dateValue: "2024-09", published: true, photos: 4, indexEnabled: false, indexContent: "" },
+  ];
+  const navItemsData = [
+    { label: "HOME", target: "홈 화면", visible: true },
+    { label: "PHOTO", target: "사진 목록", visible: true },
+    { label: "WORK", target: "작업 목록", visible: true },
+    { label: "ABOUT", target: "소개 페이지", visible: true },
+    { label: "CONTACT", target: "문의 페이지", visible: true },
+  ];
+  const socialLinksData = [{ platform: "Instagram", url: "https://instagram.com" }];
+  const messages = [
+    { id: "m1", name: "한지우", email: "jiwoo.han@studioamble.kr", date: "7월 13일", status: "NEW",
+      body: "안녕하세요 — 이번 봄 스튜디오 앰블에서 그룹전을 준비 중인데 Surface Tension 시리즈 중 몇 작품을 소개하고 싶어요. 이번 주에 통화 가능하실까요?" },
+    { id: "m2", name: "Marcus Webb", email: "m.webb@fieldcollective.com", date: "7월 12일", status: "NEW",
+      body: "Field Apparel 프로젝트 정말 좋았습니다 — 포틀랜드의 작은 아웃도어 브랜드인데 가을 룩북 촬영을 맡아주실 수 있을까요? 2일 촬영 견적 부탁드립니다." },
+    { id: "m3", name: "다나카 아이코", email: "aiko.t@gmail.com", date: "7월 9일", status: "READ",
+      body: "Space Won에서 본 Objects at Rest 전시 정말 아름다웠어요. 작품 프린트 판매도 하시나요?" },
+    { id: "m4", name: "박대호", email: "dhpark@konkuk.ac.kr", date: "7월 6일", status: "READ",
+      body: "사진 강의를 하고 있는데 Quiet Material 중 두 작품을 수업 자료로 사용해도 될까요? (출처 표기, 비영리)" },
+  ];
+
+  function showView(id) {
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+    document.getElementById("view-" + id).classList.add("active");
+    document.querySelectorAll(".nav-item[data-nav]").forEach(n => n.classList.toggle("active", n.dataset.nav === id));
+    window.scrollTo(0, 0);
+  }
+
+  function renderSidebarNav() {
+    document.getElementById("nav-list-el").innerHTML = NAV_ITEMS.map(item => {
+      const label = item.boardKey ? boardTitles[item.boardKey] : item.fixedLabel;
+      return `
+        <button class="nav-item" data-nav="${item.id}">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="${item.icon}" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="nav-label">${label}</span>
+          ${item.badgeId ? `<span class="nav-badge" id="${item.badgeId}" style="display:none;"></span>` : ""}
+        </button>
+      `;
+    }).join("");
+    document.querySelectorAll("[data-nav]").forEach(el => el.addEventListener("click", () => showView(el.dataset.nav)));
+    showView(document.querySelector(".view.active")?.id.replace("view-", "") || "home");
+  }
+
+  function refreshBoardLabels() {
+    document.getElementById("projects-title-display").textContent = boardTitles.projects;
+    document.getElementById("exhibitions-title-display").textContent = boardTitles.exhibitions;
+    document.getElementById("about-title-display").textContent = boardTitles.about;
+    document.getElementById("back-to-projects-label").textContent = boardTitles.projects;
+    document.getElementById("back-to-exhibitions-label").textContent = boardTitles.exhibitions;
+    document.getElementById("home-stat-projects").textContent = `${boardTitles.projects} 게시물 공개 중`;
+    document.getElementById("home-stat-exhibitions").textContent = `${boardTitles.exhibitions} 게시물 공개 중`;
+    document.getElementById("home-add-project-btn").textContent = `+ 새 ${boardTitles.projects} 추가`;
+    document.getElementById("home-add-exhibition-btn").textContent = `+ 새 ${boardTitles.exhibitions} 추가`;
+    document.getElementById("home-about-btn").textContent = `${boardTitles.about} 페이지 수정`;
+    renderHomeVisibility();
+    renderSidebarNav();
+  }
+
+  function startRename(boardKey) {
+    const displayEl = document.getElementById(boardKey + "-title-display");
+    const current = boardTitles[boardKey];
+    const input = document.createElement("input");
+    input.className = "title-input";
+    input.value = current;
+    input.maxLength = 20;
+    displayEl.replaceWith(input);
+    input.focus();
+    input.select();
+    const commit = () => {
+      const next = input.value.trim() || current;
+      boardTitles[boardKey] = next;
+      const h1 = document.createElement("h1");
+      h1.className = "page-title";
+      h1.id = boardKey + "-title-display";
+      h1.textContent = next;
+      input.replaceWith(h1);
+      refreshBoardLabels();
+      toast("이름이 바뀌었어요");
+    };
+    input.addEventListener("keydown", e => { if (e.key === "Enter") input.blur(); });
+    input.addEventListener("blur", commit);
+  }
+  window.startRename = startRename;
+
+  function startRenamePath(boardKey) {
+    const span = document.getElementById(boardKey + "-eyebrow");
+    const current = boardPaths[boardKey];
+    const input = document.createElement("input");
+    input.className = "path-input";
+    input.value = current;
+    input.maxLength = 30;
+    span.replaceWith(input);
+    input.focus();
+    input.select();
+
+    const restore = () => {
+      const newSpan = document.createElement("span");
+      newSpan.className = "page-eyebrow";
+      newSpan.id = boardKey + "-eyebrow";
+      newSpan.textContent = `dev.myportfolio.com/${boardPaths[boardKey]}`;
+      input.replaceWith(newSpan);
+    };
+
+    const commit = () => {
+      const clean = input.value.trim().toLowerCase().replace(/^\/+|\/+$/g, "");
+
+      if (!/^[a-z0-9-]+$/.test(clean)) {
+        toast("영문 소문자, 숫자, 하이픈(-)만 사용할 수 있어요.", true);
+        restore();
+        return;
+      }
+      if (RESERVED_PATHS.has(clean)) {
+        toast(`"${clean}"은(는) 이미 다른 용도로 쓰이는 주소예요.`, true);
+        restore();
+        return;
+      }
+      const collision = Object.entries(boardPaths).find(([key, path]) => key !== boardKey && path === clean);
+      if (collision) {
+        toast(`이미 "${boardTitles[collision[0]]}" 페이지가 쓰고 있는 주소예요.`, true);
+        restore();
+        return;
+      }
+
+      boardPaths[boardKey] = clean;
+      restore();
+      toast("주소가 바뀌었어요");
+    };
+    input.addEventListener("keydown", e => { if (e.key === "Enter") input.blur(); });
+    input.addEventListener("blur", commit);
+  }
+  window.startRenamePath = startRenamePath;
+
+  function toast(msg, isError) {
+    const t = document.getElementById("toast");
+    t.textContent = (isError ? "⚠ " : "✓ ") + msg;
+    t.style.background = isError ? "var(--danger)" : "var(--ink)";
+    t.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => t.classList.remove("show"), 2600);
+  }
+
+  function siteCard(item, kind) {
+    const href = kind === "project" ? "openProjectEditor" : "openExhibitionEditor";
+    return `
+      <div class="site-card">
+        ${!item.published ? `<div class="site-card-draft-flag">비공개</div>` : ""}
+        <button class="site-card-edit" onclick="${href}('${item.id}')" title="수정하기">✏️</button>
+        <div class="site-card-photo"></div>
+        <div class="site-card-body">
+          <span class="site-card-title">${item.name}</span>
+          <span class="site-card-meta">${formatMonth(item.dateValue)}</span>
+        </div>
+      </div>
+    `;
+  }
+  function renderProjects() {
+    document.getElementById("projects-grid").innerHTML = projects.map(p => siteCard(p, "project")).join("");
+  }
+  function renderExhibitions() {
+    document.getElementById("exhibitions-grid").innerHTML = exhibitions.map(x => siteCard(x, "exhibition")).join("");
+  }
+
+  // Array-backed (not just N placeholder tiles) so reorder/remove/
+  // set-primary are real state changes. No per-photo label/caption --
+  // removed per direction: photos are just photos, shared identically by
+  // the public site's GRID VIEW and FULLSCREEN VIEW tabs. The first photo
+  // (⭐) doubles as the item's list-card thumbnail -- no separate thumbnail
+  // upload field. Keyed by container id since two editors (project/
+  // exhibition) share this one function.
+  const photoGridState = {};
+  function placeholderPhotos(count) {
+    return Array.from({ length: count }, () => ({}));
+  }
+  function setPhotoGridState(containerId, photos) {
+    photoGridState[containerId] = photos;
+    photoManagerGrid(containerId);
+  }
+  function photoManagerGrid(containerId) {
+    const el = document.getElementById(containerId);
+    const photos = photoGridState[containerId] || [];
+    let html = photos.map((photo, idx) => {
+      const isPrimary = idx === 0;
+      return `
+        <div class="photo-tile ${isPrimary ? "is-primary" : ""}">
+          ${isPrimary ? `<div class="photo-tile-badge">⭐ 썸네일</div>` : ""}
+          <div class="photo-tile-order">
+            <button class="photo-tile-mini-btn" ${idx === 0 ? "disabled" : ""} onclick="movePhoto('${containerId}', ${idx}, -1)" title="앞으로">◀</button>
+            <button class="photo-tile-mini-btn" ${idx === photos.length - 1 ? "disabled" : ""} onclick="movePhoto('${containerId}', ${idx}, 1)" title="뒤로">▶</button>
+          </div>
+          <div class="photo-tile-actions">
+            ${!isPrimary ? `<button class="photo-tile-mini-btn" onclick="setPrimaryPhoto('${containerId}', ${idx})" title="썸네일로 지정">⭐</button>` : ""}
+            <button class="photo-tile-mini-btn remove" onclick="removePhoto('${containerId}', ${idx})" title="삭제">✕</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+    html += `<button class="photo-tile-add" onclick="addPhoto('${containerId}')"><div class="plus-circle">＋</div><span style="font-size:13px;">사진 추가</span></button>`;
+    el.innerHTML = html;
+  }
+  function movePhoto(containerId, idx, dir) {
+    const photos = photoGridState[containerId];
+    const j = idx + dir;
+    if (j < 0 || j >= photos.length) return;
+    [photos[idx], photos[j]] = [photos[j], photos[idx]];
+    photoManagerGrid(containerId);
+  }
+  function setPrimaryPhoto(containerId, idx) {
+    const photos = photoGridState[containerId];
+    const [item] = photos.splice(idx, 1);
+    photos.unshift(item);
+    photoManagerGrid(containerId);
+    toast("썸네일 사진으로 지정했어요");
+  }
+  function removePhoto(containerId, idx) {
+    photoGridState[containerId].splice(idx, 1);
+    photoManagerGrid(containerId);
+  }
+  function addPhoto(containerId) {
+    const photos = photoGridState[containerId];
+    photos.push({});
+    photoManagerGrid(containerId);
+    toast("사진을 추가했어요 (실제로는 업로드 창이 열려요)");
+  }
+  window.movePhoto = movePhoto;
+  window.setPrimaryPhoto = setPrimaryPhoto;
+  window.removePhoto = removePhoto;
+  window.addPhoto = addPhoto;
+
+  let peIsNew = false;
+  let eeIsNew = false;
+  function openProjectEditor(id) {
+    peIsNew = id === "new";
+    const p = peIsNew ? { name: "", dateValue: "", published: false, photos: 0, indexEnabled: false, indexContent: "" } : projects.find(x => x.id === id);
+    document.getElementById("project-editor-title").textContent = peIsNew ? "새 사진 프로젝트" : p.name;
+    document.getElementById("pe-name").value = p.name;
+    document.getElementById("pe-date").value = p.dateValue;
+    document.getElementById("pe-published").classList.toggle("on", p.published);
+    document.getElementById("delete-project").style.display = peIsNew ? "none" : "inline-flex";
+    document.getElementById("pe-url-hint").textContent = `/${boardPaths.projects}/${p.slug || "..."}`;
+    setIndexTabState("pe", p.indexEnabled, p.indexContent);
+    setPhotoGridState("project-photo-grid", placeholderPhotos(p.photos));
+    showView("project-editor");
+    if (peIsNew) document.getElementById("pe-name").focus();
+  }
+  function openExhibitionEditor(id) {
+    eeIsNew = id === "new";
+    const x = eeIsNew ? { name: "", dateValue: "", published: false, photos: 0, indexEnabled: false, indexContent: "" } : exhibitions.find(v => v.id === id);
+    document.getElementById("exhibition-editor-title").textContent = eeIsNew ? "새 작업" : x.name;
+    document.getElementById("ee-name").value = x.name;
+    document.getElementById("ee-date").value = x.dateValue;
+    document.getElementById("ee-published").classList.toggle("on", x.published);
+    document.getElementById("delete-exhibition").style.display = eeIsNew ? "none" : "inline-flex";
+    document.getElementById("ee-url-hint").textContent = `/${boardPaths.exhibitions}/${x.slug || "..."}`;
+    setIndexTabState("ee", x.indexEnabled, x.indexContent);
+    setPhotoGridState("exhibition-photo-grid", placeholderPhotos(x.photos));
+    showView("exhibition-editor");
+    if (eeIsNew) document.getElementById("ee-name").focus();
+  }
+
+  // Shared INDEX-tab toggle + rich-text section, used identically by both
+  // editors (prefix "pe"/"ee"). Same visual/HTML-source editor as the
+  // About page.
+  function setIndexTabState(prefix, enabled, content) {
+    document.getElementById(`${prefix}-index-enabled`).classList.toggle("on", enabled);
+    document.getElementById(`${prefix}-index-section`).style.display = enabled ? "block" : "none";
+    const canvas = document.getElementById(`${prefix}-index-canvas`);
+    canvas.innerHTML = content || "<p></p>";
+    canvas.style.display = "block";
+    document.getElementById(`${prefix}-index-code-view`).style.display = "none";
+    document.getElementById(`${prefix}-index-code-toggle`).classList.remove("active");
+  }
+  function toggleIndexTab(prefix) {
+    const btn = document.getElementById(`${prefix}-index-enabled`);
+    const on = !btn.classList.contains("on");
+    btn.classList.toggle("on", on);
+    document.getElementById(`${prefix}-index-section`).style.display = on ? "block" : "none";
+  }
+  window.toggleIndexTab = toggleIndexTab;
+  window.openProjectEditor = openProjectEditor;
+  window.openExhibitionEditor = openExhibitionEditor;
+
+  // "+ NEW" jumps straight into the same full editor used for existing
+  // items (no intermediate modal -- removed per direction: the modal was
+  // an unnecessary extra step when the editor already has 이름/날짜
+  // fields). The item isn't added to the list until "저장하기" actually
+  // succeeds (name required) -- backing out via "목록으로" just discards
+  // the draft, no empty-named ghost entries left in the grid.
+  function slugify(name) {
+    return (
+      name.trim().toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-") || "untitled"
+    );
+  }
+  // Single month value ("YYYY-MM" from a native month picker), never a
+  // free-typed range -- keeps the displayed format identical everywhere.
+  const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function formatMonth(value) {
+    if (!value) return "";
+    const [y, m] = value.split("-");
+    return `${MONTH_NAMES[+m - 1]} ${y}`;
+  }
+  let itemIdCounter = 100;
+
+  document.getElementById("pe-published").addEventListener("click", e => e.currentTarget.classList.toggle("on"));
+  document.getElementById("ee-published").addEventListener("click", e => e.currentTarget.classList.toggle("on"));
+
+  // While creating a new item, both the page title (starts as "새 사진
+  // 프로젝트" placeholder text) and the URL preview update live as the
+  // name is typed, instead of staying generic until the first save.
+  document.getElementById("pe-name").addEventListener("input", e => {
+    if (!peIsNew) return;
+    const name = e.target.value.trim();
+    document.getElementById("project-editor-title").textContent = name || "새 사진 프로젝트";
+    document.getElementById("pe-url-hint").textContent = `/${boardPaths.projects}/${name ? slugify(name) : "..."}`;
+  });
+  document.getElementById("ee-name").addEventListener("input", e => {
+    if (!eeIsNew) return;
+    const name = e.target.value.trim();
+    document.getElementById("exhibition-editor-title").textContent = name || "새 작업";
+    document.getElementById("ee-url-hint").textContent = `/${boardPaths.exhibitions}/${name ? slugify(name) : "..."}`;
+  });
+  document.getElementById("save-project").addEventListener("click", () => {
+    const name = document.getElementById("pe-name").value.trim();
+    if (!name) {
+      toast("이름을 입력해주세요.", true);
+      document.getElementById("pe-name").focus();
+      return;
+    }
+    if (peIsNew) {
+      projects.push({
+        id: "new-" + itemIdCounter++,
+        name,
+        slug: slugify(name),
+        dateValue: document.getElementById("pe-date").value,
+        published: document.getElementById("pe-published").classList.contains("on"),
+        photos: (photoGridState["project-photo-grid"] || []).length,
+        indexEnabled: document.getElementById("pe-index-enabled").classList.contains("on"),
+        indexContent: document.getElementById("pe-index-canvas").innerHTML,
+      });
+      renderProjects();
+    }
+    toast(`"${name}" 저장되었습니다`);
+    showView("projects");
+  });
+  document.getElementById("save-exhibition").addEventListener("click", () => {
+    const name = document.getElementById("ee-name").value.trim();
+    if (!name) {
+      toast("이름을 입력해주세요.", true);
+      document.getElementById("ee-name").focus();
+      return;
+    }
+    if (eeIsNew) {
+      exhibitions.push({
+        id: "new-" + itemIdCounter++,
+        name,
+        slug: slugify(name),
+        dateValue: document.getElementById("ee-date").value,
+        published: document.getElementById("ee-published").classList.contains("on"),
+        photos: (photoGridState["exhibition-photo-grid"] || []).length,
+        indexEnabled: document.getElementById("ee-index-enabled").classList.contains("on"),
+        indexContent: document.getElementById("ee-index-canvas").innerHTML,
+      });
+      renderExhibitions();
+    }
+    toast(`"${name}" 저장되었습니다`);
+    showView("exhibitions");
+  });
+  document.getElementById("delete-project").addEventListener("click", () => { toast("삭제되었습니다"); showView("projects"); });
+  document.getElementById("delete-exhibition").addEventListener("click", () => { toast("삭제되었습니다"); showView("exhibitions"); });
+  // Settings -> 메뉴 순서 is the source of truth for site-nav order; saving
+  // re-derives the sidebar's order from it (messages/settings, which have
+  // no public-nav equivalent, stay pinned after the reordered items).
+  function applyNavOrderToSidebar() {
+    const orderedLabels = navItemsData.map(n => n.label);
+    const reorderable = NAV_ITEMS.filter(item => item.navDataLabel);
+    const pinned = NAV_ITEMS.filter(item => !item.navDataLabel);
+    reorderable.sort((a, b) => orderedLabels.indexOf(a.navDataLabel) - orderedLabels.indexOf(b.navDataLabel));
+    NAV_ITEMS = [...reorderable, ...pinned];
+    renderSidebarNav();
+  }
+
+  document.getElementById("save-settings").addEventListener("click", () => {
+    applyNavOrderToSidebar();
+    toast("저장되었습니다 — 사이드바 메뉴 순서도 반영됐어요");
+  });
+  document.getElementById("save-about").addEventListener("click", () => toast("저장되었습니다"));
+
+  // Visual <-> HTML source toggle (real implementation: an editor that
+  // supports raw HTML, not just WYSIWYG — this mockup fakes it by
+  // round-tripping innerHTML through a textarea). Shared by the About
+  // page's editor and both boards' INDEX-tab editors -- same component.
+  function wireCodeToggle(toggleId, canvasId, codeViewId) {
+    let showingCode = false;
+    document.getElementById(toggleId).addEventListener("click", e => {
+      const canvas = document.getElementById(canvasId);
+      const codeView = document.getElementById(codeViewId);
+      showingCode = !showingCode;
+      e.currentTarget.classList.toggle("active", showingCode);
+      if (showingCode) {
+        codeView.value = canvas.innerHTML.split("><").join(">\n<").trim();
+        canvas.style.display = "none";
+        codeView.style.display = "block";
+      } else {
+        canvas.innerHTML = codeView.value;
+        codeView.style.display = "none";
+        canvas.style.display = "block";
+      }
+    });
+  }
+  wireCodeToggle("about-code-toggle", "about-editor-canvas", "about-code-view");
+  wireCodeToggle("pe-index-code-toggle", "pe-index-canvas", "pe-index-code-view");
+  wireCodeToggle("ee-index-code-toggle", "ee-index-canvas", "ee-index-code-view");
+
+  document.querySelectorAll("[data-open-project='new']").forEach(el => el.addEventListener("click", () => openProjectEditor("new")));
+  document.querySelectorAll("[data-open-exhibition='new']").forEach(el => el.addEventListener("click", () => openExhibitionEditor("new")));
+
+  // Single source of truth (navItemsData[i].visible) shared by the Settings
+  // reorder list and the Home "빠른 설정" toggles below -- toggling either
+  // one re-renders both, so they can never drift out of sync.
+  function toggleNavVisible(i) {
+    navItemsData[i].visible = !navItemsData[i].visible;
+    renderNavList();
+    renderHomeVisibility();
+    toast(`${navItemsData[i].label} ${navItemsData[i].visible ? "공개" : "비공개"}로 설정했어요`);
+  }
+  window.toggleNavVisible = toggleNavVisible;
+
+  function renderNavList() {
+    document.getElementById("nav-list").innerHTML = navItemsData.map((n, i) => `
+      <div class="reorder-row">
+        <div class="reorder-arrows">
+          <button class="arrow-btn" ${i === 0 ? "disabled" : ""} data-nav-up="${i}">▲</button>
+          <button class="arrow-btn" ${i === navItemsData.length - 1 ? "disabled" : ""} data-nav-down="${i}">▼</button>
+        </div>
+        <div class="reorder-main"><strong>${n.label}</strong><span>${n.target}</span></div>
+        <button class="switch ${n.visible ? "on" : ""}" onclick="toggleNavVisible(${i})"></button>
+      </div>
+    `).join("");
+    document.querySelectorAll("[data-nav-up]").forEach(el => el.addEventListener("click", () => {
+      const i = +el.dataset.navUp; [navItemsData[i-1], navItemsData[i]] = [navItemsData[i], navItemsData[i-1]]; renderNavList();
+    }));
+    document.querySelectorAll("[data-nav-down]").forEach(el => el.addEventListener("click", () => {
+      const i = +el.dataset.navDown; [navItemsData[i+1], navItemsData[i]] = [navItemsData[i], navItemsData[i+1]]; renderNavList();
+    }));
+  }
+
+  // Quick on/off for each page, right from the dashboard -- reads/writes
+  // the same navItemsData as Settings -> 메뉴 순서, applies instantly (no
+  // separate save step, unlike the list/editor pages).
+  const NAV_DISPLAY_NAME = {
+    PHOTO: () => boardTitles.projects,
+    WORK: () => boardTitles.exhibitions,
+    ABOUT: () => boardTitles.about,
+    CONTACT: () => "문의",
+  };
+  function renderHomeVisibility() {
+    const rows = navItemsData
+      .map((n, i) => ({ n, i }))
+      .filter(({ n }) => n.label !== "HOME");
+    document.getElementById("home-visibility-list").innerHTML = rows.map(({ n, i }) => `
+      <div class="reorder-row">
+        <div class="reorder-main"><strong>${NAV_DISPLAY_NAME[n.label] ? NAV_DISPLAY_NAME[n.label]() : n.label}</strong></div>
+        <button class="switch ${n.visible ? "on" : ""}" onclick="toggleNavVisible(${i})"></button>
+      </div>
+    `).join("");
+  }
+
+  function renderSocialList() {
+    document.getElementById("social-list").innerHTML = socialLinksData.map(s => `
+      <div class="reorder-row">
+        <div class="reorder-main"><strong>${s.platform}</strong><span>${s.url}</span></div>
+        <button class="icon-btn" title="삭제">✕</button>
+      </div>
+    `).join("") || `<div class="empty-note">아직 추가한 SNS 링크가 없어요.</div>`;
+  }
+
+  function renderMessages() {
+    const newMsgs = messages.filter(m => m.status === "NEW");
+    const readMsgs = messages.filter(m => m.status !== "NEW");
+    const rowHtml = m => `
+      <div class="msg-card ${m.status === "NEW" ? "is-new" : ""}" data-msg="${m.id}">
+        <div class="msg-avatar">${m.name[0]}</div>
+        <div class="msg-card-body">
+          <div class="msg-card-top">
+            <span class="msg-card-name">${m.name}${m.status === "NEW" ? '<span class="new-pill">NEW</span>' : ""}</span>
+            <span class="msg-card-date">${m.date}</span>
+          </div>
+          <div class="msg-card-snippet">${m.body}</div>
+        </div>
+      </div>
+    `;
+    let html = "";
+    if (newMsgs.length) html += `<div class="msg-section-label">새 메시지 (${newMsgs.length})</div>` + newMsgs.map(rowHtml).join("");
+    if (readMsgs.length) html += `<div class="msg-section-label">이전 메시지</div>` + readMsgs.map(rowHtml).join("");
+    if (!messages.length) html = `<div class="empty-note">아직 받은 메시지가 없어요.</div>`;
+    document.getElementById("msg-list-wrap").innerHTML = html;
+    document.querySelectorAll("[data-msg]").forEach(el => el.addEventListener("click", () => selectMessage(el.dataset.msg)));
+  }
+  function selectMessage(id) {
+    const m = messages.find(x => x.id === id);
+    if (m.status === "NEW") { m.status = "READ"; renderMessages(); renderNavBadge(); }
+    document.getElementById("msg-detail-wrap").innerHTML = `
+      <div class="msg-detail-card">
+        <div class="msg-detail-top">
+          <div><div class="msg-detail-name">${m.name}</div><div class="msg-detail-email">${m.email}</div></div>
+          <div class="msg-detail-date">${m.date}</div>
+        </div>
+        <div class="msg-detail-body">${m.body}</div>
+        <div class="msg-detail-actions">
+          <a class="btn btn-primary" href="mailto:${m.email}">이메일로 답장하기</a>
+        </div>
+      </div>
+    `;
+  }
+  function renderNavBadge() {
+    const n = messages.filter(m => m.status === "NEW").length;
+    const badge = document.getElementById("nav-badge-messages");
+    if (badge) {
+      if (n > 0) { badge.textContent = n; badge.style.display = "inline-block"; }
+      else { badge.style.display = "none"; }
+    }
+  }
+
+  renderSidebarNav();
+  renderProjects();
+  renderExhibitions();
+  renderNavList();
+  renderSocialList();
+  renderMessages();
+  renderNavBadge();
+  selectMessage(messages[0].id);
+  refreshBoardLabels();
+</script>
