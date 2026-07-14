@@ -13,7 +13,11 @@ export const resolveTenantByKey = cache(async (tenantKey: string) => {
     where: {
       OR: [{ slug: tenantKey }, { customDomain: tenantKey }],
     },
-    include: { siteSettings: true },
+    include: {
+      siteSettings: true,
+      navItems: { where: { isVisible: true }, orderBy: { order: "asc" } },
+      socialLinks: { orderBy: { order: "asc" } },
+    },
   });
 });
 
