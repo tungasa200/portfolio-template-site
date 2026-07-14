@@ -58,6 +58,10 @@ model User {
   role         UserRole @default(TENANT_OWNER)
   createdAt    DateTime @default(now())
 
+  // Brute-force lockout (see docs/decisions.md#authjs-self-hosted-not-clerk).
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+
   // Null only for PLATFORM_SUPERADMIN — every tenant-facing user belongs to exactly one tenant.
   tenantId String?
   tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)

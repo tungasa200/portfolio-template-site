@@ -10,24 +10,30 @@ gitignored and must never be committed.**
 1. Create a project at [neon.tech](https://neon.tech) (or via the Vercel
    integration — Vercel dashboard → Storage → Connect a database → Neon,
    which auto-wires the env vars into your Vercel project for you).
-2. Neon gives you two connection strings for the same database — you need
-   both:
-   - **Pooled** (hostname has `-pooler` in it) → `DATABASE_URL`. The app's
-     own `PrismaClient` (`src/lib/db/client.ts`) connects with this at
+2. Neon gives you two connection strings for the same database, and you'll
+   run each as a **different role**:
+   - **Pooled** (hostname has `-pooler` in it), as the dedicated
+     `app_runtime` role (see step 4) → `DATABASE_URL`. The app's own
+     `PrismaClient` (`src/lib/db/client.ts`) connects with this at
      runtime — required on Vercel serverless, which opens many short-lived
      connections.
-   - **Direct** (no `-pooler`) → `DIRECT_URL`. Only the Prisma CLI reads
-     this (via `prisma.config.ts`) — `migrate`/`db push` need a direct
-     connection because PgBouncer's pooling mode doesn't support the
-     advisory locks schema migrations take.
+   - **Direct** (no `-pooler`), as the Neon owner role (e.g.
+     `neondb_owner`) → `DIRECT_URL`. Read by the Prisma CLI (via
+     `prisma.config.ts` — `migrate`/`db push` need a direct connection
+     because PgBouncer's pooling mode doesn't support the advisory locks
+     schema migrations take) and by `prisma/seed.ts`.
 3. Run `npx prisma migrate dev --name init` once against it to create the
    real migration history, then commit the generated `prisma/migrations/`
    folder. (Already done for this project's initial schema — do this again
    for any future schema change.)
-4. **Do not** run `prisma/security/rls.sql` against Neon yet — see the
-   warning comment at the top of that file and
-   [architecture.md](./architecture.md#cross-tenant-isolation-two-layers).
-   It depends on Phase 4 work that hasn't landed.
+4. Run `prisma/security/create-app-role.sql` (fill in a real password in a
+   local, uncommitted copy first) to create the `app_runtime` role, then
+   `prisma/security/rls.sql` to apply the tenant-isolation policies — see
+   both files' comments and
+   [architecture.md](./architecture.md#cross-tenant-isolation-two-layers)
+   for why the role has to be `app_runtime` and not the Neon owner role
+   (the owner role's `BYPASSRLS` attribute silently makes the policies a
+   no-op). Already done for this project (2026-07-14).
 
 ## 2. Cloudflare R2 (object storage) — ✅ done for this project
 
@@ -66,6 +72,11 @@ another machine:
    credentials already exist (steps 1–2 above are done) — retrieve them
    from the Neon/Cloudflare dashboards again, or copy them from the other
    machine's `.env` out-of-band (password manager, not git/chat).
+   `app_runtime`'s password specifically isn't shown in the Neon dashboard
+   (it's a role this project created, not one Neon generated for you) — copy
+   it from the other machine's `.env`, or reset it from the Neon SQL editor
+   with `ALTER ROLE app_runtime WITH PASSWORD '<new password>';` if it's
+   genuinely lost, and update `DATABASE_URL` everywhere that used the old one.
 4. `npm run db:seed` if you need a local `dev` tenant (optional — Neon
    already has one from the first machine).
 5. `npm run dev`, then visit `http://dev.localhost:3000`,

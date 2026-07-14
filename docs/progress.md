@@ -6,6 +6,42 @@ session (on any machine) to know where things actually stand.
 
 ## Done
 
+**Phase 4a — Auth.js + RLS foundation**
+- Auth.js (NextAuth v5) wired: `src/lib/auth/auth.ts` (Credentials provider,
+  JWT sessions, `bcryptjs` password check), `src/lib/auth/tenant-context.ts`
+  (`getCurrentTenantContext()` — the only sanctioned source of `tenantId`
+  for admin mutations going forward). Login-attempt lockout (5 attempts →
+  15 min, `User.failedLoginAttempts`/`lockedUntil`, real migration
+  `20260714145612_add_login_lockout`).
+- `admin.{ROOT_DOMAIN}` is now actually gated: `src/app/admin/(dashboard)/`
+  route group calls `getCurrentTenantContext()`; `/admin/login` (public)
+  sits outside it. Old unauthenticated stub deleted.
+- `forTenant()` (`tenant-scoped-client.ts`) now wraps every tenant-scoped
+  operation in a `$transaction` running `set_config('app.tenant_id', ...,
+  true)` first — Prisma's documented RLS extension recipe.
+- **RLS applied to Neon and verified genuinely enforcing** — with a real
+  finding along the way: Neon's default owner role has `BYPASSRLS` by
+  default, which made the first `rls.sql` apply a complete no-op (unscoped
+  reads still returned every row). Fixed by creating a dedicated
+  `app_runtime` role with no `BYPASSRLS`
+  (`prisma/security/create-app-role.sql`) — `DATABASE_URL` now connects as
+  that role; `DIRECT_URL`/`prisma/seed.ts` keep the owner role (trusted
+  CLI-only paths). Confirmed after the fix: unscoped raw query on `Project`
+  returns 0 rows, `forTenant()` still returns the real 6. See
+  [architecture.md](./architecture.md#cross-tenant-isolation-two-layers).
+- Seeded a dev admin login (`admin@dev.local`, dev-only password printed by
+  `npm run db:seed` — not meant to survive to Phase 5's real go-live).
+- Verified end-to-end against real Neon (2026-07-14): full login flow via
+  NextAuth's `/api/auth/callback/credentials` (session cookie → dashboard
+  renders real tenant data), 5 wrong passwords locks the account (6th
+  attempt rejected even with the correct password), `/admin` redirects to
+  `/admin/login` when logged out, all Phase 2/3 public routes re-checked
+  post-RLS to rule out the "silent zero rows" outage the old `rls.sql`
+  warning flagged.
+- Not in this round (next up): SiteSettings/Project/Exhibition admin CRUD
+  UI, ContactSubmission inbox, R2 upload flow — see
+  [roadmap.md](./roadmap.md) Phase 4's remaining bullets.
+
 **Phase 3 — Content models + public rendering**
 - `/photo` and `/work` list pages (`src/app/s/[tenant]/photo/page.tsx`,
   `work/page.tsx`) reading real `Project`/`Exhibition` rows
@@ -71,8 +107,8 @@ session (on any machine) to know where things actually stand.
   implemented and verified with a throwaway script — cross-tenant reads
   return null/empty, forged `tenantId` on create throws.
 - Row-Level Security policies written (`prisma/security/rls.sql`),
-  rehearsed locally, **not yet applied to Neon** (see the warning comment
-  in that file — must wait for Phase 4's `SET LOCAL` wiring).
+  rehearsed locally. Applied to Neon and verified enforcing in Phase 4a
+  below, once `SET LOCAL` wiring and a non-`BYPASSRLS` app role landed.
 - Minimal proof-of-life pages: `src/app/s/[tenant]/page.tsx` renders the
   resolved tenant's site name; `src/app/admin/page.tsx` is a routing stub;
   `src/app/page.tsx` is a marketing placeholder.
@@ -92,7 +128,7 @@ session (on any machine) to know where things actually stand.
 
 ## Not started
 
-Phase 4 onward — see [roadmap.md](./roadmap.md) for the detailed breakdown.
-Next concrete task: Auth.js wiring + admin CRUD + R2 upload flow (Phase 4) —
-the phase that closes the `SET LOCAL app.tenant_id` / RLS loop from Phase 1
-and replaces every remaining placeholder image box with real uploads.
+Rest of Phase 4 — see [roadmap.md](./roadmap.md). Next concrete task: admin
+CRUD (SiteSettings editor, Project/Exhibition management + photo
+reordering, ContactSubmission inbox) and the R2 presigned-upload flow, both
+now unblocked by Phase 4a's auth/session foundation.

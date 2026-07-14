@@ -1,8 +1,17 @@
 import "dotenv/config";
+import bcrypt from "bcryptjs";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const DEV_ADMIN_EMAIL = "admin@dev.local";
+const DEV_ADMIN_PASSWORD = "dev-admin-pass-123";
+
+// DIRECT_URL (the owner role), not DATABASE_URL (the RLS-restricted
+// app_runtime role, see prisma/security/create-app-role.sql) -- seed
+// writes rows directly without going through forTenant()'s SET LOCAL, so
+// it needs the same trusted-CLI privilege as migrations, not the
+// request-serving runtime's restricted role.
+const adapter = new PrismaPg({ connectionString: process.env.DIRECT_URL });
 const prisma = new PrismaClient({ adapter });
 
 // Sample content mirrors design/Photographer Portfolio.dc.html's own
@@ -142,6 +151,22 @@ async function main() {
       });
     }
     console.log(`Seeded ${EXHIBITION_DEFS.length} sample exhibitions.`);
+  }
+
+  const existingUser = await prisma.user.findFirst({ where: { tenantId: tenant.id } });
+  if (!existingUser) {
+    const passwordHash = await bcrypt.hash(DEV_ADMIN_PASSWORD, 10);
+    await prisma.user.create({
+      data: {
+        email: DEV_ADMIN_EMAIL,
+        passwordHash,
+        role: "TENANT_OWNER",
+        tenantId: tenant.id,
+      },
+    });
+    console.log(
+      `Seeded dev admin login — email: ${DEV_ADMIN_EMAIL}, password: ${DEV_ADMIN_PASSWORD} (dev-only, not meant to survive to a real go-live).`
+    );
   }
 
   console.log(`Visit http://dev.${process.env.ROOT_DOMAIN ?? "localhost:3000"} once next dev is running.`);

@@ -4,26 +4,28 @@
 -- application code cannot leak rows across tenants once this is applied.
 --
 -- Not part of prisma/migrations/ because Prisma's schema DSL has no RLS
--- primitive. Apply manually against a real Postgres (Neon) once provisioned:
+-- primitive. Apply manually against a real Postgres (Neon):
 --   npx prisma db execute --file prisma/security/rls.sql
--- Re-run whenever a new tenant-scoped table is added to schema.prisma.
+-- Applied to Neon and verified enforcing 2026-07-14. Re-run whenever a new
+-- tenant-scoped table is added to schema.prisma.
 --
--- Runtime contract: every request that opens a transaction to read/write
--- tenant-scoped tables must first run, inside that same transaction:
---   SET LOCAL app.tenant_id = '<tenant id>';
--- forTenant() does not do this yet (Phase 1 ships the application-layer
--- guardrail only) — wiring SET LOCAL into forTenant()'s transaction path is
--- tracked for Phase 4.
+-- Runtime contract: every request that reads/writes tenant-scoped tables
+-- must first run, in the same transaction:
+--   SELECT set_config('app.tenant_id', '<tenant id>', true);
+-- forTenant() does this for every tenant-scoped operation (see
+-- tenant-scoped-client.ts).
 --
--- ** DO NOT apply this to the production (Neon) database before that Phase 4
--- wiring lands. ** Neon's connection role is not a Postgres superuser, so
--- FORCE ROW LEVEL SECURITY *will* be enforced there — and since nothing sets
--- app.tenant_id yet, every tenant-scoped query would silently return zero
--- rows (a full outage, not a leak, but still bad). It's harmless to apply
--- locally against `prisma dev`'s Postgres because that connects as a
--- superuser, which Postgres always exempts from RLS regardless of FORCE —
--- so this file has been rehearsed locally but intentionally NOT wired into
--- an automatic migration or deploy step yet.
+-- ** These policies are a no-op for any role with the BYPASSRLS attribute —
+-- including Neon's default owner role (e.g. neondb_owner), confirmed by
+-- testing, not assumption: FORCE ROW LEVEL SECURITY only closes the
+-- table-owner bypass, not role-level BYPASSRLS, which is a separate
+-- attribute. ** The app's actual runtime connection (DATABASE_URL) must use
+-- a role without BYPASSRLS — see create-app-role.sql, which sets one up.
+-- The owner role (DIRECT_URL) is fine for migrations/seed, which need full
+-- privilege and are trusted CLI-only paths, not the request-serving
+-- runtime. `prisma dev`'s local Postgres always connects as a superuser
+-- (also RLS-exempt), so this can only be meaningfully verified against real
+-- Neon, through the restricted role.
 
 DO $$
 DECLARE

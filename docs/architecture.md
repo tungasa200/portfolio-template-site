@@ -75,13 +75,26 @@ once this is a paid multi-tenant product.
    forged `tenantId` on create throws.
 
 2. **Database layer — Postgres Row-Level Security** (`prisma/security/rls.sql`,
-   defense in depth). Policies are written and rehearsed against a local
-   Postgres, but **intentionally not applied to Neon yet** — see the
-   warning comment at the top of that file. `forTenant()` doesn't yet run
-   `SET LOCAL app.tenant_id` inside a transaction (tracked for Phase 4);
-   applying the RLS policies before that lands would make every
-   tenant-scoped query return zero rows in production (a full outage, not a
-   leak, but still — don't do it out of order).
+   defense in depth). Applied to Neon and verified enforcing (2026-07-14).
+   `forTenant()` now wraps every tenant-scoped operation in a
+   `$transaction` that runs `SELECT set_config('app.tenant_id', $tenantId,
+   true)` immediately before the query, so the policies'
+   `current_setting('app.tenant_id', true)` check has something to compare
+   against.
+
+   **This only works because the app's runtime DB role has no `BYPASSRLS`.**
+   Neon's default owner role (e.g. `neondb_owner`) has `BYPASSRLS` set by
+   default — confirmed the hard way: applying `rls.sql` against it left
+   every policy nominally active (`relrowsecurity`/`relforcerowsecurity`
+   both true, policy present) but completely inert, silently returning
+   every tenant's rows to an unscoped query. `FORCE ROW LEVEL SECURITY`
+   only closes the *table-owner* bypass — `BYPASSRLS` is a separate
+   role-level attribute it doesn't touch. The fix:
+   `prisma/security/create-app-role.sql` creates a dedicated `app_runtime`
+   role (no `BYPASSRLS`) that `DATABASE_URL` connects as; `DIRECT_URL` (and
+   `prisma/seed.ts`, which writes rows directly without going through
+   `forTenant()`) keep using the owner role. See that file and
+   `.env.example` for the full setup.
 
 ## Storage (Cloudflare R2)
 

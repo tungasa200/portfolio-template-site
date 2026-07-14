@@ -85,7 +85,16 @@ export function forTenant(tenantId: string) {
             a.create = { ...a.create, tenantId };
           }
 
-          return query(a);
+          // Layer 2 (defense in depth): batch a set_config call ahead of the
+          // actual query in one implicit transaction, so
+          // current_setting('app.tenant_id', true) is visible to Postgres
+          // Row-Level Security policies (prisma/security/rls.sql) for this
+          // statement. Prisma's documented RLS extension recipe.
+          const [, result] = await basePrisma.$transaction([
+            basePrisma.$executeRaw`SELECT set_config('app.tenant_id', ${tenantId}, true)`,
+            query(a),
+          ]);
+          return result;
         },
       },
     },
