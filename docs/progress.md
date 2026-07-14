@@ -6,6 +6,33 @@ session (on any machine) to know where things actually stand.
 
 ## Done
 
+**Phase 3 — Content models + public rendering**
+- `/photo` and `/work` list pages (`src/app/s/[tenant]/photo/page.tsx`,
+  `work/page.tsx`) reading real `Project`/`Exhibition` rows
+  (`isPublished: true`, ordered) through `forTenant()`, rendered with the
+  Phase 2 `PhotoGrid` component.
+- `/photo/[slug]` and `/work/[slug]` detail pages, each fetching its row +
+  ordered photos and 404ing (`notFound()`) on an unpublished/missing slug.
+  Work's detail adds the INDEX tab (description + cover-photo placeholder,
+  page-local JSX, not a standalone component).
+- New `components/site/DetailTabs.tsx` (client) — shared controller for both
+  detail pages: syncs active tab / active fullscreen photo to
+  `?view=&photo=` via `useRouter`/`usePathname`/`useSearchParams` instead of
+  local `useState`, per the roadmap's explicit instruction, so a fullscreen
+  photo is a shareable/deep-linkable URL. `Tabs`, `PhotoGridDetail`,
+  `FullscreenViewer` (built in Phase 2) needed no changes — first real
+  callers, already controlled/prop-driven for exactly this.
+- `prisma/seed.ts` extended (idempotent — only seeds if the `dev` tenant has
+  no `Project` rows yet) with 6 sample projects and 4 sample exhibitions
+  mirroring `design/Photographer Portfolio.dc.html`'s own placeholder data,
+  all `isPublished: true`. `r2Key`/`width`/`height` are placeholders — no
+  real upload pipeline until Phase 4.
+- Verified against real Neon (2026-07-14): curl-tested all new routes (200s;
+  unknown slug 404s); confirmed rendered HTML for list cards, detail tab
+  switching (`?view=grid`), and fullscreen deep-linking
+  (`?view=fullscreen&photo=2` renders the correct active photo, checked
+  against the actual rendered `<span>`, not just the hydration payload).
+
 **Phase 2 — Public site design system**
 - `src/app/s/[tenant]/theme.css`: scoped Tailwind v4 token set ported from
   `design/Photographer Portfolio.dc.html` (oklch colors, Playfair
@@ -26,9 +53,8 @@ session (on any machine) to know where things actually stand.
   compiled CSS confirmed the scoped tokens; contact form action exercised
   directly — creates a real row, rejects an invalid email, test row cleaned
   up afterward.
-- Not yet done: `/photo`, `/work` real pages (Phase 3 — the 4 list/detail/
-  viewer components above are built but unused until then); R2-backed hero
-  image (still placeholder box, Phase 4).
+- `/photo`/`/work` real pages landed in Phase 3 below; R2-backed hero image
+  still a placeholder box pending Phase 4.
 
 **Phase 0 — Scaffolding**
 - Next.js 16.2.10 (App Router, TypeScript, Turbopack) + Prisma 7.8 +
@@ -66,8 +92,7 @@ session (on any machine) to know where things actually stand.
 
 ## Not started
 
-Phase 3 onward — see [roadmap.md](./roadmap.md) for the detailed breakdown.
-Next concrete task: real `/photo` and `/work` list/detail pages reading
-`Project`/`Exhibition` rows through `forTenant()`, using the `PhotoGrid`,
-`PhotoGridDetail`, `Tabs`, and `FullscreenViewer` components already built in
-Phase 2.
+Phase 4 onward — see [roadmap.md](./roadmap.md) for the detailed breakdown.
+Next concrete task: Auth.js wiring + admin CRUD + R2 upload flow (Phase 4) —
+the phase that closes the `SET LOCAL app.tenant_id` / RLS loop from Phase 1
+and replaces every remaining placeholder image box with real uploads.
