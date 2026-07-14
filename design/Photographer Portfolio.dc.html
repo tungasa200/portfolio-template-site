@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&amp;family=Inter:wght@300;400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background: oklch(0.99 0.002 90); color: oklch(0.18 0 0); }
+  ::selection { background: oklch(0.18 0 0); color: oklch(0.99 0.002 90); }
+  * { box-sizing: border-box; }
+  @keyframes introLine { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes introFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</helmet>
+
+<div style="display:flex; min-height:100vh; font-family:'Inter',sans-serif; background:oklch(0.99 0.002 90);">
+
+  <nav style="{{ navContainerStyle }}">
+    <div style="{{ navInnerStyle }}">
+      <div style="position:relative; margin:0 -28px; padding:0 28px 20px;">
+        <div style="{{ navNameStyle }}">SeongWoo</div>
+        <div style="position:absolute; left:0; right:0; bottom:0; height:1px; background:oklch(0.18 0 0);"></div>
+      </div>
+
+      <div style="{{ navLinksBlockStyle }}">
+        <a href="#" onClick="{{ goHome }}" onMouseEnter="{{ onNavHomeEnter }}" onMouseLeave="{{ onNavLeave }}" style="{{ navHomeStyle }}">HOME</a>
+        <a href="#" onClick="{{ goWork }}" onMouseEnter="{{ onNavWorkEnter }}" onMouseLeave="{{ onNavLeave }}" style="{{ navWorkStyle }}">PHOTO</a>
+        <a href="#" onClick="{{ goPersonal }}" onMouseEnter="{{ onNavPersonalEnter }}" onMouseLeave="{{ onNavLeave }}" style="{{ navPersonalStyle }}">WORK</a>
+        <a href="#" onClick="{{ goContact }}" onMouseEnter="{{ onNavContactEnter }}" onMouseLeave="{{ onNavLeave }}" style="{{ navContactStyle }}">CONTACT</a>
+      </div>
+
+      <div style="{{ navSocialBlockStyle }}">
+        <a href="https://instagram.com" target="_blank" style="color:oklch(0.45 0 0); text-decoration:none; display:flex; align-items:center; gap:5px;" style-hover="color:oklch(0.18 0 0);">INSTAGRAM <span style="font-size:11px;">↗</span></a>
+      </div>
+    </div>
+  </nav>
+
+  <button onClick="{{ toggleNav }}" style="{{ toggleBtnStyle }}">
+    <div style="{{ chevronStyle }}"></div>
+  </button>
+
+  <button onClick="{{ scrollToTop }}" style="{{ scrollTopBtnStyle }}">
+    <div style="width:8px; height:8px; border-top:1px solid oklch(0.18 0 0); border-left:1px solid oklch(0.18 0 0); transform:rotate(45deg); margin-top:3px;"></div>
+  </button>
+
+  <main style="flex:1; min-width:0;">
+
+<sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+    <section id="hero" style="padding:40px clamp(64px, 6vw, 140px); height:calc(100vh - 80px); max-height:calc(100vh - 80px); box-sizing:border-box; display:flex; align-items:center; overflow:hidden;">
+      <div style="width:100%; max-width:min(100%, calc(100vh - 160px)); aspect-ratio:1/1; margin:0 auto; border:1px solid oklch(0.18 0 0); background:repeating-linear-gradient(135deg, oklch(0.94 0.002 90) 0px, oklch(0.94 0.002 90) 16px, oklch(0.97 0.002 90) 16px, oklch(0.97 0.002 90) 32px); display:flex; align-items:center; justify-content:center; animation:introFade 0.6s ease 0.15s both;">
+        <span style="font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.08em; color:oklch(0.4 0 0); background:oklch(0.99 0.002 90); padding:6px 14px; border:1px solid oklch(0.18 0 0);">HERO IMAGE — 1600×1600</span>
+      </div>
+    </section>
+    </sc-if>
+
+<sc-if value="{{ isWorkList }}" hint-placeholder-val="{{ false }}">
+    <section id="work" style="padding:40px 64px; min-height:calc(100vh - 65px); box-sizing:border-box;">
+      <div style="position:relative; display:flex; align-items:center; justify-content:space-between; margin:0 -64px 56px; padding:0 64px 20px;">
+        <h2 style="font-family:'Playfair Display',serif; font-weight:500; font-size:24px; line-height:1; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; animation:introFade 0.5s ease 0.35s both;">PHOTO</h2>
+        <div style="position:absolute; left:0; right:0; bottom:0; height:1px; background:oklch(0.18 0 0); transform-origin:left; animation:introLine 0.6s ease both;"></div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; animation:introFade 0.6s ease 0.5s both;">
+        <sc-for list="{{ projects }}" as="project" hint-placeholder-count="6">
+          <a href="#" onClick="{{ project.select }}" style="text-decoration:none; color:inherit; background:oklch(0.99 0.002 90); display:block; cursor:pointer; border:1px solid oklch(0.18 0 0);">
+            <div style="aspect-ratio:4/3; position:relative; overflow:hidden;">
+              <div style="position:absolute; inset:0; background:repeating-linear-gradient(135deg, oklch(0.94 0.002 90) 0px, oklch(0.94 0.002 90) 14px, oklch(0.975 0.002 90) 14px, oklch(0.975 0.002 90) 28px);"></div>
+              <span style="position:absolute; bottom:16px; left:18px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em; color:oklch(0.35 0 0); background:oklch(0.99 0.002 90); padding:4px 8px; border:1px solid oklch(0.18 0 0);">{{ project.category }}</span>
+            </div>
+            <div style="padding:20px 22px; display:flex; justify-content:space-between; align-items:baseline; border-top:1px solid oklch(0.18 0 0);">
+              <span style="font-family:'Playfair Display',serif; font-size:20px;">{{ project.name }}</span>
+              <span style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.05em; color:oklch(0.45 0 0);">{{ project.period }}</span>
+            </div>
+          </a>
+        </sc-for>
+      </div>
+    </section>
+    </sc-if>
+
+    <sc-if value="{{ isWorkDetail }}" hint-placeholder-val="{{ false }}">
+    <section id="work-detail" style="padding:40px 64px; min-height:calc(100vh - 65px); box-sizing:border-box;">
+      <div style="position:relative; display:flex; align-items:center; justify-content:space-between; margin:0 -64px 32px; padding:0 64px 20px;">
+        <h2 style="font-family:'Playfair Display',serif; font-weight:500; font-size:24px; line-height:1; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; animation:introFade 0.5s ease 0.35s both;">{{ currentProject.name }}</h2>
+        <div style="position:absolute; left:0; right:0; bottom:0; height:1px; background:oklch(0.18 0 0); transform-origin:left; animation:introLine 0.6s ease both;"></div>
+      </div>
+
+      <div style="display:flex; gap:28px; margin-bottom:40px; border-bottom:1px solid oklch(0.9 0 0); animation:introFade 0.5s ease 0.45s both;">
+        <button onClick="{{ setGridView }}" style="{{ gridTabStyle }}">GRID VIEW</button>
+        <button onClick="{{ setFullscreenView }}" style="{{ fullscreenTabStyle }}">FULLSCREEN VIEW</button>
+      </div>
+
+      <sc-if value="{{ isGridView }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; animation:introFade 0.6s ease 0.55s both;">
+        <sc-for list="{{ currentProject.photos }}" as="item" hint-placeholder-count="6">
+          <div style="aspect-ratio:1/1; background:oklch(0.99 0.002 90); position:relative; overflow:hidden; border:1px solid oklch(0.18 0 0); display:flex; align-items:flex-end;">
+            <div style="position:absolute; inset:0; background:repeating-linear-gradient(135deg, oklch(0.94 0.002 90) 0px, oklch(0.94 0.002 90) 14px, oklch(0.975 0.002 90) 14px, oklch(0.975 0.002 90) 28px);"></div>
+            <div style="position:relative; padding:14px 16px; display:flex; justify-content:space-between; width:100%; align-items:flex-end;">
+              <span style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em; color:oklch(0.35 0 0); background:oklch(0.99 0.002 90); padding:4px 8px; border:1px solid oklch(0.18 0 0);">{{ item.label }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isFullscreenView }}" hint-placeholder-val="{{ false }}">
+      <div style="animation:introFade 0.6s ease 0.55s both;">
+        <div style="width:100%; aspect-ratio:16/9; background:oklch(0.99 0.002 90); position:relative; overflow:hidden; border:1px solid oklch(0.18 0 0); display:flex; align-items:flex-end;">
+          <div style="position:absolute; inset:0; background:repeating-linear-gradient(135deg, oklch(0.94 0.002 90) 0px, oklch(0.94 0.002 90) 16px, oklch(0.975 0.002 90) 16px, oklch(0.975 0.002 90) 32px);"></div>
+          <div style="position:relative; padding:20px 24px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.06em; color:oklch(0.35 0 0); background:oklch(0.99 0.002 90); padding:5px 10px; border:1px solid oklch(0.18 0 0);">{{ activePhoto.label }}</span>
+          </div>
+        </div>
+        <div style="display:flex; gap:12px; margin-top:20px; overflow-x:auto; padding-bottom:4px;">
+          <sc-for list="{{ thumbPhotos }}" as="thumb" hint-placeholder-count="6">
+            <div onClick="{{ thumb.select }}" style="{{ thumb.thumbStyle }}; width:100px; min-width:100px; aspect-ratio:4/3; position:relative; overflow:hidden; flex-shrink:0;">
+              <div style="position:absolute; inset:0; background:repeating-linear-gradient(135deg, oklch(0.94 0.002 90) 0px, oklch(0.94 0.002 90) 10px, oklch(0.975 0.002 90) 10px, oklch(0.975 0.002 90) 20px);"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+    </section>
+    </sc-if>
+
+<sc-if value="{{ isPersonalList }}" hint-placeholder-val="{{ true }}">
+    <section id="personal" style="padding:40px 64px; min-height:calc(100vh - 65px); box-sizing:border-box;">
+      <div style="position:relative; display:flex; align-items:center; justify-content:space-between; margin:0 -64px 56px; padding:0 64px 20px;">
+        <h2 style="font-family:'Playfair Display',serif; font-weight:500; font-size:24px; line-height:1; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; animation:introFade 0.5s ease 0.35s both;">WORK</h2>
+        <div style="position:absolute; left:0; right:0; bottom:0; height:1px; background:oklch(0.18 0 0); transform-origin:left; animation:introLine 0.6s ease both;"></div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; animation:introFade 0.6s ease 0.5s both;">
+        <sc-for list="{{ exhibitions }}" as="ex" hint-placeholder-count="4">
+          <a href="#" onClick="{{ ex.select }}" style="text-decoration:none; color:inherit; background:oklch(0.99 0.002 90); display:block; cursor:pointer; border:1px solid oklch(0.18 0 0);">
+            <div style="aspect-ratio:4/3; position:relative; overflow:hidden;">
+              <div style="position:absolute; inset:0; background:repeating-linear-gradient(135deg, oklch(0.94 0.002 90) 0px, oklch(0.94 0.002 90) 14px, oklch(0.975 0.002 90) 14px, oklch(0.975 0.002 90) 28px);"></div>
+              <span style="position:absolute; bottom:16px; left:18px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em; color:oklch(0.35 0 0); background:oklch(0.99 0.002 90); padding:4px 8px; border:1px solid oklch(0.18 0 0);">{{ ex.venue }}</span>
+            </div>
+            <div style="padding:20px 22px; display:flex; justify-content:space-between; align-items:baseline; border-top:1px solid oklch(0.18 0 0);">
+              <span style="font-family:'Playfair Display',serif; font-size:20px;">{{ ex.name }}</span>
+              <span style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.05em; color:oklch(0.45 0 0);">{{ ex.period }}</span>
+            </div>
+          </a>
+        </sc-for>
+      </div>
+    </section>
+    </sc-if>
+
+    <sc-if value="{{ isPersonalDetail }}" hint-placeholder-val="{{ false }}">
+    <section id="personal-detail" style="padding:40px 64px; min-height:calc(100vh - 65px); box-sizing:border-box;">
+      <div style="position:relative; display:flex; align-items:center; justify-content:space-between; margin:0 -64px 32px; padding:0 64px 20px;">
+        <h2 style="font-family:'Playfair Display',serif; font-weight:500; font-size:24px; line-height:1; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; animation:introFade 0.5s ease 0.35s both;">{{ currentExhibition.name }}</h2>
+        <div style="position:absolute; left:0; right:0; bottom:0; height:1px; background:oklch(0.18 0 0); transform-origin:left; animation:introLine 0.6s ease both;"></div>
+      </div>
+
+      <div style="display:flex; gap:28px; margin-bottom:40px; border-bottom:1px solid oklch(0.9 0 0); animation:introFade 0.5s ease 0.45s both;">
+        <button onClick="{{ setExIndexView }}" style="{{ exIndexTabStyle }}">INDEX</button>
+        <button onClick="{{ setExGridView }}" style="{{ exGridTabStyle }}">GRID VIEW</button>
+        <button onClick="{{ setExFullscreenView }}" style="{{ exFullscreenTabStyle }}">FULLSCREEN VIEW</button>
+      </div>
+
+      <sc-if value="{{ isExIndexView }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid; grid-template-columns:1fr 1.2fr; gap:64px; animation:introFade 0.6s ease 0.55s both;">
+        <div style="font-size:17px; line-height:1.75; color:oklch(0.25 0 0); max-width:520px;">
+          <p style="margin:0;">{{ currentExhibition.description }}</p>
+        </div>
+        <div style="aspect-ratio:4/3; background:oklch(0.99 0.002 90); position:relative; overflow:hidden; border:1px solid oklch(0.18 0 0); display:flex; align-items:flex-end;">
+          <div style="position:absolute; inset:0; background:repeating-linear-gradient(135deg, oklch(0.94 0.002 90) 0px, oklch(0.94 0.002 90) 16px, oklch(0.975 0.002 90) 16px, oklch(0.975 0.002 90) 32px);"></div>
+          <div style="position:relative; padding:16px 18px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em; color:oklch(0.35 0 0); background:oklch(0.99 0.002 90); padding:4px 8px; border:1px solid oklch(0.18 0 0);">COVER PHOTO</span>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isExGridView }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; animation:introFade 0.6s ease 0.55s both;">
+        <sc-for list="{{ currentExhibition.photos }}" as="item" hint-placeholder-count="4">
+          <div style="aspect-ratio:1/1; background:oklch(0.99 0.002 90); position:relative; overflow:hidden; border:1px solid oklch(0.18 0 0); display:flex; align-items:flex-end;">
+            <div style="position:absolute; inset:0; background:repeating-linear-gradient(135deg, oklch(0.94 0.002 90) 0px, oklch(0.94 0.002 90) 14px, oklch(0.975 0.002 90) 14px, oklch(0.975 0.002 90) 28px);"></div>
+            <div style="position:relative; padding:14px 16px; display:flex; justify-content:space-between; width:100%; align-items:flex-end;">
+              <span style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em; color:oklch(0.35 0 0); background:oklch(0.99 0.002 90); padding:4px 8px; border:1px solid oklch(0.18 0 0);">{{ item.label }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isExFullscreenView }}" hint-placeholder-val="{{ false }}">
+      <div style="animation:introFade 0.6s ease 0.55s both;">
+        <div style="width:100%; aspect-ratio:16/9; background:oklch(0.99 0.002 90); position:relative; overflow:hidden; border:1px solid oklch(0.18 0 0); display:flex; align-items:flex-end;">
+          <div style="position:absolute; inset:0; background:repeating-linear-gradient(135deg, oklch(0.94 0.002 90) 0px, oklch(0.94 0.002 90) 16px, oklch(0.975 0.002 90) 16px, oklch(0.975 0.002 90) 32px);"></div>
+          <div style="position:relative; padding:20px 24px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.06em; color:oklch(0.35 0 0); background:oklch(0.99 0.002 90); padding:5px 10px; border:1px solid oklch(0.18 0 0);">{{ exActivePhoto.label }}</span>
+          </div>
+        </div>
+        <div style="display:flex; gap:12px; margin-top:20px; overflow-x:auto; padding-bottom:4px;">
+          <sc-for list="{{ exThumbPhotos }}" as="thumb" hint-placeholder-count="4">
+            <div onClick="{{ thumb.select }}" style="{{ thumb.thumbStyle }}; width:100px; min-width:100px; aspect-ratio:4/3; position:relative; overflow:hidden; flex-shrink:0;">
+              <div style="position:absolute; inset:0; background:repeating-linear-gradient(135deg, oklch(0.94 0.002 90) 0px, oklch(0.94 0.002 90) 10px, oklch(0.975 0.002 90) 10px, oklch(0.975 0.002 90) 20px);"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+    </section>
+    </sc-if>
+
+    <sc-if value="{{ isContact }}" hint-placeholder-val="{{ false }}">
+    <section id="contact" style="padding:40px 64px; min-height:calc(100vh - 65px); box-sizing:border-box; display:flex; flex-direction:column;">
+      <div style="position:relative; margin:0 -64px 48px; padding:0 64px 20px;">
+        <h2 style="font-family:'Playfair Display',serif; font-weight:500; font-size:24px; line-height:1; margin:0; white-space:nowrap; animation:introFade 0.5s ease 0.35s both;">CONTACT</h2>
+        <div style="position:absolute; left:0; right:0; bottom:0; height:1px; background:oklch(0.18 0 0); transform-origin:left; animation:introLine 0.6s ease both;"></div>
+      </div>
+      <div style="position:relative; display:grid; grid-template-columns:6fr 4fr; gap:0; flex:1; animation:introFade 0.6s ease 0.5s both;">
+        <div style="position:absolute; left:60%; top:0; width:1px; height:100%; background:oklch(0.18 0 0);"></div>
+        <form style="display:flex; flex-direction:column; gap:32px; padding-right:40px;" onSubmit="{{ handleSubmit }}">
+          <label style="display:flex; flex-direction:column; gap:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em; color:oklch(0.45 0 0);">NAME</span>
+            <input type="text" style="border:none; border-bottom:1px solid oklch(0.18 0 0); background:transparent; padding:8px 0; font-size:16px; font-family:'Inter',sans-serif; outline:none;" style-focus="border-bottom:2px solid oklch(0.18 0 0);">
+          </label>
+          <label style="display:flex; flex-direction:column; gap:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em; color:oklch(0.45 0 0);">EMAIL</span>
+            <input type="email" style="border:none; border-bottom:1px solid oklch(0.18 0 0); background:transparent; padding:8px 0; font-size:16px; font-family:'Inter',sans-serif; outline:none;" style-focus="border-bottom:2px solid oklch(0.18 0 0);">
+          </label>
+          <label style="display:flex; flex-direction:column; gap:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em; color:oklch(0.45 0 0);">MESSAGE</span>
+            <textarea rows="4" style="border:none; border-bottom:1px solid oklch(0.18 0 0); background:transparent; padding:8px 0; font-size:16px; font-family:'Inter',sans-serif; outline:none; resize:none;" style-focus="border-bottom:2px solid oklch(0.18 0 0);"></textarea>
+          </label>
+          <label style="display:flex; flex-direction:column; gap:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em; color:oklch(0.45 0 0);">ATTACHMENT</span>
+            <div style="border:1px dashed oklch(0.18 0 0); padding:24px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; cursor:pointer;" style-hover="background:oklch(0.97 0.002 90);">
+              <span style="font-size:14px; color:oklch(0.35 0 0);">파일을 드래그하거나 클릭하여 첨부</span>
+              <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:oklch(0.55 0 0);">JPG, PNG, PDF up to 10MB</span>
+              <input type="file" style="position:absolute; width:1px; height:1px; opacity:0; overflow:hidden;"/>
+            </div>
+          </label>
+          <button type="submit" style="align-self:flex-start; margin-top:12px; padding:14px 32px; background:oklch(0.18 0 0); color:oklch(0.99 0.002 90); border:1px solid oklch(0.18 0 0); font-family:'Inter',sans-serif; font-size:14px; letter-spacing:0.04em; cursor:pointer;" style-hover="background:oklch(0.99 0.002 90); color:oklch(0.18 0 0);">SEND MESSAGE</button>
+        </form>
+        <div style="display:flex; flex-direction:column; gap:24px; padding-top:4px; padding-left:40px;">
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em; color:oklch(0.45 0 0); margin-bottom:6px;">Photographer</div>
+            <div style="font-size:16px;">김성우</div>
+          </div>
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em; color:oklch(0.45 0 0); margin-bottom:6px;"><span style="letter-spacing: 0.66px;">EMAIL</span></div>
+            <div style="font-size:16px;">ksoung140w@gmail.com</div>
+          </div>
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em; color:oklch(0.45 0 0); margin-bottom:6px;">SOCIAL</div>
+            <a href="https://instagram.com" target="_blank" style="font-size:16px; color:oklch(0.18 0 0);" style-hover="text-decoration:underline;">Instagram ↗</a>
+          </div>
+        </div>
+      </div>
+    </section>
+    </sc-if>
+
+    <footer style="padding:32px 64px; border-top:1px solid oklch(0.18 0 0); display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.05em; color:oklch(0.45 0 0);">
+      <span>SEONG WOO KIM</span>
+      <span>© 2026 ALL RIGHTS RESERVED</span>
+    </footer>
+
+  </main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { page: 'home', selectedProjectId: null, detailView: 'grid', activePhotoIndex: 0, selectedExhibitionId: null, exDetailView: 'index', exActivePhotoIndex: 0, navOpen: true, hoveredNav: null, scrolled: false };
+
+  componentDidMount() {
+    this._onScroll = () => this.setState({ scrolled: window.scrollY > 80 });
+    window.addEventListener('scroll', this._onScroll);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('scroll', this._onScroll);
+  }
+  renderVals() {
+    const page = this.state.page;
+    const setPage = (p) => (e) => {
+      e.preventDefault();
+      window.scrollTo(0, 0);
+      this.setState({
+        page: p,
+        selectedProjectId: p === 'work' ? null : this.state.selectedProjectId,
+        selectedExhibitionId: p === 'personal' ? null : this.state.selectedExhibitionId
+      });
+    };
+    const openProject = (id) => (e) => { e.preventDefault(); window.scrollTo(0, 0); this.setState({ selectedProjectId: id, detailView: 'grid', activePhotoIndex: 0 }); };
+    const backToList = (e) => { e.preventDefault(); window.scrollTo(0, 0); this.setState({ selectedProjectId: null }); };
+    const setDetailView = (v) => (e) => { e.preventDefault(); this.setState({ detailView: v }); };
+    const setActivePhoto = (i) => (e) => { e.preventDefault(); this.setState({ activePhotoIndex: i }); };
+    const detailView = this.state.detailView;
+    const tabStyle = (v, current) => ({
+      fontFamily: "'JetBrains Mono',monospace",
+      fontSize: '11px',
+      letterSpacing: '0.06em',
+      color: current === v ? 'oklch(0.18 0 0)' : 'oklch(0.55 0 0)',
+      background: 'transparent',
+      border: 'none',
+      borderBottom: current === v ? '1px solid oklch(0.18 0 0)' : '1px solid transparent',
+      padding: '0 0 8px',
+      cursor: 'pointer'
+    });
+    const openExhibition = (id) => (e) => { e.preventDefault(); window.scrollTo(0, 0); this.setState({ selectedExhibitionId: id, exDetailView: 'index', exActivePhotoIndex: 0 }); };
+    const backToExhibitions = (e) => { e.preventDefault(); window.scrollTo(0, 0); this.setState({ selectedExhibitionId: null }); };
+    const setExDetailView = (v) => (e) => { e.preventDefault(); this.setState({ exDetailView: v }); };
+    const setExActivePhoto = (i) => (e) => { e.preventDefault(); this.setState({ exActivePhotoIndex: i }); };
+    const exDetailView = this.state.exDetailView;
+    const navOpen = this.state.navOpen;
+    const toggleNav = (e) => { e.preventDefault(); this.setState({ navOpen: !navOpen }); };
+    const navContainerStyle = {
+      position: 'sticky', top: 0, alignSelf: 'flex-start', width: navOpen ? '220px' : '0px', minWidth: navOpen ? '220px' : '0px',
+      height: '100vh', borderRight: '1px solid oklch(0.18 0 0)', overflow: 'hidden',
+      transition: 'width 0.35s ease, min-width 0.35s ease'
+    };
+    const navInnerStyle = {
+      width: '220px', minWidth: '220px', height: '100%', boxSizing: 'border-box', padding: '40px 28px',
+      display: 'flex', flexDirection: 'column'
+    };
+    const navFade = {
+      opacity: navOpen ? 1 : 0,
+      transition: navOpen ? 'opacity 0.25s ease 0.3s' : 'opacity 0.1s ease'
+    };
+    const navNameStyle = { fontFamily: "'Playfair Display',serif", fontSize: '24px', letterSpacing: '0.02em', lineHeight: '1', whiteSpace: 'nowrap', overflow: 'visible', ...navFade };
+    const navLinksBlockStyle = { display: 'flex', flexDirection: 'column', gap: '18px', fontSize: '14px', letterSpacing: '0.03em', marginTop: '56px', ...navFade };
+    const navSocialBlockStyle = { display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px', letterSpacing: '0.05em', marginTop: 'auto', ...navFade };
+    const toggleBtnStyle = {
+      position: 'fixed', top: '50vh', left: navOpen ? '207px' : '-13px', transform: 'translateY(-50%)',
+      width: '26px', height: '26px', border: '1px solid oklch(0.18 0 0)', background: 'oklch(0.99 0.002 90)',
+      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+      borderRadius: '50%', zIndex: 3, transition: 'left 0.35s ease'
+    };
+    const chevronStyle = {
+      width: '7px', height: '7px', borderRight: '1px solid oklch(0.18 0 0)', borderBottom: '1px solid oklch(0.18 0 0)',
+      transform: navOpen ? 'rotate(135deg)' : 'rotate(-45deg)', transition: 'transform 0.25s ease'
+    };
+    const hoveredNav = this.state.hoveredNav;
+    const setHoveredNav = (p) => () => this.setState({ hoveredNav: p });
+    const clearHoveredNav = () => this.setState({ hoveredNav: null });
+    const navStyle = (p) => ({
+      color: 'oklch(0.18 0 0)',
+      textDecoration: 'none',
+      paddingBottom: '4px',
+      width: 'fit-content',
+      lineHeight: '1',
+      backgroundImage: 'linear-gradient(oklch(0.18 0 0), oklch(0.18 0 0))',
+      backgroundRepeat: 'no-repeat',
+      backgroundPosition: 'left bottom',
+      backgroundSize: (page === p || hoveredNav === p) ? '100% 1px' : '0% 1px',
+      transition: 'background-size 0.3s ease'
+    });
+    const categories = ['Beauty','Tech','Beverage','Apparel','Home','Accessories'];
+    const projectDefs = [
+      { id: 'p1', name: 'Project Name\n', category: 'Beauty', period: 'Jan — Mar 2026', spans: [2,1,1,2] },
+      { id: 'p2', name: 'Nord Audio', category: 'Tech', period: 'Sep — Nov 2025', spans: [1,2,2,1] },
+      { id: 'p3', name: 'Still Water Co.', category: 'Beverage', period: 'Jun — Jul 2025', spans: [2,2,1,1] },
+      { id: 'p4', name: 'Field Apparel', category: 'Apparel', period: 'Feb — Apr 2025', spans: [1,1,2,2] },
+      { id: 'p5', name: 'Home & Form', category: 'Home', period: 'Oct — Dec 2024', spans: [2,1,2,1] },
+      { id: 'p6', name: 'Line Accessories', category: 'Accessories', period: 'Mar — May 2024', spans: [1,2,1,2] }
+    ];
+    const projects = projectDefs.map((p) => ({
+      ...p,
+      select: openProject(p.id),
+      photos: p.spans.map((span, i) => ({
+        label: `SHOT ${String(i + 1).padStart(2, '0')}`,
+        category: p.category,
+        span
+      }))
+    }));
+    const selectedProjectId = this.state.selectedProjectId;
+    const currentProject = projects.find((p) => p.id === selectedProjectId) || null;
+    const activeIndex = this.state.activePhotoIndex;
+    let activePhoto = null;
+    let thumbPhotos = [];
+    if (currentProject) {
+      activePhoto = currentProject.photos[activeIndex] || currentProject.photos[0];
+      thumbPhotos = currentProject.photos.map((ph, i) => ({
+        ...ph,
+        select: setActivePhoto(i),
+        thumbStyle: { opacity: i === activeIndex ? 1 : 0.4, cursor: 'pointer', border: i === activeIndex ? '1px solid oklch(0.18 0 0)' : '1px solid transparent' }
+      }));
+    }
+
+    const exhibitionDefs = [
+      { id: 'e1', name: 'Art Work Name', venue: 'Gallery Sohn, Seoul', period: 'Apr 2026', spans: [2,1,1,2], description: 'A series examining domestic objects removed from use, photographed as still, isolated forms. The work considers how meaning drains from an object once its function is taken away.' },
+      { id: 'e2', name: 'Surface Tension', venue: 'Studio Concrete, Busan', period: 'Nov 2025', spans: [1,2,2,1], description: 'Studies of material surfaces under controlled light — concrete, glass, and skin treated with the same visual attention, blurring the line between the industrial and the organic.' },
+      { id: 'e3', name: 'Objects at Rest', venue: 'Space Won, Seoul', period: 'May 2025', spans: [2,2,1,1], description: 'A quiet catalogue of everyday tools arranged without hierarchy, asking the viewer to look at the ordinary as if for the first time.' },
+      { id: 'e4', name: 'Quiet Material', venue: 'Atelier Baek, Seoul', period: 'Sep 2024', spans: [1,1,2,2], description: 'An exploration of restraint — minimal compositions built from natural materials, shot with soft, even light to remove drama from the frame.' }
+    ];
+    const exhibitions = exhibitionDefs.map((ex) => ({
+      ...ex,
+      select: openExhibition(ex.id),
+      photos: ex.spans.map((span, i) => ({
+        label: `PLATE ${String(i + 1).padStart(2, '0')}`,
+        category: ex.venue,
+        span
+      }))
+    }));
+    const selectedExhibitionId = this.state.selectedExhibitionId;
+    const currentExhibition = exhibitions.find((ex) => ex.id === selectedExhibitionId) || null;
+    const exActiveIndex = this.state.exActivePhotoIndex;
+    let exActivePhoto = null;
+    let exThumbPhotos = [];
+    if (currentExhibition) {
+      exActivePhoto = currentExhibition.photos[exActiveIndex] || currentExhibition.photos[0];
+      exThumbPhotos = currentExhibition.photos.map((ph, i) => ({
+        ...ph,
+        select: setExActivePhoto(i),
+        thumbStyle: { opacity: i === exActiveIndex ? 1 : 0.4, cursor: 'pointer', border: i === exActiveIndex ? '1px solid oklch(0.18 0 0)' : '1px solid transparent' }
+      }));
+    }
+    return {
+      page,
+      isHome: page === 'home',
+      isWork: page === 'work',
+      isPersonal: page === 'personal',
+      isContact: page === 'contact',
+      isWorkList: page === 'work' && !currentProject,
+      isWorkDetail: page === 'work' && !!currentProject,
+      isPersonalList: page === 'personal' && !currentExhibition,
+      isPersonalDetail: page === 'personal' && !!currentExhibition,
+      navHomeStyle: navStyle('home'),
+      navWorkStyle: navStyle('work'),
+      navPersonalStyle: navStyle('personal'),
+      navContactStyle: navStyle('contact'),
+      onNavHomeEnter: setHoveredNav('home'),
+      onNavWorkEnter: setHoveredNav('work'),
+      onNavPersonalEnter: setHoveredNav('personal'),
+      onNavContactEnter: setHoveredNav('contact'),
+      onNavLeave: clearHoveredNav,
+      goHome: setPage('home'),
+      goWork: setPage('work'),
+      goPersonal: setPage('personal'),
+      goContact: setPage('contact'),
+      projects,
+      currentProject,
+      openProject,
+      backToList,
+      isGridView: detailView === 'grid',
+      isFullscreenView: detailView === 'fullscreen',
+      gridTabStyle: tabStyle('grid', detailView),
+      fullscreenTabStyle: tabStyle('fullscreen', detailView),
+      setGridView: setDetailView('grid'),
+      setFullscreenView: setDetailView('fullscreen'),
+      activePhoto,
+      thumbPhotos,
+      exhibitions,
+      currentExhibition,
+      backToExhibitions,
+      isExGridView: exDetailView === 'grid',
+      isExFullscreenView: exDetailView === 'fullscreen',
+      isExIndexView: exDetailView === 'index',
+      exGridTabStyle: tabStyle('grid', exDetailView),
+      exFullscreenTabStyle: tabStyle('fullscreen', exDetailView),
+      exIndexTabStyle: tabStyle('index', exDetailView),
+      setExGridView: setExDetailView('grid'),
+      setExFullscreenView: setExDetailView('fullscreen'),
+      setExIndexView: setExDetailView('index'),
+      exActivePhoto,
+      exThumbPhotos,
+      scrollTopBtnStyle: {
+        position: 'fixed', bottom: '112px', right: '32px', width: '44px', height: '44px', borderRadius: '50%',
+        border: '1px solid oklch(0.18 0 0)', background: 'oklch(0.99 0.002 90)', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, zIndex: 5,
+        opacity: this.state.scrolled ? 1 : 0, pointerEvents: this.state.scrolled ? 'auto' : 'none',
+        transition: 'opacity 0.3s ease'
+      },
+      scrollToTop: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+      navOpen,
+      toggleNav,
+      navContainerStyle,
+      navInnerStyle,
+      navNameStyle,
+      navLinksBlockStyle,
+      navSocialBlockStyle,
+      chevronStyle,
+      toggleBtnStyle,
+      handleSubmit: (e) => { e.preventDefault(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

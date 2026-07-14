@@ -1,0 +1,224 @@
+// Prisma schema — multi-tenant photographer portfolio SaaS
+// See C:\Users\YJMEDIA\.claude\plans\wiggly-fluttering-sunset.md for the architecture this implements.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Platform-level models
+// ---------------------------------------------------------------------------
+
+enum TenantPlan {
+  FREE
+}
+
+enum CustomDomainStatus {
+  NONE
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+model Tenant {
+  id                 String             @id @default(uuid())
+  slug               String             @unique
+  customDomain       String?            @unique
+  customDomainStatus CustomDomainStatus @default(NONE)
+  planTier           TenantPlan         @default(FREE)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  users              User[]
+  siteSettings       SiteSettings?
+  navItems           NavItem[]
+  socialLinks        SocialLink[]
+  projects           Project[]
+  exhibitions        Exhibition[]
+  contactSubmissions ContactSubmission[]
+  projectPhotos      ProjectPhoto[]
+  exhibitionPhotos   ExhibitionPhoto[]
+}
+
+enum UserRole {
+  TENANT_OWNER
+  TENANT_ADMIN
+  PLATFORM_SUPERADMIN
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(TENANT_OWNER)
+  createdAt    DateTime @default(now())
+
+  // Null only for PLATFORM_SUPERADMIN — every tenant-facing user belongs to exactly one tenant.
+  tenantId String?
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+// ---------------------------------------------------------------------------
+// Tenant-scoped content models
+// Every model below carries `tenantId` directly (denormalized even where a
+// parent relation could derive it) so the forTenant() guardrail can filter
+// every table without relying on a correct join. See lib/db/tenant-scoped-client.ts.
+// ---------------------------------------------------------------------------
+
+model SiteSettings {
+  id       String @id @default(uuid())
+  tenantId String @unique
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  siteName         String
+  photographerName String
+  heroImageKey     String?
+  contactEmail     String
+  footerText       String?
+  themeName        String  @default("editorial-default") // reserved for future per-tenant theming
+}
+
+enum NavItemType {
+  INTERNAL_PAGE
+  EXTERNAL_URL
+}
+
+enum InternalPage {
+  HOME
+  PHOTO
+  WORK
+  CONTACT
+}
+
+model NavItem {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  label      String
+  type       NavItemType
+  targetPage InternalPage?
+  url        String?
+  order      Int
+  isVisible  Boolean       @default(true)
+
+  @@index([tenantId, order])
+}
+
+model SocialLink {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  platform String
+  url      String
+  order    Int
+
+  @@index([tenantId, order])
+}
+
+model Project {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  slug        String
+  name        String
+  category    String
+  period      String
+  order       Int
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  photos ProjectPhoto[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId, order])
+}
+
+model ProjectPhoto {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  r2Key  String
+  label  String?
+  order  Int
+  width  Int
+  height Int
+
+  @@index([tenantId])
+  @@index([projectId, order])
+}
+
+model Exhibition {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  slug            String
+  name            String
+  venue           String
+  period          String
+  description     String   @db.Text
+  coverPhotoR2Key String?
+  order           Int
+  isPublished     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  photos ExhibitionPhoto[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId, order])
+}
+
+model ExhibitionPhoto {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  exhibitionId String
+  exhibition   Exhibition @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+
+  r2Key  String
+  label  String?
+  order  Int
+  width  Int
+  height Int
+
+  @@index([tenantId])
+  @@index([exhibitionId, order])
+}
+
+enum ContactStatus {
+  NEW
+  READ
+  ARCHIVED
+}
+
+model ContactSubmission {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name            String
+  email           String
+  message         String        @db.Text
+  attachmentR2Key String?
+  status          ContactStatus @default(NEW)
+  createdAt       DateTime      @default(now())
+
+  @@index([tenantId, status])
+}
