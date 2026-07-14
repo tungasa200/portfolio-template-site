@@ -9,6 +9,11 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // CLI-only (migrate/db push/db execute) — Neon's pooled connection
+    // doesn't support the schema-change advisory locks these need, so this
+    // must be the *direct* (non "-pooler") connection string. The app's own
+    // runtime PrismaClient (src/lib/db/client.ts) uses DATABASE_URL (pooled)
+    // via its own adapter and never reads this file.
+    url: process.env["DIRECT_URL"],
   },
 });
