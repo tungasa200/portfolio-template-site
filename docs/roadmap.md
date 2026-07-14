@@ -1,0 +1,97 @@
+# Roadmap
+
+Phases after the completed Phase 0/1 (see [progress.md](./progress.md)).
+Each phase should end with the working tree in a state where `npm run dev`
+demonstrably does the new thing — don't move on with something half-wired.
+
+## Phase 2 — Public site design system
+
+Port `design/Photographer Portfolio.dc.html` (a Claude Design prototype —
+UI/UX spec, not real code; uses a `sc-if`/`sc-for`/`{{ }}` templating DSL
+that doesn't exist outside that tool) into real Tailwind v4 + React.
+
+1. Add the mockup's `oklch(...)` color tokens and three fonts (Playfair
+   Display, Inter, JetBrains Mono via `next/font/google`) to a
+   theme scoped under `src/app/s/[tenant]/` (not the global
+   `src/app/globals.css` — admin and marketing will likely want their own
+   look later, don't let the portfolio theme leak into them).
+2. Build `components/site/` (presentational, prop-driven, no direct DB
+   calls so they're reusable for a future admin live-preview):
+   `Nav.tsx` (collapsible sidebar), `SectionHeader.tsx` (animated-underline
+   heading), `PhotoGrid.tsx` (shared by Project and Exhibition list views),
+   `PhotoGridDetail.tsx`, `Tabs.tsx`, `FullscreenViewer.tsx` (main image +
+   thumbnail strip), `ContactForm.tsx`, `Footer.tsx`.
+3. Wire Home + Contact pages for real (contact submission → `ContactSubmission`
+   row via a Server Action, scoped through `forTenant()`).
+
+Reference the mockup file directly for exact spacing/animation values —
+don't approximate from memory.
+
+## Phase 3 — Content models + public rendering
+
+- Photo list (`/photo`) and detail (`/photo/[slug]`) pages reading real
+  `Project`/`ProjectPhoto` rows.
+- Work list (`/work`) and detail (`/work/[slug]`) pages reading real
+  `Exhibition`/`ExhibitionPhoto` rows, including the INDEX tab's long-form
+  `description` text.
+- Grid/fullscreen view state: use `searchParams` (`?view=fullscreen&photo=2`)
+  rather than local `useState` like the original mockup — makes fullscreen
+  views shareable/deep-linkable, a small upgrade over the prototype.
+- All reads go through `forTenant(tenant.id)` — no exceptions.
+
+## Phase 4 — Admin CRUD + auth + uploads
+
+This is the phase that closes two loops left open in Phase 1:
+
+- **Auth.js (NextAuth v5) wiring**: Credentials provider, bcrypt password
+  hashing, session cookie gating `admin.{ROOT_DOMAIN}`. Login-attempt
+  counting / lockout for brute-force protection (see
+  [decisions.md](./decisions.md#authjs-self-hosted-not-clerk) for why this
+  needs care).
+- **`SET LOCAL app.tenant_id` in `forTenant()`**: wrap tenant-scoped
+  mutations in an explicit transaction that sets the Postgres session
+  variable first, so the RLS policies in `prisma/security/rls.sql` become
+  load-bearing. Only *after* this lands: apply `rls.sql` to Neon.
+- Admin pages: dashboard, SiteSettings editor (nav items, social links,
+  hero image, contact info, footer text), Project CRUD, Exhibition CRUD,
+  photo upload + reordering, ContactSubmission inbox.
+- R2 upload flow: presigned PUT URL issued by an admin-only Route Handler
+  that derives `tenantId` from the session and builds the R2 key itself
+  (`tenants/{tenantId}/...`) — never trust a client-supplied path or
+  tenantId. Client captures image `width`/`height` via `Image()` decode
+  before requesting the presign.
+- `next/image` + R2: connect a custom domain to the R2 bucket
+  (`R2_PUBLIC_HOSTNAME`), allowlist it in `next.config.ts`
+  `images.remotePatterns`.
+
+## Phase 5 — Go live as tenant #1
+
+- Create the real `Tenant` row for the owner's own site (replacing/renaming
+  the `dev` seed tenant, or adding alongside it).
+- Point the real domain at it once Vercel is provisioned (see
+  [external-services.md](./external-services.md)).
+- Populate real content through the finished admin panel.
+- Exercise the custom-domain connection flow once, even though only tenant
+  #1 uses it right now.
+- Write an automated test that logs in as tenant A and asserts requesting
+  tenant B's resource IDs 403s/404s — this is the single most
+  security-critical behavior in the whole system and deserves a real test,
+  not just the manual verification done in Phase 1.
+
+## Phase 6 — Deferred (platform expansion, not needed for tenant #1)
+
+Explicitly out of scope until there's a reason to build it:
+
+- Platform superadmin dashboard (managing all tenants, impersonation).
+- Stripe billing / subscription plans.
+- Self-serve tenant signup flow (currently tenants are created via seed/
+  internal path only — this is what keeps Phase 4's auth attack surface
+  small).
+- Per-tenant theme customization UI (the token architecture in Phase 2
+  supports this later without a rewrite — `SiteSettings.themeName` field
+  already exists in the schema, reserved/unused).
+- Multiple users per tenant (`UserRole.TENANT_ADMIN` exists in the schema,
+  reserved/unused — MVP is one owner per tenant).
+- Apex-domain custom domains (CNAME-only for now — bare apex/ALIAS handling
+  varies too much by registrar for a solo AI-coding maintainer to support
+  well).
