@@ -39,23 +39,41 @@ don't approximate from memory.
   views shareable/deep-linkable, a small upgrade over the prototype.
 - All reads go through `forTenant(tenant.id)` — no exceptions.
 
-## Phase 4 — Admin CRUD + auth + uploads
+## Phase 4 — Admin CRUD + uploads
 
-This is the phase that closes two loops left open in Phase 1:
+**Phase 4a (auth + RLS enforcement) is done** — see
+[progress.md](./progress.md#phase-4a--authjs--rls-foundation). Concretely,
+this means `auth()`/`getCurrentTenantContext()`
+(`src/lib/auth/tenant-context.ts`), the `admin.{ROOT_DOMAIN}` session gate
+(`src/app/admin/(dashboard)/layout.tsx`), and RLS-enforcing `forTenant()`
+already exist and work — don't re-plan or re-build any of that. What's
+below is the actual remaining scope: real CRUD pages behind that gate, and
+the upload pipeline they need.
 
-- **Auth.js (NextAuth v5) wiring**: Credentials provider, bcrypt password
-  hashing, session cookie gating `admin.{ROOT_DOMAIN}`. Login-attempt
-  counting / lockout for brute-force protection (see
-  [decisions.md](./decisions.md#authjs-self-hosted-not-clerk) for why this
-  needs care).
-- **`SET LOCAL app.tenant_id` in `forTenant()`**: wrap tenant-scoped
-  mutations in an explicit transaction that sets the Postgres session
-  variable first, so the RLS policies in `prisma/security/rls.sql` become
-  load-bearing. Only *after* this lands: apply `rls.sql` to Neon.
-- Admin pages: dashboard, SiteSettings editor (nav items, social links,
-  hero image, contact info, footer text), Board/BoardItem CRUD (per-tenant
-  board provisioning — see the board-redesign section below), photo upload
-  + reordering, ContactSubmission inbox.
+Current state of `src/app/admin/(dashboard)/page.tsx`: a proof-of-life
+stub only (renders the signed-in tenant's site name + a logout button, per
+its own comment). No real admin page exists yet.
+
+- Admin pages, against `design/admin-mockup.html` (current as of
+  2026-07-15, safe to build from directly) as the interaction/copy spec:
+  - Dashboard (Home), SiteSettings editor (nav items, social links, hero
+    image, contact info, footer text).
+  - **BoardItem CRUD *within* each operator-provisioned board** — rename
+    the board's `name` (only), and create/edit/delete/reorder/publish its
+    `BoardItem`s. **Not in scope**: creating/deleting a board, or changing
+    a board's `kind` or `seq` — those stay operator/seed-only (see the
+    board-redesign section below). The mockup already reflects this split
+    correctly (no add/remove-board control anywhere in it) — if a build
+    session is tempted to add one, that's a regression, not a feature.
+  - Photo upload + reordering (per `BoardItem`, respecting each board's
+    `kind`-based photo cap — 1 for `GALLERY_SINGLE`, unlimited for
+    `GALLERY_MULTI`, same as the mockup's `editorPhotoMax`).
+  - ContactSubmission inbox.
+- **`BoardItem.slug` must only be assigned on create, never re-derived on
+  update** — not enforced by the schema, has to be upheld in the Server
+  Action itself. See
+  [architecture.md](./architecture.md#data-model) for why (bookmarked/
+  shared/indexed URLs silently break otherwise).
 - R2 upload flow: presigned PUT URL issued by an admin-only Route Handler
   that derives `tenantId` from the session and builds the R2 key itself
   (`tenants/{tenantId}/...`) — never trust a client-supplied path or
@@ -63,7 +81,9 @@ This is the phase that closes two loops left open in Phase 1:
   before requesting the presign.
 - `next/image` + R2: connect a custom domain to the R2 bucket
   (`R2_PUBLIC_HOSTNAME`), allowlist it in `next.config.ts`
-  `images.remotePatterns`.
+  `images.remotePatterns` — see
+  [external-services.md](./external-services.md#2-cloudflare-r2-object-storage--done-for-this-project)
+  for the dashboard steps (not code, needs your Cloudflare login).
 - **SiteSettings save action must normalize empty strings to `null`**:
   `src/components/site/Footer.tsx` already falls back to
   `` © ${year} ALL RIGHTS RESERVED `` via `footerText ?? ...`, but `??`
@@ -72,16 +92,16 @@ This is the phase that closes two loops left open in Phase 1:
   never fires. The Server Action must coerce `""` -> `null` before writing.
 - **Must-check when porting `design/admin-mockup.html`'s editor screens to
   real code**: the mockup's save handlers only ever push a *new* row —
-  editing an *existing* Project/Exhibition and hitting "저장하기" doesn't
-  persist any field (name, date, published, INDEX content, photos) back to
-  the mockup's in-memory array, it just toasts and navigates away. That's
-  an acceptable mockup shortcut (per the user, 2026-07-15: mockups don't
-  need fully correct behavior), but the real Server Action **must** do a
-  proper `update` for existing rows, not only `create` for new ones —
-  verify this explicitly with a real edit-and-reload check before calling
-  the CRUD screens done, since a mockup that silently "worked" by only
-  ever hitting the create path is exactly the kind of gap that's easy to
-  carry into real code unnoticed.
+  editing an *existing* `BoardItem` and hitting "저장하기" doesn't persist
+  any field (name, date, published, INDEX content, photos) back to the
+  mockup's in-memory array, it just toasts and navigates away. That's an
+  acceptable mockup shortcut (per the user, 2026-07-15: mockups don't need
+  fully correct behavior), but the real Server Action **must** do a proper
+  `update` for existing rows, not only `create` for new ones — verify this
+  explicitly with a real edit-and-reload check before calling the CRUD
+  screens done, since a mockup that silently "worked" by only ever hitting
+  the create path is exactly the kind of gap that's easy to carry into
+  real code unnoticed.
 
 ## Phase 5 — Go live as tenant #1
 

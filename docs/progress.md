@@ -278,6 +278,6 @@ session (on any machine) to know where things actually stand.
 ## Not started
 
 Rest of Phase 4 — see [roadmap.md](./roadmap.md). Next concrete task: admin
-CRUD (SiteSettings editor, Project/Exhibition management + photo
-reordering, ContactSubmission inbox) and the R2 presigned-upload flow, both
-now unblocked by Phase 4a's auth/session foundation.
+CRUD (SiteSettings editor, Board/BoardItem management + photo reordering,
+ContactSubmission inbox) and the R2 presigned-upload flow, both now
+unblocked by Phase 4a's auth/session foundation.

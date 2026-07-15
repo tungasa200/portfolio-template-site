@@ -65,6 +65,15 @@ See `prisma/schema.prisma` for the authoritative source. Summary:
   boards a tenant's package includes without a code change. See
   [decisions.md](./decisions.md) and [roadmap.md](./roadmap.md) for why.
 
+  `BoardItem.slug` (drives `/board/{seq}/{itemSlug}`, `GALLERY_MULTI` only)
+  follows the same immutability principle as `Board.seq`, but it's **not**
+  enforced by the schema — there's no DB constraint that can stop a slug
+  from being re-derived. The rule has to be upheld in the admin CRUD Server
+  Action itself: assign the slug once, on create, and never touch it again
+  on an update/rename, even though nothing will error if you do. Getting
+  this wrong silently breaks any bookmarked/shared/indexed item URL the
+  moment someone renames the item.
+
 ## Cross-tenant isolation (two layers)
 
 This is the single highest-risk area of the whole system — a bug here

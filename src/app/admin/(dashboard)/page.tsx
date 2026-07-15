@@ -4,7 +4,7 @@ import { forTenant } from "@/lib/db/tenant-scoped-client";
 import { logoutAction } from "@/lib/actions/auth";
 
 // Proves session -> tenant context end-to-end. Real CRUD UI (SiteSettings
-// editor, Project/Exhibition management, ContactSubmission inbox) is a
+// editor, Board/BoardItem management, ContactSubmission inbox) is a
 // follow-up round, not this one.
 export default async function AdminDashboardPage() {
   const { tenantId } = await getCurrentTenantContext();
