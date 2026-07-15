@@ -41,11 +41,14 @@ session (on any machine) to know where things actually stand.
   - Dark sidebar nav shell (not a top tab bar — tried and reverted).
   - Photo/Work stay exactly 2 fixed gallery-type boards, not a
     user-defined N-board CMS (an earlier, larger ask for that was
-    explicitly descoped). Each board's *display name* and *URL path* are
-    both user-editable (inline ✏️ next to the title / next to the address),
-    validated against reserved words and cross-board collisions on rename.
-    A path that stops resolving should redirect to home, not 404 — no
-    redirect-mapping system planned.
+    explicitly descoped) — though board *count* being operator-configured
+    per tenant is now a pending, separate decision, see
+    [roadmap.md](./roadmap.md#pending-design-decision--per-tenant-board-count-set-at-onboarding-not-started).
+    Each board's *display name* is user-editable (inline ✏️ next to the
+    title). **URL path is not editable** (2026-07-15: reversed — judged
+    too risky, broken bookmarks/backlinks/SEO churn with no undo. Paths
+    are fixed: `/photo`, `/work`, `/about`, matching the real app's
+    already-fixed route folders — no mismatch to reconcile).
   - Third fixed section **About** (`/about`) — static page, rich-text
     editor with a visual/HTML-source toggle (real implementation needs an
     editor library that supports raw HTML, e.g. Tiptap with a source-view

@@ -122,16 +122,6 @@
   .page { max-width: 980px; margin: 0 auto; padding: 40px 32px 90px; }
   .page-head { margin-bottom: 26px; }
   .page-eyebrow { font-size: 14px; color: var(--muted); margin-bottom: 6px; font-family: ui-monospace, "SF Mono", monospace; }
-  .path-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .path-row .page-eyebrow { margin-bottom: 0; }
-  .path-edit-btn { width: 24px; height: 24px; border-radius: 50%; border: none; background: none; color: var(--faint); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
-  .path-edit-btn:hover { background: var(--panel-2); color: var(--ink); }
-  .path-input {
-    font-family: ui-monospace, "SF Mono", monospace; font-size: 14px; border: none; border-bottom: 2px solid var(--accent);
-    background: transparent; color: var(--ink); padding: 0 2px; width: 220px;
-  }
-  .path-input:focus { outline: none; }
-  .path-error { font-size: 12.5px; color: var(--danger); margin-bottom: 6px; }
   .page-title-row { display: flex; align-items: center; gap: 10px; }
   .page-title { font-size: 28px; font-weight: 700; }
   .page-desc { font-size: 15.5px; color: var(--muted); margin-top: 8px; max-width: 56ch; }
@@ -515,10 +505,7 @@
       <div class="page">
         <div class="page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
           <div>
-            <div class="path-row">
-              <span class="page-eyebrow" id="projects-eyebrow">dev.myportfolio.com/photo</span>
-              <button class="path-edit-btn" title="주소 바꾸기" onclick="startRenamePath('projects')">✏️</button>
-            </div>
+            <span class="page-eyebrow" id="projects-eyebrow">dev.myportfolio.com/photo</span>
             <div class="page-title-row">
               <h1 class="page-title" id="projects-title-display">WORK 1</h1>
               <button class="rename-btn" title="이 게시판 이름 바꾸기" onclick="startRename('projects')">✏️</button>
@@ -615,10 +602,7 @@
       <div class="page">
         <div class="page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
           <div>
-            <div class="path-row">
-              <span class="page-eyebrow" id="exhibitions-eyebrow">dev.myportfolio.com/work</span>
-              <button class="path-edit-btn" title="주소 바꾸기" onclick="startRenamePath('exhibitions')">✏️</button>
-            </div>
+            <span class="page-eyebrow" id="exhibitions-eyebrow">dev.myportfolio.com/work</span>
             <div class="page-title-row">
               <h1 class="page-title" id="exhibitions-title-display">WORK 2</h1>
               <button class="rename-btn" title="이 게시판 이름 바꾸기" onclick="startRename('exhibitions')">✏️</button>
@@ -714,10 +698,7 @@
     <section class="view" id="view-about">
       <div class="page">
         <div class="page-head">
-          <div class="path-row">
-            <span class="page-eyebrow" id="about-eyebrow">dev.myportfolio.com/about</span>
-            <button class="path-edit-btn" title="주소 바꾸기" onclick="startRenamePath('about')">✏️</button>
-          </div>
+          <span class="page-eyebrow" id="about-eyebrow">dev.myportfolio.com/about</span>
           <div class="page-title-row">
             <h1 class="page-title" id="about-title-display">ABOUT</h1>
             <button class="rename-btn" title="이 페이지 이름 바꾸기" onclick="startRename('about')">✏️</button>
@@ -842,16 +823,13 @@
   // (already free-text in the schema) for both.
   const boardTitles = { projects: "WORK 1", exhibitions: "WORK 2", about: "ABOUT" };
 
-  // URL path per board -- also user-editable, not just the display name.
-  // Real implementation: every board (photo/work/about alike) resolves
-  // through one generic dynamic route (e.g. src/app/s/[tenant]/[path]/...)
-  // that looks up which board a given tenant's path maps to, rather than
-  // fixed /photo, /work folders -- decided specifically so path-editing
-  // doesn't need special-casing against hardcoded route folders. Reserved
-  // words + cross-board collisions must be checked on every rename (both
-  // here and for real, server-side).
+  // URL path per board -- display-only now, not user-editable (removed per
+  // direction: letting tenants rename their own URLs was judged too risky
+  // -- broken bookmarks/backlinks, SEO churn, no undo). This actually
+  // matches the real app as already built: fixed routes
+  // (src/app/s/[tenant]/photo/, work/, about/), not a generic [path]
+  // segment -- no mismatch to reconcile later.
   const boardPaths = { projects: "photo", exhibitions: "work", about: "about" };
-  const RESERVED_PATHS = new Set(["contact", "admin", "api", "s"]);
 
   // Reorderable in step with Settings -> 메뉴 순서 (navItemsData below);
   // "messages"/"settings" are admin-only sections with no public nav
@@ -983,53 +961,6 @@
   }
   window.startRename = startRename;
 
-  function startRenamePath(boardKey) {
-    const span = document.getElementById(boardKey + "-eyebrow");
-    const current = boardPaths[boardKey];
-    const input = document.createElement("input");
-    input.className = "path-input";
-    input.value = current;
-    input.maxLength = 30;
-    span.replaceWith(input);
-    input.focus();
-    input.select();
-
-    const restore = () => {
-      const newSpan = document.createElement("span");
-      newSpan.className = "page-eyebrow";
-      newSpan.id = boardKey + "-eyebrow";
-      newSpan.textContent = `dev.myportfolio.com/${boardPaths[boardKey]}`;
-      input.replaceWith(newSpan);
-    };
-
-    const commit = () => {
-      const clean = input.value.trim().toLowerCase().replace(/^\/+|\/+$/g, "");
-
-      if (!/^[a-z0-9-]+$/.test(clean)) {
-        toast("영문 소문자, 숫자, 하이픈(-)만 사용할 수 있어요.", true);
-        restore();
-        return;
-      }
-      if (RESERVED_PATHS.has(clean)) {
-        toast(`"${clean}"은(는) 이미 다른 용도로 쓰이는 주소예요.`, true);
-        restore();
-        return;
-      }
-      const collision = Object.entries(boardPaths).find(([key, path]) => key !== boardKey && path === clean);
-      if (collision) {
-        toast(`이미 "${boardTitles[collision[0]]}" 페이지가 쓰고 있는 주소예요.`, true);
-        restore();
-        return;
-      }
-
-      boardPaths[boardKey] = clean;
-      restore();
-      toast("주소가 바뀌었어요");
-    };
-    input.addEventListener("keydown", e => { if (e.key === "Enter") input.blur(); });
-    input.addEventListener("blur", commit);
-  }
-  window.startRenamePath = startRenamePath;
 
   function toast(msg, isError) {
     const t = document.getElementById("toast");
