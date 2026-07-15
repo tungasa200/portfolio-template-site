@@ -953,6 +953,7 @@
     document.getElementById("home-add-exhibition-btn").textContent = `+ 새 ${boardTitles.exhibitions} 추가`;
     document.getElementById("home-about-btn").textContent = `${boardTitles.about} 페이지 수정`;
     renderHomeVisibility();
+    renderNavList();
     renderSidebarNav();
   }
 
@@ -1472,11 +1473,17 @@
   }
   window.toggleNavVisible = toggleNavVisible;
 
+  // Shows the *actual* menu name a visitor would see (via NAV_DISPLAY_NAME,
+  // same mapping renderHomeVisibility uses below) -- not navItemsData's raw
+  // label ("HOME"/"PHOTO"/"WORK"/...), which is an internal key, not real
+  // display text. PHOTO/WORK/ABOUT in particular are user-renameable board
+  // titles (boardTitles), so showing the raw label here would drift out of
+  // sync with the sidebar the moment a board gets renamed.
   function renderNavList() {
     document.getElementById("nav-list").innerHTML = navItemsData.map((n, i) => `
       <div class="reorder-row" ondragover="handleNavDragOver(event, '${n.label}')" ondrop="handleNavDrop(event, '${n.label}')">
         <div class="reorder-drag-handle" draggable="true" ondragstart="handleNavDragStart(event, '${n.label}')" ondragend="handleNavDragEnd()" title="드래그해서 순서 변경">⠿</div>
-        <div class="reorder-main"><strong>${n.label}</strong><span>${n.target}</span></div>
+        <div class="reorder-main"><strong>${NAV_DISPLAY_NAME[n.label] ? NAV_DISPLAY_NAME[n.label]() : n.label}</strong><span>${n.target}</span></div>
         <button class="switch ${n.visible ? "on" : ""}" onclick="toggleNavVisible(${i})"></button>
       </div>
     `).join("");
@@ -1525,6 +1532,7 @@
   // the same navItemsData as Settings -> 메뉴 순서, applies instantly (no
   // separate save step, unlike the list/editor pages).
   const NAV_DISPLAY_NAME = {
+    HOME: () => "홈",
     PHOTO: () => boardTitles.projects,
     WORK: () => boardTitles.exhibitions,
     ABOUT: () => boardTitles.about,
