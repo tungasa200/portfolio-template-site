@@ -121,10 +121,15 @@
   .main { flex: 1; min-width: 0; height: 100vh; overflow-y: auto; }
   .page { max-width: 980px; margin: 0 auto; padding: 40px 32px 90px; }
   .page-head { margin-bottom: 26px; }
-  .page-eyebrow { font-size: 14px; color: var(--muted); margin-bottom: 6px; font-family: ui-monospace, "SF Mono", monospace; }
+  .page-eyebrow { font-size: 14px; color: var(--muted); margin-bottom: 6px; font-family: ui-monospace, "SF Mono", monospace; display: block; }
   .page-title-row { display: flex; align-items: center; gap: 10px; }
   .page-title { font-size: 28px; font-weight: 700; }
   .page-desc { font-size: 15.5px; color: var(--muted); margin-top: 8px; max-width: 56ch; }
+  .board-kind-badge {
+    display: inline-flex; align-items: center; font-size: 12px; font-weight: 700;
+    padding: 4px 10px; border-radius: 100px; background: var(--panel-2); color: var(--muted);
+    border: 1px solid var(--line); white-space: nowrap;
+  }
   .rename-btn {
     width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel);
     display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; font-size: 14px;
@@ -242,21 +247,24 @@
   /* ---------- site grid ----------
      Mirrors the real public-site PhotoGrid component exactly
      (src/components/site/PhotoGrid.tsx): grid-cols-3 gap-4, aspect-[4/3]
-     photo, tag badge bottom-4 left-[18px], border-t body row with title
-     (serif, text-xl) and meta (mono, 11px) on one baseline — same size,
-     same proportions, every item. Edit button / draft flag are admin-only
-     overlays layered on top, not part of the real card. */
+     photo, border-t body row with title (serif, text-xl) and meta (mono,
+     11px) on one baseline. No tag/category badge -- items no longer carry
+     one (see docs/progress.md's unified item-model decision). Edit button /
+     draft flag are admin-only overlays layered on top, not part of the
+     real card. */
   .site-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
   .site-card { border: 1px solid var(--ink); background: var(--panel); position: relative; }
   .site-card-photo { aspect-ratio: 4/3; position: relative; overflow: hidden; background: repeating-linear-gradient(135deg, var(--panel-2) 0px, var(--panel-2) 14px, var(--panel) 14px, var(--panel) 28px); }
+  /* GALLERY_SINGLE boards: square tiles, matching a pure-image-wall gallery
+     rather than the 4:3 project-photo ratio the multi-photo boards use. */
+  .site-card-photo.is-square { aspect-ratio: 1/1; }
   .site-card-edit { position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; border-radius: 50%; background: var(--paper); border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--shadow); z-index: 2; }
   .site-card-edit:hover { background: var(--accent); border-color: var(--accent); }
   .site-card-body { padding: 20px 22px; border-top: 1px solid var(--ink); display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
   .site-card-title { font-family: Georgia, "Noto Serif KR", "Times New Roman", serif; font-size: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .site-card-meta { font-size: 11px; letter-spacing: 0.03em; color: var(--muted); font-family: ui-monospace, "SF Mono", monospace; flex-shrink: 0; }
-  /* Replaces the old static "비공개" flag -- always shown now (not just
-     when unpublished), and clickable: this is the fast path to flip a
-     board item's public/draft state without opening the full editor. */
+  /* Always shown (not just when unpublished), and clickable: fast path to
+     flip a board item's public/draft state without opening the full editor. */
   .site-card-toggle {
     position: absolute; top: 10px; left: 10px; z-index: 2;
     border: 1px solid var(--faint); background: var(--panel); color: var(--muted);
@@ -289,10 +297,14 @@
   .photo-manager-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
   .photo-tile { position: relative; aspect-ratio: 4/3; border: 1.5px solid var(--line); border-radius: var(--radius-sm); background: repeating-linear-gradient(135deg, var(--panel-2) 0px, var(--panel-2) 10px, var(--panel) 10px, var(--panel) 20px); overflow: hidden; display: flex; flex-direction: column; }
   .photo-tile.is-active { border-color: var(--accent); border-width: 2px; }
+  /* Matches the 1:1 grid ratio GALLERY_SINGLE boards render at on the site
+     -- what the admin previews here is what visitors will actually see. */
+  .photo-tile.is-square, .photo-tile-add.is-square { aspect-ratio: 1/1; }
   .photo-tile-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
-  /* Badge doubles as the control -- every tile gets one, inactive by
-     default; clicking it designates that photo as the project thumbnail
-     (see setPrimaryPhoto). Not a plain label anymore, so it's a <button>. */
+  /* Badge doubles as the control -- every tile gets one on GALLERY_MULTI
+     boards, inactive by default; clicking it designates that photo as the
+     item thumbnail (see setPrimaryPhoto). Hidden on GALLERY_SINGLE boards,
+     where the single photo is trivially the thumbnail -- nothing to pick. */
   .photo-tile-badge {
     position: absolute; top: 8px; left: 8px; z-index: 2;
     border: 1px solid var(--line); background: var(--panel); color: var(--muted);
@@ -310,9 +322,6 @@
   .photo-tile-add:hover { border-color: var(--accent); color: var(--ink); background: var(--accent-soft); }
   .photo-tile-add .plus-circle { width: 40px; height: 40px; border-radius: 50%; background: var(--panel-2); display: flex; align-items: center; justify-content: center; font-size: 20px; }
 
-  .single-upload { width: 180px; aspect-ratio: 4/3; border: 1.5px dashed var(--line); border-radius: var(--radius-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--muted); cursor: pointer; }
-  .single-upload:hover { border-color: var(--accent); color: var(--ink); background: var(--accent-soft); }
-
   /* ---------- reorder list ---------- */
   .reorder-list { display: flex; flex-direction: column; gap: 10px; }
   .reorder-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: var(--panel-2); border-radius: var(--radius-sm); }
@@ -322,13 +331,12 @@
   .reorder-main { flex: 1; min-width: 0; }
   .reorder-main strong { font-size: 15.5px; display: block; }
   .reorder-main span { font-size: 13.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
-  .reorder-main input[type="text"] { padding: 8px 10px; font-size: 14.5px; }
   .add-row-btn { display: flex; align-items: center; gap: 8px; padding: 13px 16px; border: 1.5px dashed var(--line); border-radius: var(--radius-sm); color: var(--muted); background: none; cursor: pointer; font-size: 15px; font-weight: 600; width: 100%; justify-content: center; }
   .add-row-btn:hover { border-color: var(--accent); color: var(--ink); background: var(--accent-soft); }
   .icon-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink); flex-shrink: 0; }
   .icon-btn:hover { border-color: var(--ink); }
 
-  /* ---------- rich-text editor (About page + both boards' INDEX tab) ---------- */
+  /* ---------- rich-text editor (About page + GALLERY_MULTI boards' INDEX tab) ---------- */
   .rich-editor { border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; }
   .rich-editor .editor-canvas { min-height: 160px; padding: 20px 22px; }
   .editor-toolbar { display: flex; align-items: center; gap: 2px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
@@ -454,20 +462,7 @@
     <!-- ============ HOME ============ -->
     <section class="view active" id="view-home">
       <div class="page">
-        <div class="section-card" style="display:flex; gap:24px; flex-wrap:wrap; margin-bottom:24px;">
-          <div style="flex:1; min-width:160px;">
-            <div style="font-size:34px; font-weight:700;">6</div>
-            <div style="font-size:14.5px; color:var(--muted);" id="home-stat-projects">WORK 1 게시물 공개 중</div>
-          </div>
-          <div style="flex:1; min-width:160px;">
-            <div style="font-size:34px; font-weight:700;">4</div>
-            <div style="font-size:14.5px; color:var(--muted);" id="home-stat-exhibitions">WORK 2 게시물 공개 중</div>
-          </div>
-          <div style="flex:1; min-width:160px;">
-            <div style="font-size:34px; font-weight:700; color:var(--accent-ink); background:var(--accent); display:inline-block; padding:0 10px; border-radius:8px;">2</div>
-            <div style="font-size:14.5px; color:var(--muted); margin-top:6px;">새로 온 메시지 · <a href="#" data-nav="messages" style="color:var(--ink); font-weight:700; text-decoration:underline;">확인하기</a></div>
-          </div>
-        </div>
+        <div class="section-card" style="display:flex; gap:24px; flex-wrap:wrap; margin-bottom:24px;" id="home-stats"></div>
 
         <h2 style="font-size:18px; font-weight:700; margin-bottom:10px;">대표 이미지</h2>
         <div class="home-preview-frame">
@@ -485,12 +480,7 @@
 
         <div class="section-card" style="margin-top:24px;">
           <h2>Quick Menu</h2>
-          <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:20px;">
-            <button class="btn" id="home-add-project-btn" data-open-project="new">+ 새 프로젝트 추가</button>
-            <button class="btn" id="home-add-exhibition-btn" data-open-exhibition="new">+ 새 항목 추가</button>
-            <button class="btn" id="home-about-btn" data-nav="about">ABOUT 페이지 수정</button>
-            <button class="btn" data-nav="settings">사이트 정보 수정</button>
-          </div>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:20px;" id="home-quick-menu"></div>
         </div>
 
         <div class="section-card" style="margin-top:20px;">
@@ -500,65 +490,75 @@
       </div>
     </section>
 
-    <!-- ============ PHOTO LIST (renameable board) ============ -->
-    <section class="view" id="view-projects">
+    <!-- ============ BOARD LIST (generic -- one view for however many
+         boards exist; which board is showing is tracked by currentBoardId,
+         not a per-board section like the old view-projects/view-exhibitions
+         pair). Board *count* and *kind* are operator-provisioned, not
+         editable here -- only the name can be changed. ============ -->
+    <section class="view" id="view-board-list">
       <div class="page">
         <div class="page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
           <div>
-            <span class="page-eyebrow" id="projects-eyebrow">dev.myportfolio.com/photo</span>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+              <span class="page-eyebrow" id="board-list-eyebrow" style="margin-bottom:0;"></span>
+              <span class="board-kind-badge" id="board-list-kind-badge"></span>
+            </div>
             <div class="page-title-row">
-              <h1 class="page-title" id="projects-title-display">WORK 1</h1>
-              <button class="rename-btn" title="이 게시판 이름 바꾸기" onclick="startRename('projects')">✏️</button>
+              <h1 class="page-title" id="board-list-title"></h1>
+              <button class="rename-btn" title="이 게시판 이름 바꾸기" onclick="startRenameBoard()">✏️</button>
             </div>
           </div>
           <div style="display:flex; gap:10px;">
-            <button class="btn" id="projects-reorder-btn" onclick="toggleReorderMode('project')">순서 변경</button>
-            <button class="btn btn-primary" id="projects-add-btn" data-open-project="new">+ NEW</button>
+            <button class="btn" id="board-list-reorder-btn" onclick="toggleReorderMode()">순서 변경</button>
+            <button class="btn btn-primary" onclick="openBoardItemEditor('new')">+ NEW</button>
           </div>
         </div>
-        <div class="site-grid" id="projects-grid"></div>
+        <div class="site-grid" id="board-list-grid"></div>
       </div>
     </section>
 
-    <!-- ============ PROJECT EDITOR ============ -->
-    <section class="view" id="view-project-editor">
+    <!-- ============ BOARD ITEM EDITOR (generic -- shared by every board;
+         GALLERY_MULTI-only sections (설명 추가/INDEX, multi-photo) are
+         hidden via JS for GALLERY_SINGLE boards, see openBoardItemEditor).
+         ============ -->
+    <section class="view" id="view-board-item-editor">
       <div class="page">
         <div class="editor-header">
-          <button class="back-btn" data-nav="projects">← <span id="back-to-projects-label">WORK 1</span> 목록으로</button>
+          <button class="back-btn" onclick="backToBoardList()">← <span id="board-item-editor-back-label"></span> 목록으로</button>
         </div>
         <div class="page-head">
-          <input class="item-title-input" id="project-editor-title" type="text" placeholder="새 프로젝트" />
+          <input class="item-title-input" id="ie-title" type="text" placeholder="새 항목" />
         </div>
 
         <div class="section-card">
           <h2>날짜</h2>
           <div class="field" style="margin-bottom:0;">
-            <div class="month-picker" id="pe-date-picker">
-              <button type="button" class="month-picker-trigger" id="pe-date-trigger">
+            <div class="month-picker" id="ie-date-picker">
+              <button type="button" class="month-picker-trigger" id="ie-date-trigger">
                 <svg class="month-picker-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="3.2" width="12" height="10.8" rx="1.6" stroke="currentColor" stroke-width="1.3"/><path d="M2 6.4h12M5.2 1.6v2.4M10.8 1.6v2.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-                <span id="pe-date-label">날짜 선택</span>
+                <span id="ie-date-label">날짜 선택</span>
                 <svg class="month-picker-chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </button>
-              <div class="month-picker-popover" id="pe-date-popover" hidden>
+              <div class="month-picker-popover" id="ie-date-popover" hidden>
                 <div class="month-picker-header">
-                  <button type="button" class="month-picker-nav-btn" data-picker="pe" data-dir="-1">‹</button>
-                  <span id="pe-date-year">2025</span>
-                  <button type="button" class="month-picker-nav-btn" data-picker="pe" data-dir="1">›</button>
+                  <button type="button" class="month-picker-nav-btn" data-picker="ie" data-dir="-1">‹</button>
+                  <span id="ie-date-year">2025</span>
+                  <button type="button" class="month-picker-nav-btn" data-picker="ie" data-dir="1">›</button>
                 </div>
-                <div class="month-picker-grid" id="pe-date-grid"></div>
+                <div class="month-picker-grid" id="ie-date-grid"></div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="section-card">
+        <div class="section-card" id="ie-index-wrap">
           <div class="toggle-row">
             <div class="toggle-row-text">
               <strong>설명 추가</strong>
             </div>
-            <button class="switch" id="pe-index-enabled" onclick="toggleIndexTab('pe')"></button>
+            <button class="switch" id="ie-index-enabled" onclick="toggleIndexTab()"></button>
           </div>
-          <div id="pe-index-section" style="margin-top:18px; display:none;">
+          <div id="ie-index-section" style="margin-top:18px; display:none;">
             <div class="rich-editor">
               <div class="editor-toolbar">
                 <button class="editor-tool" title="굵게"><strong>B</strong></button>
@@ -568,17 +568,17 @@
                 <button class="editor-tool" title="목록">≡</button>
                 <button class="editor-tool" title="링크 삽입">🔗</button>
                 <span class="editor-tool-divider"></span>
-                <button class="editor-tool editor-tool-code" id="pe-index-code-toggle" title="HTML 코드로 보기">&lt;/&gt;</button>
+                <button class="editor-tool editor-tool-code" id="ie-index-code-toggle" title="HTML 코드로 보기">&lt;/&gt;</button>
               </div>
-              <div class="editor-canvas" id="pe-index-canvas" contenteditable="true"></div>
-              <textarea class="editor-code-view" id="pe-index-code-view" spellcheck="false" style="display:none;"></textarea>
+              <div class="editor-canvas" id="ie-index-canvas" contenteditable="true"></div>
+              <textarea class="editor-code-view" id="ie-index-code-view" spellcheck="false" style="display:none;"></textarea>
             </div>
           </div>
         </div>
 
         <div class="section-card">
           <h2>사진</h2>
-          <div class="photo-manager-grid" id="project-photo-grid"></div>
+          <div class="photo-manager-grid" id="ie-photo-grid"></div>
         </div>
 
         <div class="section-card">
@@ -586,122 +586,28 @@
             <div class="toggle-row-text">
               <strong>게시물 공개</strong>
             </div>
-            <button class="switch on" id="pe-published"></button>
+            <button class="switch on" id="ie-published"></button>
           </div>
         </div>
 
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:28px;">
-          <button class="btn btn-danger-outline" id="delete-project">이 프로젝트 삭제하기</button>
-          <button class="btn btn-primary btn-lg" id="save-project">저장하기</button>
+          <button class="btn btn-danger-outline" id="ie-delete">이 항목 삭제하기</button>
+          <button class="btn btn-primary btn-lg" id="ie-save">저장하기</button>
         </div>
       </div>
     </section>
 
-    <!-- ============ WORK LIST (renameable board) ============ -->
-    <section class="view" id="view-exhibitions">
-      <div class="page">
-        <div class="page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
-          <div>
-            <span class="page-eyebrow" id="exhibitions-eyebrow">dev.myportfolio.com/work</span>
-            <div class="page-title-row">
-              <h1 class="page-title" id="exhibitions-title-display">WORK 2</h1>
-              <button class="rename-btn" title="이 게시판 이름 바꾸기" onclick="startRename('exhibitions')">✏️</button>
-            </div>
-          </div>
-          <div style="display:flex; gap:10px;">
-            <button class="btn" id="exhibitions-reorder-btn" onclick="toggleReorderMode('exhibition')">순서 변경</button>
-            <button class="btn btn-primary" id="exhibitions-add-btn" data-open-exhibition="new">+ NEW</button>
-          </div>
-        </div>
-        <div class="site-grid" id="exhibitions-grid"></div>
-      </div>
-    </section>
-
-    <!-- ============ EXHIBITION EDITOR ============ -->
-    <section class="view" id="view-exhibition-editor">
-      <div class="page">
-        <div class="editor-header">
-          <button class="back-btn" data-nav="exhibitions">← <span id="back-to-exhibitions-label">WORK 2</span> 목록으로</button>
-        </div>
-        <div class="page-head">
-          <input class="item-title-input" id="exhibition-editor-title" type="text" placeholder="새 프로젝트" />
-        </div>
-
-        <div class="section-card">
-          <h2>날짜</h2>
-          <div class="field" style="margin-bottom:0;">
-            <div class="month-picker" id="ee-date-picker">
-              <button type="button" class="month-picker-trigger" id="ee-date-trigger">
-                <svg class="month-picker-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="3.2" width="12" height="10.8" rx="1.6" stroke="currentColor" stroke-width="1.3"/><path d="M2 6.4h12M5.2 1.6v2.4M10.8 1.6v2.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-                <span id="ee-date-label">날짜 선택</span>
-                <svg class="month-picker-chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </button>
-              <div class="month-picker-popover" id="ee-date-popover" hidden>
-                <div class="month-picker-header">
-                  <button type="button" class="month-picker-nav-btn" data-picker="ee" data-dir="-1">‹</button>
-                  <span id="ee-date-year">2025</span>
-                  <button type="button" class="month-picker-nav-btn" data-picker="ee" data-dir="1">›</button>
-                </div>
-                <div class="month-picker-grid" id="ee-date-grid"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="section-card">
-          <div class="toggle-row">
-            <div class="toggle-row-text">
-              <strong>설명 추가</strong>
-            </div>
-            <button class="switch" id="ee-index-enabled" onclick="toggleIndexTab('ee')"></button>
-          </div>
-          <div id="ee-index-section" style="margin-top:18px; display:none;">
-            <div class="rich-editor">
-              <div class="editor-toolbar">
-                <button class="editor-tool" title="굵게"><strong>B</strong></button>
-                <button class="editor-tool" title="기울임"><em>I</em></button>
-                <button class="editor-tool" title="밑줄" style="text-decoration:underline;">U</button>
-                <span class="editor-tool-divider"></span>
-                <button class="editor-tool" title="목록">≡</button>
-                <button class="editor-tool" title="링크 삽입">🔗</button>
-                <span class="editor-tool-divider"></span>
-                <button class="editor-tool editor-tool-code" id="ee-index-code-toggle" title="HTML 코드로 보기">&lt;/&gt;</button>
-              </div>
-              <div class="editor-canvas" id="ee-index-canvas" contenteditable="true"></div>
-              <textarea class="editor-code-view" id="ee-index-code-view" spellcheck="false" style="display:none;"></textarea>
-            </div>
-          </div>
-        </div>
-
-        <div class="section-card">
-          <h2>사진</h2>
-          <div class="photo-manager-grid" id="exhibition-photo-grid"></div>
-        </div>
-
-        <div class="section-card">
-          <div class="toggle-row">
-            <div class="toggle-row-text">
-              <strong>게시물 공개</strong>
-            </div>
-            <button class="switch on" id="ee-published"></button>
-          </div>
-        </div>
-
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:28px;">
-          <button class="btn btn-danger-outline" id="delete-exhibition">이 작업 삭제하기</button>
-          <button class="btn btn-primary btn-lg" id="save-exhibition">저장하기</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ ABOUT (static page, rich-text editor) ============ -->
+    <!-- ============ ABOUT (static page, rich-text editor -- not a board:
+         no items, no photo grid. Name is still user-editable like a board's
+         name, just backed by its own variable, not the boards array.
+         ============ -->
     <section class="view" id="view-about">
       <div class="page">
         <div class="page-head">
           <span class="page-eyebrow" id="about-eyebrow">dev.myportfolio.com/about</span>
           <div class="page-title-row">
             <h1 class="page-title" id="about-title-display">ABOUT</h1>
-            <button class="rename-btn" title="이 페이지 이름 바꾸기" onclick="startRename('about')">✏️</button>
+            <button class="rename-btn" title="이 페이지 이름 바꾸기" onclick="startRenameAbout()">✏️</button>
           </div>
         </div>
 
@@ -796,7 +702,7 @@
 </div>
 
 <div class="toast" id="toast">✓ 저장되었습니다</div>
-<input type="file" id="photo-upload-input" accept="image/*" multiple hidden />
+<input type="file" id="photo-upload-input" accept="image/*" hidden />
 
 <div class="modal-overlay" id="msg-modal-overlay" hidden onclick="handleMsgModalOverlayClick(event)">
   <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="msg-modal-name">
@@ -816,63 +722,74 @@
 </div>
 
 <script>
-  // Two fixed gallery-type boards (photo/work) whose *display name* is
-  // user-editable — not a generic N-board CMS. boardTitles is the single
-  // source of truth for both the sidebar label and each board's own page
-  // heading, mirroring how the real implementation would read NavItem.label
-  // (already free-text in the schema) for both.
-  const boardTitles = { projects: "WORK 1", exhibitions: "WORK 2", about: "ABOUT" };
-
-  // URL path per board -- display-only now, not user-editable (removed per
-  // direction: letting tenants rename their own URLs was judged too risky
-  // -- broken bookmarks/backlinks, SEO churn, no undo). This actually
-  // matches the real app as already built: fixed routes
-  // (src/app/s/[tenant]/photo/, work/, about/), not a generic [path]
-  // segment -- no mismatch to reconcile later.
-  const boardPaths = { projects: "photo", exhibitions: "work", about: "about" };
-
-  // Reorderable in step with Settings -> 메뉴 순서 (navItemsData below);
-  // "messages"/"settings" are admin-only sections with no public nav
-  // equivalent, so they always stay pinned after the site-nav items rather
-  // than participating in the reorder.
-  let NAV_ITEMS = [
-    { id: "home", boardKey: null, fixedLabel: "HOME", navDataLabel: "HOME", icon: "M2 8.5 8 3l6 5.5M3.5 7.5V13a.5.5 0 0 0 .5.5h3v-4h2v4h3a.5.5 0 0 0 .5-.5V7.5" },
-    { id: "projects", boardKey: "projects", navDataLabel: "PHOTO", icon: "M1.8 3.2h12.4v9.6H1.8zM4.4 9.6l2.2-2.4 1.8 1.8 2-2.6 1.8 2" },
-    { id: "exhibitions", boardKey: "exhibitions", navDataLabel: "WORK", icon: "M2.2 2.2h8.6v8.6H2.2z" },
-    { id: "about", boardKey: "about", navDataLabel: "ABOUT", icon: "M3.2 1.8h7.2l2.4 2.4v9.4a.6.6 0 0 1-.6.6H3.2a.6.6 0 0 1-.6-.6V2.4a.6.6 0 0 1 .6-.6ZM4.8 7.4h6.4M4.8 9.8h6.4M4.8 5h3.2" },
-    { id: "messages", boardKey: null, fixedLabel: "메시지", icon: "M1.8 3.4h12.4v9.2H1.8zM2.4 4.2 8 8.4l5.6-4.2", badgeId: "nav-badge-messages" },
-    { id: "settings", boardKey: null, fixedLabel: "설정", icon: "M8 5.8a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4Z" },
+  // ===========================================================================
+  // DATA MODEL
+  // Boards are generic and data-driven (2026-07-15 redesign, replacing the
+  // old fixed projects/exhibitions pair) -- see docs/decisions.md and
+  // docs/roadmap.md. `kind` determines editor behavior:
+  //   GALLERY_MULTI  -- item has N photos + its own detail page (INDEX tab
+  //                     optional per item, GRID/FULLSCREEN always).
+  //   GALLERY_SINGLE -- item has exactly 1 photo, no detail page, no INDEX.
+  // Board *count* and *kind* are operator-provisioned per tenant package,
+  // not a tenant-facing feature -- this admin has no "add board" UI, only
+  // rename + content management for whatever boards already exist.
+  // ===========================================================================
+  const boards = [
+    { id: "b1", seq: 1, name: "WORK 1", kind: "GALLERY_MULTI", order: 0 },
+    { id: "b2", seq: 2, name: "WORK 2", kind: "GALLERY_MULTI", order: 1 },
+    { id: "b3", seq: 3, name: "GALLERY", kind: "GALLERY_SINGLE", order: 2 },
   ];
 
-  // Unified item shape for both boards -- no category/venue, no period
-  // range, no per-photo label. dateValue is a single "YYYY-MM" (from a
-  // month picker, so it's always formatted the same way). indexEnabled/
-  // indexContent back the detail page's optional INDEX tab (rich text,
-  // same editor as the About page). Thumbnail = whichever photo is
-  // first/⭐ in the photo manager, not a separate field.
-  const projects = [
-    { id: "p1", name: "Project Name", slug: "project-name", dateValue: "2026-01", published: true, photos: 4, indexEnabled: false, indexContent: "" },
-    { id: "p2", name: "Nord Audio", slug: "nord-audio", dateValue: "2025-09", published: true, photos: 4, indexEnabled: true, indexContent: "<p>Nord Audio와 3일간 진행한 제품 촬영 프로젝트입니다.</p>" },
-    { id: "p3", name: "Still Water Co.", slug: "still-water-co", dateValue: "2025-06", published: true, photos: 4, indexEnabled: false, indexContent: "" },
-    { id: "p4", name: "Field Apparel", slug: "field-apparel", dateValue: "2025-02", published: true, photos: 4, indexEnabled: false, indexContent: "" },
-    { id: "p5", name: "Home & Form", slug: "home-and-form", dateValue: "2024-10", published: false, photos: 4, indexEnabled: false, indexContent: "" },
-    { id: "p6", name: "Line Accessories", slug: "line-accessories", dateValue: "2024-03", published: true, photos: 4, indexEnabled: false, indexContent: "" },
-  ];
-  const exhibitions = [
-    { id: "e1", name: "Art Work Name", slug: "art-work-name", dateValue: "2026-04", published: true, photos: 4, indexEnabled: true,
-      indexContent: "<p>A series examining domestic objects removed from use, photographed as still, isolated forms.</p>" },
-    { id: "e2", name: "Surface Tension", slug: "surface-tension", dateValue: "2025-11", published: true, photos: 4, indexEnabled: true,
-      indexContent: "<p>Studies of material surfaces under controlled light — concrete, glass, and skin treated with the same visual attention, blurring the line between the industrial and the organic.</p>" },
-    { id: "e3", name: "Objects at Rest", slug: "objects-at-rest", dateValue: "2025-05", published: true, photos: 4, indexEnabled: true,
-      indexContent: "<p>A quiet catalogue of everyday tools arranged without hierarchy.</p>" },
-    { id: "e4", name: "Quiet Material", slug: "quiet-material", dateValue: "2024-09", published: true, photos: 4, indexEnabled: false, indexContent: "" },
-  ];
+  // Unified item shape across both kinds -- no category/venue, no period
+  // range, no per-photo caption. dateValue is a single "YYYY-MM". slug/
+  // indexEnabled/indexContent only apply to GALLERY_MULTI items (ignored,
+  // left undefined, for GALLERY_SINGLE). `photos` is a placeholder COUNT
+  // here (like the previous version of this mockup), not real persisted
+  // photo data -- opening an editor regenerates that many empty tiles;
+  // there's no backend in this mockup to load real photos from.
+  const boardItems = {
+    b1: [
+      { id: "p1", name: "Project Name", slug: "project-name", dateValue: "2026-01", published: true, photos: 4, indexEnabled: false, indexContent: "" },
+      { id: "p2", name: "Nord Audio", slug: "nord-audio", dateValue: "2025-09", published: true, photos: 4, indexEnabled: true, indexContent: "<p>Nord Audio와 3일간 진행한 제품 촬영 프로젝트입니다.</p>" },
+      { id: "p3", name: "Still Water Co.", slug: "still-water-co", dateValue: "2025-06", published: true, photos: 4, indexEnabled: false, indexContent: "" },
+      { id: "p4", name: "Field Apparel", slug: "field-apparel", dateValue: "2025-02", published: true, photos: 4, indexEnabled: false, indexContent: "" },
+      { id: "p5", name: "Home & Form", slug: "home-and-form", dateValue: "2024-10", published: false, photos: 4, indexEnabled: false, indexContent: "" },
+      { id: "p6", name: "Line Accessories", slug: "line-accessories", dateValue: "2024-03", published: true, photos: 4, indexEnabled: false, indexContent: "" },
+    ],
+    b2: [
+      { id: "e1", name: "Art Work Name", slug: "art-work-name", dateValue: "2026-04", published: true, photos: 4, indexEnabled: true,
+        indexContent: "<p>A series examining domestic objects removed from use, photographed as still, isolated forms.</p>" },
+      { id: "e2", name: "Surface Tension", slug: "surface-tension", dateValue: "2025-11", published: true, photos: 4, indexEnabled: true,
+        indexContent: "<p>Studies of material surfaces under controlled light — concrete, glass, and skin treated with the same visual attention, blurring the line between the industrial and the organic.</p>" },
+      { id: "e3", name: "Objects at Rest", slug: "objects-at-rest", dateValue: "2025-05", published: true, photos: 4, indexEnabled: true,
+        indexContent: "<p>A quiet catalogue of everyday tools arranged without hierarchy.</p>" },
+      { id: "e4", name: "Quiet Material", slug: "quiet-material", dateValue: "2024-09", published: true, photos: 4, indexEnabled: false, indexContent: "" },
+    ],
+    b3: [
+      { id: "g1", name: "Morning Light", dateValue: "2026-02", published: true, photos: 1 },
+      { id: "g2", name: "Concrete Study", dateValue: "2025-12", published: true, photos: 1 },
+      { id: "g3", name: "Glasshouse", dateValue: "2025-08", published: true, photos: 1 },
+      { id: "g4", name: "Untitled 04", dateValue: "2025-03", published: false, photos: 1 },
+    ],
+  };
+
+  // About is not a board (singleton static page, no items) -- its name is
+  // still user-editable like a board's, just backed by its own variable.
+  let aboutName = "ABOUT";
+
+  // Mirrors the real NavTargetKind enum (HOME/BOARD/ABOUT/CONTACT/
+  // EXTERNAL_URL) -- BOARD entries reference a board by id instead of
+  // duplicating its name, so a board rename can never drift out of sync
+  // with its own nav entry (same fix already applied in real code, see
+  // docs/decisions.md). CONTACT has no admin management screen but still
+  // participates in nav order/visibility.
   const navItemsData = [
-    { label: "HOME", target: "홈 화면", visible: true },
-    { label: "PHOTO", target: "게시판 1", visible: true },
-    { label: "WORK", target: "게시판 2", visible: true },
-    { label: "ABOUT", target: "소개 페이지", visible: true },
-    { label: "CONTACT", target: "문의 페이지", visible: true },
+    { id: "nav-home", kind: "HOME", target: "홈 화면", visible: true },
+    { id: "nav-b1", kind: "BOARD", boardId: "b1", target: "게시판", visible: true },
+    { id: "nav-b2", kind: "BOARD", boardId: "b2", target: "게시판", visible: true },
+    { id: "nav-b3", kind: "BOARD", boardId: "b3", target: "게시판", visible: true },
+    { id: "nav-about", kind: "ABOUT", target: "소개 페이지", visible: true },
+    { id: "nav-contact", kind: "CONTACT", target: "문의 페이지", visible: true },
   ];
   const socialLinksData = [{ platform: "Instagram", url: "https://instagram.com" }];
   const messages = [
@@ -886,6 +803,77 @@
       body: "사진 강의를 하고 있는데 Quiet Material 중 두 작품을 수업 자료로 사용해도 될까요? (출처 표기, 비영리)" },
   ];
 
+  // ===========================================================================
+  // NAV / VIEW ROUTING
+  // ===========================================================================
+  // Two distinct icons + labels per board kind, keyed by BoardKind (mirrors
+  // the real schema's enum) -- lets the sidebar and board-list header both
+  // signal at a glance whether a board is a multi-photo project archive or
+  // a single-photo-per-item gallery, without opening it.
+  const BOARD_KIND_META = {
+    GALLERY_MULTI: { icon: "M1.8 3.2h10.4v8.6H1.8zM4.2 8.4h10.4v3.4a1 1 0 0 1-1 1H5.2a1 1 0 0 1-1-1z", label: "프로젝트 아카이브" },
+    GALLERY_SINGLE: { icon: "M2 2.6h12v10.8H2zM5.4 6a1.1 1.1 0 1 0 0-2.2 1.1 1.1 0 0 0 0 2.2ZM2 10.6l3.4-3.8 2.6 2.8 2-2.2L14 10.6", label: "포토 갤러리" },
+  };
+  const HOME_ICON = "M2 8.5 8 3l6 5.5M3.5 7.5V13a.5.5 0 0 0 .5.5h3v-4h2v4h3a.5.5 0 0 0 .5-.5V7.5";
+  const ABOUT_ICON = "M3.2 1.8h7.2l2.4 2.4v9.4a.6.6 0 0 1-.6.6H3.2a.6.6 0 0 1-.6-.6V2.4a.6.6 0 0 1 .6-.6ZM4.8 7.4h6.4M4.8 9.8h6.4M4.8 5h3.2";
+  const MESSAGES_ICON = "M1.8 3.4h12.4v9.2H1.8zM2.4 4.2 8 8.4l5.6-4.2";
+  const SETTINGS_ICON = "M8 5.8a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4Z";
+
+  let currentBoardId = null;   // which board's list view-board-list is showing
+  let editorBoardId = null;    // which board the open item editor belongs to
+  let editorIsNew = false;
+  let editorPhotoMax = null;   // 1 for GALLERY_SINGLE, null (unlimited) for GALLERY_MULTI
+
+  // Sidebar entries derived fresh from navItemsData + boards every render --
+  // order lives in ONE place (navItemsData) instead of two parallel arrays
+  // that used to need manual reconciliation (applyNavOrderToSidebar, now
+  // removed entirely -- this was a real source of drift risk).
+  function buildSidebarItems() {
+    const fromNavData = navItemsData
+      .filter(n => n.kind !== "CONTACT") // no admin management screen for Contact
+      .map(n => {
+        if (n.kind === "HOME") return { id: "home", label: "HOME", icon: HOME_ICON };
+        if (n.kind === "ABOUT") return { id: "about", label: aboutName, icon: ABOUT_ICON };
+        if (n.kind === "BOARD") {
+          const b = boards.find(x => x.id === n.boardId);
+          return b ? { id: "board-" + b.id, label: b.name, icon: BOARD_KIND_META[b.kind].icon } : null;
+        }
+        return null;
+      })
+      .filter(Boolean);
+    return [
+      ...fromNavData,
+      { id: "messages", label: "메시지", icon: MESSAGES_ICON, badgeId: "nav-badge-messages" },
+      { id: "settings", label: "설정", icon: SETTINGS_ICON },
+    ];
+  }
+
+  function renderSidebarNav() {
+    document.getElementById("nav-list-el").innerHTML = buildSidebarItems().map(item => `
+      <button class="nav-item" data-nav="${item.id}">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="${item.icon}" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="nav-label">${item.label}</span>
+        ${item.badgeId ? `<span class="nav-badge" id="${item.badgeId}" style="display:none;"></span>` : ""}
+      </button>
+    `).join("");
+    document.querySelectorAll("[data-nav]").forEach(el => el.addEventListener("click", () => {
+      const id = el.dataset.nav;
+      if (id.startsWith("board-")) showBoardList(id.slice(6));
+      else showView(id);
+    }));
+    reapplyActiveNavHighlight();
+  }
+
+  function reapplyActiveNavHighlight() {
+    const activeEl = document.querySelector(".view.active");
+    if (!activeEl) return;
+    let navId;
+    if (activeEl.id === "view-board-list") navId = "board-" + currentBoardId;
+    else if (activeEl.id === "view-board-item-editor") navId = "board-" + editorBoardId;
+    else navId = activeEl.id.replace("view-", "");
+    document.querySelectorAll(".nav-item[data-nav]").forEach(n => n.classList.toggle("active", n.dataset.nav === navId));
+  }
+
   function showView(id) {
     document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
     document.getElementById("view-" + id).classList.add("active");
@@ -895,20 +883,27 @@
     document.querySelector(".main").scrollTo(0, 0);
   }
 
-  function renderSidebarNav() {
-    document.getElementById("nav-list-el").innerHTML = NAV_ITEMS.map(item => {
-      const label = item.boardKey ? boardTitles[item.boardKey] : item.fixedLabel;
-      return `
-        <button class="nav-item" data-nav="${item.id}">
-          <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="${item.icon}" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="nav-label">${label}</span>
-          ${item.badgeId ? `<span class="nav-badge" id="${item.badgeId}" style="display:none;"></span>` : ""}
-        </button>
-      `;
-    }).join("");
-    document.querySelectorAll("[data-nav]").forEach(el => el.addEventListener("click", () => showView(el.dataset.nav)));
-    showView(document.querySelector(".view.active")?.id.replace("view-", "") || "home");
+  function showBoardList(boardId) {
+    currentBoardId = boardId;
+    renderBoardList();
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+    document.getElementById("view-board-list").classList.add("active");
+    document.querySelectorAll(".nav-item[data-nav]").forEach(n => n.classList.toggle("active", n.dataset.nav === "board-" + boardId));
+    document.querySelector(".main").scrollTo(0, 0);
   }
+
+  function showBoardItemEditorView() {
+    // Deliberately doesn't touch nav highlighting -- stays on whichever
+    // board's nav item was already active when you opened an item.
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+    document.getElementById("view-board-item-editor").classList.add("active");
+    document.querySelector(".main").scrollTo(0, 0);
+  }
+
+  function backToBoardList() {
+    showBoardList(editorBoardId);
+  }
+  window.backToBoardList = backToBoardList;
 
   // Deliberately outside the [data-nav] system above -- it's not a view to
   // switch to, it's a separate action. (Previously mis-tagged
@@ -919,25 +914,10 @@
   }
   window.handleLogoutClick = handleLogoutClick;
 
-  function refreshBoardLabels() {
-    document.getElementById("projects-title-display").textContent = boardTitles.projects;
-    document.getElementById("exhibitions-title-display").textContent = boardTitles.exhibitions;
-    document.getElementById("about-title-display").textContent = boardTitles.about;
-    document.getElementById("back-to-projects-label").textContent = boardTitles.projects;
-    document.getElementById("back-to-exhibitions-label").textContent = boardTitles.exhibitions;
-    document.getElementById("home-stat-projects").textContent = `${boardTitles.projects} 게시물 공개 중`;
-    document.getElementById("home-stat-exhibitions").textContent = `${boardTitles.exhibitions} 게시물 공개 중`;
-    document.getElementById("home-add-project-btn").textContent = `+ 새 ${boardTitles.projects} 추가`;
-    document.getElementById("home-add-exhibition-btn").textContent = `+ 새 ${boardTitles.exhibitions} 추가`;
-    document.getElementById("home-about-btn").textContent = `${boardTitles.about} 페이지 수정`;
-    renderHomeVisibility();
-    renderNavList();
-    renderSidebarNav();
-  }
-
-  function startRename(boardKey) {
-    const displayEl = document.getElementById(boardKey + "-title-display");
-    const current = boardTitles[boardKey];
+  function startRenameBoard() {
+    const board = boards.find(b => b.id === currentBoardId);
+    const displayEl = document.getElementById("board-list-title");
+    const current = board.name;
     const input = document.createElement("input");
     input.className = "title-input";
     input.value = current;
@@ -946,21 +926,50 @@
     input.focus();
     input.select();
     const commit = () => {
-      const next = input.value.trim() || current;
-      boardTitles[boardKey] = next;
+      board.name = input.value.trim() || current;
       const h1 = document.createElement("h1");
       h1.className = "page-title";
-      h1.id = boardKey + "-title-display";
-      h1.textContent = next;
+      h1.id = "board-list-title";
+      h1.textContent = board.name;
       input.replaceWith(h1);
-      refreshBoardLabels();
+      renderSidebarNav();
+      renderNavList();
+      renderHomeVisibility();
+      renderHomeQuickMenu();
       toast("이름이 바뀌었어요");
     };
     input.addEventListener("keydown", e => { if (e.key === "Enter") input.blur(); });
     input.addEventListener("blur", commit);
   }
-  window.startRename = startRename;
+  window.startRenameBoard = startRenameBoard;
 
+  function startRenameAbout() {
+    const displayEl = document.getElementById("about-title-display");
+    const current = aboutName;
+    const input = document.createElement("input");
+    input.className = "title-input";
+    input.value = current;
+    input.maxLength = 20;
+    displayEl.replaceWith(input);
+    input.focus();
+    input.select();
+    const commit = () => {
+      aboutName = input.value.trim() || current;
+      const h1 = document.createElement("h1");
+      h1.className = "page-title";
+      h1.id = "about-title-display";
+      h1.textContent = aboutName;
+      input.replaceWith(h1);
+      renderSidebarNav();
+      renderNavList();
+      renderHomeVisibility();
+      renderHomeQuickMenu();
+      toast("이름이 바뀌었어요");
+    };
+    input.addEventListener("keydown", e => { if (e.key === "Enter") input.blur(); });
+    input.addEventListener("blur", commit);
+  }
+  window.startRenameAbout = startRenameAbout;
 
   function toast(msg, isError) {
     const t = document.getElementById("toast");
@@ -971,122 +980,131 @@
     toast._t = setTimeout(() => t.classList.remove("show"), 2600);
   }
 
-  function siteCard(item, kind) {
-    const href = kind === "project" ? "openProjectEditor" : "openExhibitionEditor";
-    const dragOn = reorderMode[kind];
+  // ===========================================================================
+  // BOARD LIST + CARDS
+  // ===========================================================================
+  // GALLERY_SINGLE boards drop the title/date row entirely -- name and date
+  // are still collected in the item editor and stored (see openBoardItemEditor/
+  // the save handler), just not surfaced on the grid card itself, since a
+  // one-photo-per-item gallery reads as a pure image wall. The name/date
+  // move to a native title-attribute tooltip so they're still one hover
+  // away for the admin, without competing with the photo visually.
+  function siteCard(item, board) {
+    const dragOn = reorderMode[board.id];
+    const showBody = board.kind !== "GALLERY_SINGLE";
     const dragAttrs = dragOn
       ? `draggable="true"
-         ondragstart="handleCardDragStart(event, '${kind}', '${item.id}')"
-         ondragover="handleCardDragOver(event, '${kind}', '${item.id}')"
-         ondrop="handleCardDrop(event, '${kind}', '${item.id}')"
-         ondragend="handleCardDragEnd(event, '${kind}')"`
+         ondragstart="handleCardDragStart(event, '${board.id}', '${item.id}')"
+         ondragover="handleCardDragOver(event, '${board.id}', '${item.id}')"
+         ondrop="handleCardDrop(event, '${board.id}', '${item.id}')"
+         ondragend="handleCardDragEnd(event, '${board.id}')"`
       : "";
+    const titleAttr = showBody ? "" : ` title="${item.name} · ${formatMonth(item.dateValue)}"`;
     return `
-      <div class="site-card ${dragOn ? "is-draggable" : ""}" ${dragAttrs}>
+      <div class="site-card ${dragOn ? "is-draggable" : ""}" ${dragAttrs}${titleAttr}>
         ${dragOn
           ? `<div class="site-card-drag-handle" title="드래그해서 순서 변경">⠿</div>`
-          : `<button class="site-card-toggle ${item.published ? "is-published" : ""}" onclick="toggleItemPublished('${kind}', '${item.id}')" title="${item.published ? "비공개로 전환" : "공개로 전환"}">${item.published ? "공개" : "비공개"}</button>
-             <button class="site-card-edit" onclick="${href}('${item.id}')" title="수정하기">✏️</button>`
+          : `<button class="site-card-toggle ${item.published ? "is-published" : ""}" onclick="toggleItemPublished('${board.id}', '${item.id}')" title="${item.published ? "비공개로 전환" : "공개로 전환"}">${item.published ? "공개" : "비공개"}</button>
+             <button class="site-card-edit" onclick="openBoardItemEditor('${item.id}', '${board.id}')" title="수정하기">✏️</button>`
         }
-        <div class="site-card-photo"></div>
-        <div class="site-card-body">
+        <div class="site-card-photo ${showBody ? "" : "is-square"}"></div>
+        ${showBody ? `<div class="site-card-body">
           <span class="site-card-title">${item.name}</span>
           <span class="site-card-meta">${formatMonth(item.dateValue)}</span>
-        </div>
+        </div>` : ""}
       </div>
     `;
   }
+
+  function renderBoardList() {
+    const board = boards.find(b => b.id === currentBoardId);
+    if (!board) return;
+    document.getElementById("board-list-eyebrow").textContent = `dev.myportfolio.com/board/${board.seq}`;
+    document.getElementById("board-list-title").textContent = board.name;
+    document.getElementById("board-list-kind-badge").textContent = BOARD_KIND_META[board.kind].label;
+    const btn = document.getElementById("board-list-reorder-btn");
+    btn.textContent = reorderMode[board.id] ? "완료" : "순서 변경";
+    btn.classList.toggle("btn-primary", !!reorderMode[board.id]);
+    document.getElementById("board-list-grid").innerHTML =
+      (boardItems[board.id] || []).map(item => siteCard(item, board)).join("");
+  }
+
   // Fast path to flip published/draft straight from the grid, without
   // opening the full item editor (which has its own "게시물 공개" switch --
   // both write the same item.published field, so they can never disagree).
-  function toggleItemPublished(kind, id) {
-    const list = kind === "project" ? projects : exhibitions;
-    const item = list.find(x => x.id === id);
+  function toggleItemPublished(boardId, id) {
+    const item = (boardItems[boardId] || []).find(x => x.id === id);
     if (!item) return;
     item.published = !item.published;
-    if (kind === "project") renderProjects();
-    else renderExhibitions();
+    if (boardId === currentBoardId) renderBoardList();
     toast(item.published ? `"${item.name}" 공개로 전환했어요` : `"${item.name}" 비공개로 전환했어요`);
   }
+  window.toggleItemPublished = toggleItemPublished;
 
-  // Reorder mode -- off by default for both boards. Cards are only
-  // draggable while their board's mode is on (see siteCard's `dragOn`),
-  // so a stray drag can never happen from normal browsing/clicking.
-  const reorderMode = { project: false, exhibition: false };
-  let dragState = null; // { kind, draggedId }
+  // Reorder mode -- off by default for every board, keyed by board id now
+  // (was a fixed {project,exhibition} object when there were only 2 kinds
+  // of board; a plain object indexed by id scales to however many boards
+  // exist). Cards are only draggable while their board's mode is on, so a
+  // stray drag can never happen from normal browsing/clicking.
+  const reorderMode = {};
+  let dragState = null; // { boardId, draggedId }
 
-  function toggleReorderMode(kind) {
-    reorderMode[kind] = !reorderMode[kind];
-    const btn = document.getElementById(kind === "project" ? "projects-reorder-btn" : "exhibitions-reorder-btn");
-    btn.textContent = reorderMode[kind] ? "완료" : "순서 변경";
-    btn.classList.toggle("btn-primary", reorderMode[kind]);
-    if (kind === "project") renderProjects();
-    else renderExhibitions();
-    if (!reorderMode[kind]) toast("순서가 저장됐어요");
+  function toggleReorderMode() {
+    const id = currentBoardId;
+    reorderMode[id] = !reorderMode[id];
+    renderBoardList();
+    if (!reorderMode[id]) toast("순서가 저장됐어요");
   }
   window.toggleReorderMode = toggleReorderMode;
 
-  function gridElFor(kind) {
-    return document.getElementById(kind === "project" ? "projects-grid" : "exhibitions-grid");
-  }
-  function handleCardDragStart(e, kind, id) {
-    dragState = { kind, draggedId: id };
+  function handleCardDragStart(e, boardId, id) {
+    dragState = { boardId, draggedId: id };
     e.currentTarget.classList.add("is-dragging");
     e.dataTransfer.effectAllowed = "move";
   }
-  function handleCardDragOver(e, kind, id) {
-    if (!dragState || dragState.kind !== kind) return;
+  function handleCardDragOver(e, boardId, id) {
+    if (!dragState || dragState.boardId !== boardId) return;
     e.preventDefault(); // required for this element to be a valid drop target
     e.dataTransfer.dropEffect = "move";
     if (id === dragState.draggedId) return;
-    gridElFor(kind).querySelectorAll(".site-card").forEach(c => c.classList.remove("drag-over"));
+    document.getElementById("board-list-grid").querySelectorAll(".site-card").forEach(c => c.classList.remove("drag-over"));
     e.currentTarget.classList.add("drag-over");
   }
-  function handleCardDrop(e, kind, targetId) {
+  function handleCardDrop(e, boardId, targetId) {
     e.preventDefault();
-    if (!dragState || dragState.kind !== kind || dragState.draggedId === targetId) return;
-    const list = kind === "project" ? projects : exhibitions;
+    if (!dragState || dragState.boardId !== boardId || dragState.draggedId === targetId) return;
+    const list = boardItems[boardId];
     const fromIndex = list.findIndex(x => x.id === dragState.draggedId);
     const toIndex = list.findIndex(x => x.id === targetId);
     if (fromIndex === -1 || toIndex === -1) return;
     const [moved] = list.splice(fromIndex, 1);
     list.splice(toIndex, 0, moved);
-    if (kind === "project") renderProjects();
-    else renderExhibitions();
+    if (boardId === currentBoardId) renderBoardList();
   }
-  function handleCardDragEnd(e, kind) {
+  function handleCardDragEnd(e, boardId) {
     dragState = null;
-    gridElFor(kind).querySelectorAll(".site-card").forEach(c => c.classList.remove("drag-over", "is-dragging"));
+    document.getElementById("board-list-grid").querySelectorAll(".site-card").forEach(c => c.classList.remove("drag-over", "is-dragging"));
   }
   window.handleCardDragStart = handleCardDragStart;
   window.handleCardDragOver = handleCardDragOver;
   window.handleCardDrop = handleCardDrop;
   window.handleCardDragEnd = handleCardDragEnd;
-  window.toggleItemPublished = toggleItemPublished;
-  function renderProjects() {
-    document.getElementById("projects-grid").innerHTML = projects.map(p => siteCard(p, "project")).join("");
-  }
-  function renderExhibitions() {
-    document.getElementById("exhibitions-grid").innerHTML = exhibitions.map(x => siteCard(x, "exhibition")).join("");
-  }
 
+  // ===========================================================================
+  // PHOTO MANAGER (item editor's photo grid)
   // Array-backed (not just N placeholder tiles) so reorder/remove/
-  // set-primary are real state changes. No per-photo label/caption --
-  // removed per direction: photos are just photos, shared identically by
-  // the public site's GRID VIEW and FULLSCREEN VIEW tabs. Whichever photo
-  // is marked primary (via its "대표" badge, independent of display order)
-  // doubles as the item's list-card thumbnail -- no separate thumbnail
-  // upload field. Keyed by container id since two editors (project/
-  // exhibition) share this one function.
-  // Each photo: { url, primary }. `url` is a real local preview
-  // (URL.createObjectURL) once picked via the file input below; existing
-  // items opened for edit start as placeholder slots (url: null -- no real
-  // backend to load actual photos from in this mockup). `primary` starts
-  // false on every photo, for every item -- nothing is auto-designated as
-  // the thumbnail; the badge button on each tile is how you choose one.
+  // set-primary are real state changes. Each photo: { url, primary }. `url`
+  // is a real local preview (URL.createObjectURL) once picked via the file
+  // input; existing items opened for edit start as placeholder slots (url:
+  // null -- no real backend to load actual photos from in this mockup).
+  // `maxPhotos` (editorPhotoMax) caps a GALLERY_SINGLE board's items at
+  // exactly 1 -- hides the "add" tile once full, and hides the badge/order
+  // controls entirely since there's nothing to pick a thumbnail among.
+  // ===========================================================================
   const photoGridState = {};
-  function placeholderPhotos(count) {
-    return Array.from({ length: count }, () => ({ url: null, primary: false }));
+  function placeholderPhotos(count, maxPhotos) {
+    const n = maxPhotos ? Math.min(count, maxPhotos) : count;
+    return Array.from({ length: n }, (_, i) => ({ url: null, primary: maxPhotos === 1 ? true : false }));
   }
   function setPhotoGridState(containerId, photos) {
     photoGridState[containerId] = photos;
@@ -1095,20 +1113,23 @@
   function photoManagerGrid(containerId) {
     const el = document.getElementById(containerId);
     const photos = photoGridState[containerId] || [];
+    const single = editorPhotoMax === 1;
     let html = photos.map((photo, idx) => `
-        <div class="photo-tile ${photo.primary ? "is-active" : ""}">
+        <div class="photo-tile ${photo.primary ? "is-active" : ""} ${single ? "is-square" : ""}">
           ${photo.url ? `<img class="photo-tile-img" src="${photo.url}" alt="" />` : ""}
-          <button class="photo-tile-badge ${photo.primary ? "active" : ""}" onclick="setPrimaryPhoto('${containerId}', ${idx})" title="대표 사진으로 지정">대표</button>
-          <div class="photo-tile-order">
+          ${single ? "" : `<button class="photo-tile-badge ${photo.primary ? "active" : ""}" onclick="setPrimaryPhoto('${containerId}', ${idx})" title="대표 사진으로 지정">대표</button>`}
+          ${single ? "" : `<div class="photo-tile-order">
             <button class="photo-tile-mini-btn" ${idx === 0 ? "disabled" : ""} onclick="movePhoto('${containerId}', ${idx}, -1)" title="앞으로">◀</button>
             <button class="photo-tile-mini-btn" ${idx === photos.length - 1 ? "disabled" : ""} onclick="movePhoto('${containerId}', ${idx}, 1)" title="뒤로">▶</button>
-          </div>
+          </div>`}
           <div class="photo-tile-actions">
             <button class="photo-tile-mini-btn remove" onclick="removePhoto('${containerId}', ${idx})" title="삭제">✕</button>
           </div>
         </div>
       `).join("");
-    html += `<button class="photo-tile-add" onclick="triggerPhotoUpload('${containerId}')"><div class="plus-circle">＋</div><span style="font-size:13px;">사진 추가</span></button>`;
+    if (!editorPhotoMax || photos.length < editorPhotoMax) {
+      html += `<button class="photo-tile-add ${single ? "is-square" : ""}" onclick="triggerPhotoUpload('${containerId}')"><div class="plus-circle">＋</div><span style="font-size:13px;">사진 추가</span></button>`;
+    }
     el.innerHTML = html;
   }
   function movePhoto(containerId, idx, dir) {
@@ -1119,9 +1140,9 @@
     photoManagerGrid(containerId);
   }
   // Order (movePhoto) and "which one is the thumbnail" (this) are
-  // independent now -- picking a new primary no longer reshuffles the grid,
-  // it just moves which single badge is active. Only one photo can be
-  // primary per item at a time.
+  // independent -- picking a new primary doesn't reshuffle the grid, it
+  // just moves which single badge is active. Only one photo can be primary
+  // per item at a time.
   function setPrimaryPhoto(containerId, idx) {
     const photos = photoGridState[containerId];
     photos.forEach((p, i) => { p.primary = i === idx; });
@@ -1137,10 +1158,12 @@
   // triggered by .click() -- the only way to open one from a styled
   // button) instead of a fake toast. Selected files get a local preview
   // via URL.createObjectURL; there's no backend in this mockup to actually
-  // upload to.
+  // upload to. `multiple` is toggled per board kind so a GALLERY_SINGLE
+  // board's file dialog can't even let you pick more than one to begin with.
   let photoUploadTargetContainer = null;
   function triggerPhotoUpload(containerId) {
     photoUploadTargetContainer = containerId;
+    document.getElementById("photo-upload-input").multiple = editorPhotoMax !== 1;
     document.getElementById("photo-upload-input").click();
   }
   document.getElementById("photo-upload-input").addEventListener("change", e => {
@@ -1149,70 +1172,21 @@
     e.target.value = ""; // reset so selecting the same file again still fires "change"
     if (!files.length || !containerId) return;
     const photos = photoGridState[containerId] || (photoGridState[containerId] = []);
-    files.forEach(file => photos.push({ url: URL.createObjectURL(file), primary: false }));
+    const room = editorPhotoMax ? Math.max(editorPhotoMax - photos.length, 0) : files.length;
+    const toAdd = files.slice(0, room);
+    toAdd.forEach(file => photos.push({ url: URL.createObjectURL(file), primary: editorPhotoMax === 1 ? true : photos.length === 0 }));
     photoManagerGrid(containerId);
-    toast(files.length > 1 ? `사진 ${files.length}장을 추가했어요` : "사진을 추가했어요");
+    if (toAdd.length < files.length) toast("이 게시판은 사진을 1장만 추가할 수 있어요", true);
+    else toast(toAdd.length > 1 ? `사진 ${toAdd.length}장을 추가했어요` : "사진을 추가했어요");
   });
   window.movePhoto = movePhoto;
   window.setPrimaryPhoto = setPrimaryPhoto;
   window.removePhoto = removePhoto;
   window.triggerPhotoUpload = triggerPhotoUpload;
 
-  let peIsNew = false;
-  let eeIsNew = false;
-  function openProjectEditor(id) {
-    peIsNew = id === "new";
-    const p = peIsNew ? { name: "", dateValue: "", published: false, photos: 0, indexEnabled: false, indexContent: "" } : projects.find(x => x.id === id);
-    document.getElementById("project-editor-title").value = p.name;
-    setMonthPickerValue("pe", p.dateValue);
-    document.getElementById("pe-published").classList.toggle("on", p.published);
-    document.getElementById("delete-project").style.display = peIsNew ? "none" : "inline-flex";
-    setIndexTabState("pe", p.indexEnabled, p.indexContent);
-    setPhotoGridState("project-photo-grid", placeholderPhotos(p.photos));
-    showView("project-editor");
-    if (peIsNew) document.getElementById("project-editor-title").focus();
-  }
-  function openExhibitionEditor(id) {
-    eeIsNew = id === "new";
-    const x = eeIsNew ? { name: "", dateValue: "", published: false, photos: 0, indexEnabled: false, indexContent: "" } : exhibitions.find(v => v.id === id);
-    document.getElementById("exhibition-editor-title").value = x.name;
-    setMonthPickerValue("ee", x.dateValue);
-    document.getElementById("ee-published").classList.toggle("on", x.published);
-    document.getElementById("delete-exhibition").style.display = eeIsNew ? "none" : "inline-flex";
-    setIndexTabState("ee", x.indexEnabled, x.indexContent);
-    setPhotoGridState("exhibition-photo-grid", placeholderPhotos(x.photos));
-    showView("exhibition-editor");
-    if (eeIsNew) document.getElementById("exhibition-editor-title").focus();
-  }
-
-  // Shared INDEX-tab toggle + rich-text section, used identically by both
-  // editors (prefix "pe"/"ee"). Same visual/HTML-source editor as the
-  // About page.
-  function setIndexTabState(prefix, enabled, content) {
-    document.getElementById(`${prefix}-index-enabled`).classList.toggle("on", enabled);
-    document.getElementById(`${prefix}-index-section`).style.display = enabled ? "block" : "none";
-    const canvas = document.getElementById(`${prefix}-index-canvas`);
-    canvas.innerHTML = content || "<p></p>";
-    canvas.style.display = "block";
-    document.getElementById(`${prefix}-index-code-view`).style.display = "none";
-    document.getElementById(`${prefix}-index-code-toggle`).classList.remove("active");
-  }
-  function toggleIndexTab(prefix) {
-    const btn = document.getElementById(`${prefix}-index-enabled`);
-    const on = !btn.classList.contains("on");
-    btn.classList.toggle("on", on);
-    document.getElementById(`${prefix}-index-section`).style.display = on ? "block" : "none";
-  }
-  window.toggleIndexTab = toggleIndexTab;
-  window.openProjectEditor = openProjectEditor;
-  window.openExhibitionEditor = openExhibitionEditor;
-
-  // "+ NEW" jumps straight into the same full editor used for existing
-  // items (no intermediate modal -- removed per direction: the modal was
-  // an unnecessary extra step when the editor already has 이름/날짜
-  // fields). The item isn't added to the list until "저장하기" actually
-  // succeeds (name required) -- backing out via "목록으로" just discards
-  // the draft, no empty-named ghost entries left in the grid.
+  // ===========================================================================
+  // BOARD ITEM EDITOR (shared by every board; sections toggle per board.kind)
+  // ===========================================================================
   function slugify(name) {
     return (
       name.trim().toLowerCase()
@@ -1221,8 +1195,6 @@
         .replace(/-+/g, "-") || "untitled"
     );
   }
-  // Single month value ("YYYY-MM"), never a free-typed range -- keeps the
-  // displayed format identical everywhere.
   const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   function formatMonth(value) {
     if (!value) return "";
@@ -1230,11 +1202,97 @@
     return `${MONTH_NAMES[+m - 1]} ${y}`;
   }
 
-  // Custom month picker (replaces native input[type=month] -- its calendar
+  // "+ NEW" jumps straight into the same full editor used for existing
+  // items (no intermediate modal). The item isn't added to the list until
+  // "저장하기" actually succeeds (name required) -- backing out via
+  // "목록으로" just discards the draft, no empty-named ghost entries left.
+  let itemIdCounter = 100;
+
+  function openBoardItemEditor(itemId, boardId) {
+    const board = boards.find(b => b.id === (boardId || currentBoardId));
+    editorBoardId = board.id;
+    editorIsNew = itemId === "new";
+    editorPhotoMax = board.kind === "GALLERY_SINGLE" ? 1 : null;
+    const isMulti = board.kind === "GALLERY_MULTI";
+
+    const item = editorIsNew
+      ? { name: "", dateValue: "", published: false, photos: 0, indexEnabled: false, indexContent: "" }
+      : boardItems[board.id].find(x => x.id === itemId);
+
+    document.getElementById("ie-title").value = item.name;
+    setMonthPickerValue("ie", item.dateValue);
+    document.getElementById("ie-published").classList.toggle("on", item.published);
+    document.getElementById("ie-delete").style.display = editorIsNew ? "none" : "inline-flex";
+    document.getElementById("board-item-editor-back-label").textContent = board.name;
+
+    document.getElementById("ie-index-wrap").style.display = isMulti ? "block" : "none";
+    if (isMulti) setIndexTabState(item.indexEnabled, item.indexContent);
+
+    setPhotoGridState("ie-photo-grid", placeholderPhotos(editorIsNew ? 0 : item.photos, editorPhotoMax));
+    showBoardItemEditorView();
+    reapplyActiveNavHighlight();
+    if (editorIsNew) document.getElementById("ie-title").focus();
+  }
+  window.openBoardItemEditor = openBoardItemEditor;
+
+  // Shared INDEX-tab toggle + rich-text section (GALLERY_MULTI only). Same
+  // visual/HTML-source editor as the About page.
+  function setIndexTabState(enabled, content) {
+    document.getElementById("ie-index-enabled").classList.toggle("on", enabled);
+    document.getElementById("ie-index-section").style.display = enabled ? "block" : "none";
+    const canvas = document.getElementById("ie-index-canvas");
+    canvas.innerHTML = content || "<p></p>";
+    canvas.style.display = "block";
+    document.getElementById("ie-index-code-view").style.display = "none";
+    document.getElementById("ie-index-code-toggle").classList.remove("active");
+  }
+  function toggleIndexTab() {
+    const btn = document.getElementById("ie-index-enabled");
+    const on = !btn.classList.contains("on");
+    btn.classList.toggle("on", on);
+    document.getElementById("ie-index-section").style.display = on ? "block" : "none";
+  }
+  window.toggleIndexTab = toggleIndexTab;
+
+  document.getElementById("ie-published").addEventListener("click", e => e.currentTarget.classList.toggle("on"));
+
+  document.getElementById("ie-save").addEventListener("click", () => {
+    const name = document.getElementById("ie-title").value.trim();
+    if (!name) {
+      toast("이름을 입력해주세요.", true);
+      document.getElementById("ie-title").focus();
+      return;
+    }
+    const board = boards.find(b => b.id === editorBoardId);
+    const isMulti = board.kind === "GALLERY_MULTI";
+    if (editorIsNew) {
+      boardItems[board.id].push({
+        id: "new-" + itemIdCounter++,
+        name,
+        slug: isMulti ? slugify(name) : undefined,
+        dateValue: getMonthPickerValue("ie"),
+        published: document.getElementById("ie-published").classList.contains("on"),
+        photos: (photoGridState["ie-photo-grid"] || []).length,
+        indexEnabled: isMulti && document.getElementById("ie-index-enabled").classList.contains("on"),
+        indexContent: isMulti ? document.getElementById("ie-index-canvas").innerHTML : "",
+      });
+      if (board.id === currentBoardId) renderBoardList();
+      renderHomeStats();
+    }
+    toast(`"${name}" 저장되었습니다`);
+    backToBoardList();
+  });
+  document.getElementById("ie-delete").addEventListener("click", () => {
+    toast("삭제되었습니다");
+    backToBoardList();
+  });
+
+  // ===========================================================================
+  // MONTH PICKER (replaces native input[type=month] -- its calendar
   // icon/popup is rendered by the OS/browser and can't be restyled to match
-  // this app, see the .month-picker CSS comment). One state object + one set
-  // of functions shared by both editors, keyed by prefix ("pe"/"ee") like
-  // the photo grid and INDEX tab above.
+  // this app). Single instance now (prefix "ie") since there's one shared
+  // editor instead of two ("pe"/"ee").
+  // ===========================================================================
   const MONTH_NAMES_KO = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
   const monthPickerState = {};
   function formatMonthKorean(value) {
@@ -1290,84 +1348,141 @@
     });
   }
   document.addEventListener("click", () => closeAllMonthPickers());
-  initMonthPicker("pe");
-  initMonthPicker("ee");
+  initMonthPicker("ie");
 
-  let itemIdCounter = 100;
+  // ===========================================================================
+  // HOME DASHBOARD (stats/quick-menu are generated per board, not hardcoded
+  // to exactly 2 -- scales to however many boards a tenant's package has).
+  // ===========================================================================
+  function renderHomeStats() {
+    const boardTiles = boards.map(b => {
+      const count = (boardItems[b.id] || []).filter(i => i.published).length;
+      return `
+        <div style="flex:1; min-width:160px;">
+          <div style="font-size:34px; font-weight:700;">${count}</div>
+          <div style="font-size:14.5px; color:var(--muted);">${b.name} 게시물 공개 중</div>
+        </div>`;
+    }).join("");
+    const newMsgCount = messages.filter(m => m.status === "NEW").length;
+    document.getElementById("home-stats").innerHTML = boardTiles + `
+      <div style="flex:1; min-width:160px;">
+        <div style="font-size:34px; font-weight:700; color:var(--accent-ink); background:var(--accent); display:inline-block; padding:0 10px; border-radius:8px;">${newMsgCount}</div>
+        <div style="font-size:14.5px; color:var(--muted); margin-top:6px;">새로 온 메시지 · <a href="#" id="home-stats-msg-link" style="color:var(--ink); font-weight:700; text-decoration:underline;">확인하기</a></div>
+      </div>`;
+    const link = document.getElementById("home-stats-msg-link");
+    if (link) link.addEventListener("click", e => { e.preventDefault(); showView("messages"); });
+  }
 
-  document.getElementById("pe-published").addEventListener("click", e => e.currentTarget.classList.toggle("on"));
-  document.getElementById("ee-published").addEventListener("click", e => e.currentTarget.classList.toggle("on"));
+  function renderHomeQuickMenu() {
+    const boardBtns = boards.map(b => `<button class="btn" onclick="openBoardItemEditor('new', '${b.id}')">+ 새 ${b.name} 추가</button>`).join("");
+    document.getElementById("home-quick-menu").innerHTML = boardBtns + `
+      <button class="btn" id="home-about-btn">${aboutName} 페이지 수정</button>
+      <button class="btn" id="home-settings-btn">사이트 정보 수정</button>
+    `;
+    document.getElementById("home-about-btn").addEventListener("click", () => showView("about"));
+    document.getElementById("home-settings-btn").addEventListener("click", () => showView("settings"));
+  }
 
-  document.getElementById("save-project").addEventListener("click", () => {
-    const name = document.getElementById("project-editor-title").value.trim();
-    if (!name) {
-      toast("이름을 입력해주세요.", true);
-      document.getElementById("project-editor-title").focus();
-      return;
+  // ===========================================================================
+  // SETTINGS -> 메뉴 순서 및 공개 (also backs Home's 페이지 노출 quick-toggle
+  // list -- both read/write the same navItemsData, so they can never drift).
+  // ===========================================================================
+  function navItemDisplayName(n) {
+    if (n.kind === "HOME") return "HOME";
+    if (n.kind === "ABOUT") return aboutName;
+    if (n.kind === "CONTACT") return "CONTACT";
+    if (n.kind === "BOARD") {
+      const b = boards.find(x => x.id === n.boardId);
+      return b ? b.name : "(삭제된 게시판)";
     }
-    if (peIsNew) {
-      projects.push({
-        id: "new-" + itemIdCounter++,
-        name,
-        slug: slugify(name),
-        dateValue: getMonthPickerValue("pe"),
-        published: document.getElementById("pe-published").classList.contains("on"),
-        photos: (photoGridState["project-photo-grid"] || []).length,
-        indexEnabled: document.getElementById("pe-index-enabled").classList.contains("on"),
-        indexContent: document.getElementById("pe-index-canvas").innerHTML,
-      });
-      renderProjects();
-    }
-    toast(`"${name}" 저장되었습니다`);
-    showView("projects");
-  });
-  document.getElementById("save-exhibition").addEventListener("click", () => {
-    const name = document.getElementById("exhibition-editor-title").value.trim();
-    if (!name) {
-      toast("이름을 입력해주세요.", true);
-      document.getElementById("exhibition-editor-title").focus();
-      return;
-    }
-    if (eeIsNew) {
-      exhibitions.push({
-        id: "new-" + itemIdCounter++,
-        name,
-        slug: slugify(name),
-        dateValue: getMonthPickerValue("ee"),
-        published: document.getElementById("ee-published").classList.contains("on"),
-        photos: (photoGridState["exhibition-photo-grid"] || []).length,
-        indexEnabled: document.getElementById("ee-index-enabled").classList.contains("on"),
-        indexContent: document.getElementById("ee-index-canvas").innerHTML,
-      });
-      renderExhibitions();
-    }
-    toast(`"${name}" 저장되었습니다`);
-    showView("exhibitions");
-  });
-  document.getElementById("delete-project").addEventListener("click", () => { toast("삭제되었습니다"); showView("projects"); });
-  document.getElementById("delete-exhibition").addEventListener("click", () => { toast("삭제되었습니다"); showView("exhibitions"); });
-  // Settings -> 메뉴 순서 is the source of truth for site-nav order; saving
-  // re-derives the sidebar's order from it (messages/settings, which have
-  // no public-nav equivalent, stay pinned after the reordered items).
-  function applyNavOrderToSidebar() {
-    const orderedLabels = navItemsData.map(n => n.label);
-    const reorderable = NAV_ITEMS.filter(item => item.navDataLabel);
-    const pinned = NAV_ITEMS.filter(item => !item.navDataLabel);
-    reorderable.sort((a, b) => orderedLabels.indexOf(a.navDataLabel) - orderedLabels.indexOf(b.navDataLabel));
-    NAV_ITEMS = [...reorderable, ...pinned];
-    renderSidebarNav();
+    return "";
+  }
+
+  function toggleNavVisible(i) {
+    navItemsData[i].visible = !navItemsData[i].visible;
+    renderNavList();
+    renderHomeVisibility();
+    toast(`${navItemDisplayName(navItemsData[i])} ${navItemsData[i].visible ? "공개" : "비공개"}로 설정했어요`);
+  }
+  window.toggleNavVisible = toggleNavVisible;
+
+  function renderNavList() {
+    document.getElementById("nav-list").innerHTML = navItemsData.map((n, i) => `
+      <div class="reorder-row" ondragover="handleNavDragOver(event, '${n.id}')" ondrop="handleNavDrop(event, '${n.id}')">
+        <div class="reorder-drag-handle" draggable="true" ondragstart="handleNavDragStart(event, '${n.id}')" ondragend="handleNavDragEnd()" title="드래그해서 순서 변경">⠿</div>
+        <div class="reorder-main"><strong>${navItemDisplayName(n)}</strong><span>${n.target}</span></div>
+        <button class="switch ${n.visible ? "on" : ""}" onclick="toggleNavVisible(${i})"></button>
+      </div>
+    `).join("");
+  }
+  // Only the handle (not the whole row) is draggable=true, so grabbing the
+  // visibility switch never gets mistaken for a drag gesture.
+  let navDragState = null; // { draggedId }
+  function handleNavDragStart(e, id) {
+    navDragState = { draggedId: id };
+    e.dataTransfer.effectAllowed = "move";
+    // draggable="true" is on the small handle icon, so the browser's
+    // default drag image would just be that icon -- use the whole row.
+    const row = e.currentTarget.closest(".reorder-row");
+    if (row) e.dataTransfer.setDragImage(row, 20, row.offsetHeight / 2);
+  }
+  function handleNavDragOver(e, id) {
+    if (!navDragState) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    document.querySelectorAll("#nav-list .reorder-row").forEach(r => r.classList.remove("drag-over"));
+    if (id !== navDragState.draggedId) e.currentTarget.classList.add("drag-over");
+  }
+  function handleNavDrop(e, id) {
+    e.preventDefault();
+    if (!navDragState || navDragState.draggedId === id) return;
+    const fromIndex = navItemsData.findIndex(n => n.id === navDragState.draggedId);
+    const toIndex = navItemsData.findIndex(n => n.id === id);
+    if (fromIndex === -1 || toIndex === -1) return;
+    const [moved] = navItemsData.splice(fromIndex, 1);
+    navItemsData.splice(toIndex, 0, moved);
+    renderNavList();
+    renderSidebarNav(); // sidebar order derives directly from navItemsData now
+  }
+  function handleNavDragEnd() {
+    navDragState = null;
+    document.querySelectorAll("#nav-list .reorder-row").forEach(r => r.classList.remove("drag-over"));
+  }
+  window.handleNavDragStart = handleNavDragStart;
+  window.handleNavDragOver = handleNavDragOver;
+  window.handleNavDrop = handleNavDrop;
+  window.handleNavDragEnd = handleNavDragEnd;
+
+  function renderHomeVisibility() {
+    const rows = navItemsData
+      .map((n, i) => ({ n, i }))
+      .filter(({ n }) => n.kind !== "HOME");
+    document.getElementById("home-visibility-list").innerHTML = rows.map(({ n, i }) => `
+      <div class="reorder-row">
+        <div class="reorder-main"><strong>${navItemDisplayName(n)}</strong></div>
+        <button class="switch ${n.visible ? "on" : ""}" onclick="toggleNavVisible(${i})"></button>
+      </div>
+    `).join("");
   }
 
   document.getElementById("save-settings").addEventListener("click", () => {
-    applyNavOrderToSidebar();
-    toast("저장되었습니다 — 사이드바 메뉴 순서도 반영됐어요");
+    toast("저장되었습니다");
   });
   document.getElementById("save-about").addEventListener("click", () => toast("저장되었습니다"));
+
+  function renderSocialList() {
+    document.getElementById("social-list").innerHTML = socialLinksData.map(s => `
+      <div class="reorder-row">
+        <div class="reorder-main"><strong>${s.platform}</strong><span>${s.url}</span></div>
+        <button class="icon-btn" title="삭제">✕</button>
+      </div>
+    `).join("") || `<div class="empty-note">아직 추가한 SNS 링크가 없어요.</div>`;
+  }
 
   // Visual <-> HTML source toggle (real implementation: an editor that
   // supports raw HTML, not just WYSIWYG — this mockup fakes it by
   // round-tripping innerHTML through a textarea). Shared by the About
-  // page's editor and both boards' INDEX-tab editors -- same component.
+  // page's editor and the item editor's INDEX-tab editor -- same component.
   function wireCodeToggle(toggleId, canvasId, codeViewId) {
     let showingCode = false;
     document.getElementById(toggleId).addEventListener("click", e => {
@@ -1387,109 +1502,11 @@
     });
   }
   wireCodeToggle("about-code-toggle", "about-editor-canvas", "about-code-view");
-  wireCodeToggle("pe-index-code-toggle", "pe-index-canvas", "pe-index-code-view");
-  wireCodeToggle("ee-index-code-toggle", "ee-index-canvas", "ee-index-code-view");
+  wireCodeToggle("ie-index-code-toggle", "ie-index-canvas", "ie-index-code-view");
 
-  document.querySelectorAll("[data-open-project='new']").forEach(el => el.addEventListener("click", () => openProjectEditor("new")));
-  document.querySelectorAll("[data-open-exhibition='new']").forEach(el => el.addEventListener("click", () => openExhibitionEditor("new")));
-
-  // Single source of truth (navItemsData[i].visible) shared by the Settings
-  // reorder list and the Home "빠른 설정" toggles below -- toggling either
-  // one re-renders both, so they can never drift out of sync.
-  function toggleNavVisible(i) {
-    navItemsData[i].visible = !navItemsData[i].visible;
-    renderNavList();
-    renderHomeVisibility();
-    toast(`${navItemsData[i].label} ${navItemsData[i].visible ? "공개" : "비공개"}로 설정했어요`);
-  }
-  window.toggleNavVisible = toggleNavVisible;
-
-  // Shows the *actual* menu name a visitor would see (via NAV_DISPLAY_NAME,
-  // same mapping renderHomeVisibility uses below) -- not navItemsData's raw
-  // label ("HOME"/"PHOTO"/"WORK"/...), which is an internal key, not real
-  // display text. PHOTO/WORK/ABOUT in particular are user-renameable board
-  // titles (boardTitles), so showing the raw label here would drift out of
-  // sync with the sidebar the moment a board gets renamed.
-  function renderNavList() {
-    document.getElementById("nav-list").innerHTML = navItemsData.map((n, i) => `
-      <div class="reorder-row" ondragover="handleNavDragOver(event, '${n.label}')" ondrop="handleNavDrop(event, '${n.label}')">
-        <div class="reorder-drag-handle" draggable="true" ondragstart="handleNavDragStart(event, '${n.label}')" ondragend="handleNavDragEnd()" title="드래그해서 순서 변경">⠿</div>
-        <div class="reorder-main"><strong>${NAV_DISPLAY_NAME[n.label] ? NAV_DISPLAY_NAME[n.label]() : n.label}</strong><span>${n.target}</span></div>
-        <button class="switch ${n.visible ? "on" : ""}" onclick="toggleNavVisible(${i})"></button>
-      </div>
-    `).join("");
-  }
-  // Only the handle (not the whole row) is draggable=true, so grabbing the
-  // visibility switch never gets mistaken for a drag gesture -- dragover/
-  // drop still listen on the full row so dropping anywhere on it works.
-  let navDragState = null; // { draggedLabel }
-  function handleNavDragStart(e, label) {
-    navDragState = { draggedLabel: label };
-    e.dataTransfer.effectAllowed = "move";
-    // draggable="true" is on the small handle icon (see renderNavList's
-    // comment), so the browser's default drag image would just be that
-    // icon -- not enough to tell which row is actually being moved. Use
-    // the whole row as the drag image instead.
-    const row = e.currentTarget.closest(".reorder-row");
-    if (row) e.dataTransfer.setDragImage(row, 20, row.offsetHeight / 2);
-  }
-  function handleNavDragOver(e, label) {
-    if (!navDragState) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    document.querySelectorAll("#nav-list .reorder-row").forEach(r => r.classList.remove("drag-over"));
-    if (label !== navDragState.draggedLabel) e.currentTarget.classList.add("drag-over");
-  }
-  function handleNavDrop(e, label) {
-    e.preventDefault();
-    if (!navDragState || navDragState.draggedLabel === label) return;
-    const fromIndex = navItemsData.findIndex(n => n.label === navDragState.draggedLabel);
-    const toIndex = navItemsData.findIndex(n => n.label === label);
-    if (fromIndex === -1 || toIndex === -1) return;
-    const [moved] = navItemsData.splice(fromIndex, 1);
-    navItemsData.splice(toIndex, 0, moved);
-    renderNavList();
-  }
-  function handleNavDragEnd() {
-    navDragState = null;
-    document.querySelectorAll("#nav-list .reorder-row").forEach(r => r.classList.remove("drag-over"));
-  }
-  window.handleNavDragStart = handleNavDragStart;
-  window.handleNavDragOver = handleNavDragOver;
-  window.handleNavDrop = handleNavDrop;
-  window.handleNavDragEnd = handleNavDragEnd;
-
-  // Quick on/off for each page, right from the dashboard -- reads/writes
-  // the same navItemsData as Settings -> 메뉴 순서, applies instantly (no
-  // separate save step, unlike the list/editor pages).
-  const NAV_DISPLAY_NAME = {
-    HOME: () => "HOME",
-    PHOTO: () => boardTitles.projects,
-    WORK: () => boardTitles.exhibitions,
-    ABOUT: () => boardTitles.about,
-    CONTACT: () => "CONTACT",
-  };
-  function renderHomeVisibility() {
-    const rows = navItemsData
-      .map((n, i) => ({ n, i }))
-      .filter(({ n }) => n.label !== "HOME");
-    document.getElementById("home-visibility-list").innerHTML = rows.map(({ n, i }) => `
-      <div class="reorder-row">
-        <div class="reorder-main"><strong>${NAV_DISPLAY_NAME[n.label] ? NAV_DISPLAY_NAME[n.label]() : n.label}</strong></div>
-        <button class="switch ${n.visible ? "on" : ""}" onclick="toggleNavVisible(${i})"></button>
-      </div>
-    `).join("");
-  }
-
-  function renderSocialList() {
-    document.getElementById("social-list").innerHTML = socialLinksData.map(s => `
-      <div class="reorder-row">
-        <div class="reorder-main"><strong>${s.platform}</strong><span>${s.url}</span></div>
-        <button class="icon-btn" title="삭제">✕</button>
-      </div>
-    `).join("") || `<div class="empty-note">아직 추가한 SNS 링크가 없어요.</div>`;
-  }
-
+  // ===========================================================================
+  // MESSAGES
+  // ===========================================================================
   function renderMessages() {
     const newMsgs = messages.filter(m => m.status === "NEW");
     const readMsgs = messages.filter(m => m.status !== "NEW");
@@ -1515,7 +1532,7 @@
   function selectMessage(id) {
     const m = messages.find(x => x.id === id);
     if (!m) return;
-    if (m.status === "NEW") { m.status = "READ"; renderMessages(); renderNavBadge(); }
+    if (m.status === "NEW") { m.status = "READ"; renderMessages(); renderNavBadge(); renderHomeStats(); }
     document.getElementById("msg-modal-name").textContent = m.name;
     document.getElementById("msg-modal-email").textContent = m.email;
     document.getElementById("msg-modal-date").textContent = m.date;
@@ -1545,12 +1562,22 @@
     }
   }
 
+  // ===========================================================================
+  // INIT
+  // ===========================================================================
   renderSidebarNav();
-  renderProjects();
-  renderExhibitions();
+  showBoardList(boards[0].id); // land on the first board's list, matching
+                                // where the old hardcoded view-projects used
+                                // to be reachable from by default
+  showView("home"); // ...but actually open on Home, same as before -- the
+                     // showBoardList call above just needed to run once so
+                     // board-list-grid isn't empty the first time a board
+                     // nav item is clicked.
+  renderHomeStats();
+  renderHomeQuickMenu();
   renderNavList();
+  renderHomeVisibility();
   renderSocialList();
   renderMessages();
   renderNavBadge();
-  refreshBoardLabels();
 </script>
