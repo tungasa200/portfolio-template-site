@@ -76,13 +76,16 @@
   p { margin: 0; }
 
   /* ---------- shell ---------- */
-  .shell { display: flex; min-height: 100vh; }
+  /* height (not min-height) + hidden overflow makes .shell itself
+     non-scrolling -- .sidebar and .main below become two independent
+     panes, so the menu never moves and only the content pane scrolls. */
+  .shell { display: flex; height: 100vh; overflow: hidden; }
 
   .sidebar {
     width: var(--sidebar-w); min-width: var(--sidebar-w);
     background: var(--sidebar-bg); color: var(--sidebar-ink);
     display: flex; flex-direction: column; padding: 22px 16px;
-    position: sticky; top: 0; height: 100vh;
+    height: 100vh; overflow-y: auto;
   }
   .sidebar-brand { display: flex; align-items: center; gap: 11px; padding: 4px 8px 20px; margin-bottom: 6px; border-bottom: 1px solid var(--sidebar-line); }
   .brand-dot { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; flex-shrink: 0; }
@@ -115,7 +118,7 @@
   .user-email { font-size: 12.5px; color: var(--sidebar-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* ---------- main ---------- */
-  .main { flex: 1; min-width: 0; }
+  .main { flex: 1; min-width: 0; height: 100vh; overflow-y: auto; }
   .page { max-width: 980px; margin: 0 auto; padding: 40px 32px 90px; }
   .page-head { margin-bottom: 26px; }
   .page-eyebrow { font-size: 14px; color: var(--muted); margin-bottom: 6px; font-family: ui-monospace, "SF Mono", monospace; }
@@ -142,6 +145,17 @@
     background: transparent; color: var(--ink); padding: 0 2px; width: 260px; max-width: 60vw;
   }
   .title-input:focus { outline: none; }
+
+  /* Item editor's own title -- always an input (not click-to-reveal like
+     .title-input above), since naming the item is a primary required action,
+     not an optional rename. Subtle border at rest signals "editable" without
+     looking like a static heading; brightens to accent on focus. */
+  .item-title-input {
+    font-size: 28px; font-weight: 700; font-family: inherit; border: none; border-bottom: 2px solid var(--line);
+    background: transparent; color: var(--ink); padding: 4px 2px; width: 100%; max-width: 480px;
+  }
+  .item-title-input:focus { outline: none; border-bottom-color: var(--accent); }
+  .item-title-input::placeholder { color: var(--faint); font-weight: 700; }
 
   .view { display: none; }
   .view.active { display: block; }
@@ -194,8 +208,37 @@
   input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
   textarea { resize: vertical; min-height: 110px; line-height: 1.7; }
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-  .url-hint { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--faint); margin-top: 8px; }
-  .url-hint code { background: var(--panel-2); padding: 2px 7px; border-radius: 5px; }
+
+  /* ---------- month picker (replaces native input[type=month], whose
+     calendar-icon/OS-native popup can't be styled to match this app) ---------- */
+  .month-picker { position: relative; width: 240px; max-width: 100%; }
+  .month-picker-trigger {
+    display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+    font-family: inherit; font-size: 16px; color: var(--faint);
+    background: var(--panel); border: 1.5px solid var(--line); border-radius: var(--radius-sm);
+    padding: 13px 14px; cursor: pointer;
+  }
+  .month-picker.has-value .month-picker-trigger { color: var(--ink); }
+  .month-picker-trigger:hover { border-color: var(--ink); }
+  .month-picker-trigger:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .month-picker-trigger span { flex: 1; }
+  .month-picker-icon, .month-picker-chevron { width: 15px; height: 15px; flex-shrink: 0; color: var(--faint); }
+  .month-picker-popover {
+    position: absolute; top: calc(100% + 8px); left: 0; z-index: 20; width: 260px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 16px;
+  }
+  .month-picker-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .month-picker-header span { font-size: 15.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .month-picker-nav-btn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .month-picker-nav-btn:hover { border-color: var(--ink); color: var(--ink); }
+  .month-picker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .month-picker-cell {
+    padding: 9px 0; border-radius: var(--radius-sm); border: none; background: none;
+    color: var(--ink); font-size: 14.5px; font-weight: 600; cursor: pointer; text-align: center;
+  }
+  .month-picker-cell:hover { background: var(--panel-2); }
+  .month-picker-cell.selected { background: var(--accent); color: var(--accent-ink); }
 
   /* ---------- toggle row ---------- */
   .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 18px; background: var(--panel-2); border-radius: var(--radius-sm); }
@@ -216,12 +259,21 @@
   .site-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
   .site-card { border: 1px solid var(--ink); background: var(--panel); position: relative; }
   .site-card-photo { aspect-ratio: 4/3; position: relative; overflow: hidden; background: repeating-linear-gradient(135deg, var(--panel-2) 0px, var(--panel-2) 14px, var(--panel) 14px, var(--panel) 28px); }
-  .site-card-edit { position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; border-radius: 50%; background: var(--paper); border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--shadow); }
+  .site-card-edit { position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; border-radius: 50%; background: var(--paper); border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--shadow); z-index: 2; }
   .site-card-edit:hover { background: var(--accent); border-color: var(--accent); }
   .site-card-body { padding: 20px 22px; border-top: 1px solid var(--ink); display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
   .site-card-title { font-family: Georgia, "Noto Serif KR", "Times New Roman", serif; font-size: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .site-card-meta { font-size: 11px; letter-spacing: 0.03em; color: var(--muted); font-family: ui-monospace, "SF Mono", monospace; flex-shrink: 0; }
-  .site-card-draft-flag { position: absolute; top: 10px; left: 10px; background: var(--panel); border: 1px solid var(--faint); color: var(--muted); font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 100px; z-index: 2; }
+  /* Replaces the old static "비공개" flag -- always shown now (not just
+     when unpublished), and clickable: this is the fast path to flip a
+     board item's public/draft state without opening the full editor. */
+  .site-card-toggle {
+    position: absolute; top: 10px; left: 10px; z-index: 2;
+    border: 1px solid var(--faint); background: var(--panel); color: var(--muted);
+    font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 100px; cursor: pointer;
+  }
+  .site-card-toggle:hover { border-color: var(--ink); color: var(--ink); }
+  .site-card-toggle.is-published { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
 
   /* ---------- editor ---------- */
   .editor-header { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
@@ -230,10 +282,20 @@
 
   .photo-manager-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
   .photo-tile { position: relative; aspect-ratio: 4/3; border: 1.5px solid var(--line); border-radius: var(--radius-sm); background: repeating-linear-gradient(135deg, var(--panel-2) 0px, var(--panel-2) 10px, var(--panel) 10px, var(--panel) 20px); overflow: hidden; display: flex; flex-direction: column; }
-  .photo-tile.is-primary { border-color: var(--accent); border-width: 2px; }
-  .photo-tile-badge { position: absolute; top: 8px; left: 8px; background: var(--accent); color: var(--accent-ink); font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 100px; z-index: 1; }
+  .photo-tile.is-active { border-color: var(--accent); border-width: 2px; }
+  .photo-tile-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+  /* Badge doubles as the control -- every tile gets one, inactive by
+     default; clicking it designates that photo as the project thumbnail
+     (see setPrimaryPhoto). Not a plain label anymore, so it's a <button>. */
+  .photo-tile-badge {
+    position: absolute; top: 8px; left: 8px; z-index: 2;
+    border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+    font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 100px; cursor: pointer;
+  }
+  .photo-tile-badge:hover { border-color: var(--ink); color: var(--ink); }
+  .photo-tile-badge.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   .photo-tile-order { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; z-index: 1; }
-  .photo-tile-actions { margin-top: auto; display: flex; gap: 6px; padding: 6px; justify-content: flex-end; }
+  .photo-tile-actions { position: relative; z-index: 1; margin-top: auto; display: flex; gap: 6px; padding: 6px; justify-content: flex-end; }
   .photo-tile-mini-btn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; flex-shrink: 0; }
   .photo-tile-mini-btn:hover { border-color: var(--ink); }
   .photo-tile-mini-btn:disabled { opacity: 0.35; cursor: not-allowed; }
@@ -311,8 +373,12 @@
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   @media (max-width: 860px) {
-    .shell { flex-direction: column; }
-    .sidebar { width: 100%; min-width: 0; height: auto; position: relative; flex-direction: row; flex-wrap: wrap; align-items: center; }
+    /* Below this width the sidebar becomes a wrapping top bar, so the
+       fixed-menu/scrolling-content split pane no longer makes sense --
+       fall back to one normal, whole-page scroll. */
+    .shell { flex-direction: column; height: auto; overflow: visible; }
+    .sidebar { width: 100%; min-width: 0; height: auto; overflow: visible; flex-direction: row; flex-wrap: wrap; align-items: center; }
+    .main { height: auto; overflow: visible; }
     .sidebar-brand { border-bottom: none; margin-bottom: 0; padding: 4px; }
     .nav-list { flex-direction: row; margin-top: 0; flex-wrap: wrap; }
     .sidebar-foot { margin-top: 0; padding-top: 0; border-top: none; }
@@ -342,7 +408,7 @@
         <div class="user-avatar">A</div>
         <div class="user-email">admin@dev.local</div>
       </div>
-      <button class="nav-item" data-nav="home" style="opacity:.8; margin-top:2px;">
+      <button class="nav-item" style="opacity:.8; margin-top:2px;" onclick="handleLogoutClick()">
         <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M6.4 2.4H3.6a1 1 0 0 0-1 1v9.2a1 1 0 0 0 1 1h2.8M10.4 11.2l3.2-3.2-3.2-3.2M13.4 8H6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span class="nav-label">로그아웃</span>
       </button>
@@ -426,35 +492,34 @@
           <button class="back-btn" data-nav="projects">← <span id="back-to-projects-label">사진</span> 목록으로</button>
         </div>
         <div class="page-head">
-          <h1 class="page-title" id="project-editor-title">Nord Audio</h1>
+          <input class="item-title-input" id="project-editor-title" type="text" placeholder="새 사진 프로젝트" />
         </div>
 
         <div class="section-card">
-          <h2>사진</h2>
-          <div class="section-desc">별 표시 ⭐가 목록에서 보이는 대표 사진이에요. 사진을 추가하거나 지울 수 있어요.</div>
-          <div class="photo-manager-grid" id="project-photo-grid"></div>
-        </div>
-
-        <div class="section-card">
-          <h2>기본 정보</h2>
-          <div class="field-row">
-            <div class="field">
-              <label>프로젝트 이름</label>
-              <input type="text" id="pe-name" value="Nord Audio" />
-            </div>
-            <div class="field">
-              <label>날짜</label>
-              <input type="month" id="pe-date" />
+          <h2>날짜</h2>
+          <div class="field" style="margin-bottom:0;">
+            <div class="month-picker" id="pe-date-picker">
+              <button type="button" class="month-picker-trigger" id="pe-date-trigger">
+                <svg class="month-picker-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="3.2" width="12" height="10.8" rx="1.6" stroke="currentColor" stroke-width="1.3"/><path d="M2 6.4h12M5.2 1.6v2.4M10.8 1.6v2.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                <span id="pe-date-label">날짜 선택</span>
+                <svg class="month-picker-chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="month-picker-popover" id="pe-date-popover" hidden>
+                <div class="month-picker-header">
+                  <button type="button" class="month-picker-nav-btn" data-picker="pe" data-dir="-1">‹</button>
+                  <span id="pe-date-year">2025</span>
+                  <button type="button" class="month-picker-nav-btn" data-picker="pe" data-dir="1">›</button>
+                </div>
+                <div class="month-picker-grid" id="pe-date-grid"></div>
+              </div>
             </div>
           </div>
-          <div class="url-hint">🔗 주소: <code id="pe-url-hint">/photo/nord-audio</code> (이름을 바꾸면 자동으로 바뀌어요)</div>
         </div>
 
         <div class="section-card">
           <div class="toggle-row">
             <div class="toggle-row-text">
-              <strong>INDEX 탭</strong>
-              <span>켜면 상세 페이지에 소개 글을 위한 INDEX 탭이 추가돼요.</span>
+              <strong>설명 추가</strong>
             </div>
             <button class="switch" id="pe-index-enabled" onclick="toggleIndexTab('pe')"></button>
           </div>
@@ -477,10 +542,14 @@
         </div>
 
         <div class="section-card">
+          <h2>사진</h2>
+          <div class="photo-manager-grid" id="project-photo-grid"></div>
+        </div>
+
+        <div class="section-card">
           <div class="toggle-row">
             <div class="toggle-row-text">
-              <strong>🌐 내 사이트에 공개하기</strong>
-              <span>켜두면 방문자가 바로 볼 수 있어요. 꺼두면 나만 볼 수 있는 임시 저장 상태예요.</span>
+              <strong>게시물 공개</strong>
             </div>
             <button class="switch on" id="pe-published"></button>
           </div>
@@ -520,35 +589,34 @@
           <button class="back-btn" data-nav="exhibitions">← <span id="back-to-exhibitions-label">작업</span> 목록으로</button>
         </div>
         <div class="page-head">
-          <h1 class="page-title" id="exhibition-editor-title">Surface Tension</h1>
+          <input class="item-title-input" id="exhibition-editor-title" type="text" placeholder="새 작업" />
         </div>
 
         <div class="section-card">
-          <h2>사진</h2>
-          <div class="section-desc">별 표시 ⭐가 목록에서 보이는 대표 사진이에요.</div>
-          <div class="photo-manager-grid" id="exhibition-photo-grid"></div>
-        </div>
-
-        <div class="section-card">
-          <h2>기본 정보</h2>
-          <div class="field-row">
-            <div class="field">
-              <label>작업 이름</label>
-              <input type="text" id="ee-name" value="Surface Tension" />
-            </div>
-            <div class="field">
-              <label>날짜</label>
-              <input type="month" id="ee-date" />
+          <h2>날짜</h2>
+          <div class="field" style="margin-bottom:0;">
+            <div class="month-picker" id="ee-date-picker">
+              <button type="button" class="month-picker-trigger" id="ee-date-trigger">
+                <svg class="month-picker-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="3.2" width="12" height="10.8" rx="1.6" stroke="currentColor" stroke-width="1.3"/><path d="M2 6.4h12M5.2 1.6v2.4M10.8 1.6v2.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                <span id="ee-date-label">날짜 선택</span>
+                <svg class="month-picker-chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="month-picker-popover" id="ee-date-popover" hidden>
+                <div class="month-picker-header">
+                  <button type="button" class="month-picker-nav-btn" data-picker="ee" data-dir="-1">‹</button>
+                  <span id="ee-date-year">2025</span>
+                  <button type="button" class="month-picker-nav-btn" data-picker="ee" data-dir="1">›</button>
+                </div>
+                <div class="month-picker-grid" id="ee-date-grid"></div>
+              </div>
             </div>
           </div>
-          <div class="url-hint">🔗 주소: <code id="ee-url-hint">/work/surface-tension</code></div>
         </div>
 
         <div class="section-card">
           <div class="toggle-row">
             <div class="toggle-row-text">
-              <strong>INDEX 탭</strong>
-              <span>켜면 상세 페이지에 소개 글을 위한 INDEX 탭이 추가돼요.</span>
+              <strong>설명 추가</strong>
             </div>
             <button class="switch" id="ee-index-enabled" onclick="toggleIndexTab('ee')"></button>
           </div>
@@ -571,10 +639,14 @@
         </div>
 
         <div class="section-card">
+          <h2>사진</h2>
+          <div class="photo-manager-grid" id="exhibition-photo-grid"></div>
+        </div>
+
+        <div class="section-card">
           <div class="toggle-row">
             <div class="toggle-row-text">
-              <strong>🌐 내 사이트에 공개하기</strong>
-              <span>켜두면 방문자가 바로 볼 수 있어요.</span>
+              <strong>게시물 공개</strong>
             </div>
             <button class="switch on" id="ee-published"></button>
           </div>
@@ -695,6 +767,7 @@
 </div>
 
 <div class="toast" id="toast">✓ 저장되었습니다</div>
+<input type="file" id="photo-upload-input" accept="image/*" multiple hidden />
 
 <script>
   // Two fixed gallery-type boards (photo/work) whose *display name* is
@@ -774,7 +847,9 @@
     document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
     document.getElementById("view-" + id).classList.add("active");
     document.querySelectorAll(".nav-item[data-nav]").forEach(n => n.classList.toggle("active", n.dataset.nav === id));
-    window.scrollTo(0, 0);
+    // .main is the scroll container now (see .shell/.sidebar/.main layout),
+    // not the window -- resetting window scroll would no-op.
+    document.querySelector(".main").scrollTo(0, 0);
   }
 
   function renderSidebarNav() {
@@ -791,6 +866,15 @@
     document.querySelectorAll("[data-nav]").forEach(el => el.addEventListener("click", () => showView(el.dataset.nav)));
     showView(document.querySelector(".view.active")?.id.replace("view-", "") || "home");
   }
+
+  // Deliberately outside the [data-nav] system above -- it's not a view to
+  // switch to, it's a separate action. (Previously mis-tagged
+  // data-nav="home", which both made it highlight orange whenever Home was
+  // active and made clicking it navigate to Home instead of logging out.)
+  function handleLogoutClick() {
+    toast("로그아웃되었어요 (실제로는 로그인 화면으로 이동해요)");
+  }
+  window.handleLogoutClick = handleLogoutClick;
 
   function refreshBoardLabels() {
     document.getElementById("projects-title-display").textContent = boardTitles.projects;
@@ -894,7 +978,7 @@
     const href = kind === "project" ? "openProjectEditor" : "openExhibitionEditor";
     return `
       <div class="site-card">
-        ${!item.published ? `<div class="site-card-draft-flag">비공개</div>` : ""}
+        <button class="site-card-toggle ${item.published ? "is-published" : ""}" onclick="toggleItemPublished('${kind}', '${item.id}')" title="${item.published ? "비공개로 전환" : "공개로 전환"}">${item.published ? "공개" : "비공개"}</button>
         <button class="site-card-edit" onclick="${href}('${item.id}')" title="수정하기">✏️</button>
         <div class="site-card-photo"></div>
         <div class="site-card-body">
@@ -904,6 +988,19 @@
       </div>
     `;
   }
+  // Fast path to flip published/draft straight from the grid, without
+  // opening the full item editor (which has its own "게시물 공개" switch --
+  // both write the same item.published field, so they can never disagree).
+  function toggleItemPublished(kind, id) {
+    const list = kind === "project" ? projects : exhibitions;
+    const item = list.find(x => x.id === id);
+    if (!item) return;
+    item.published = !item.published;
+    if (kind === "project") renderProjects();
+    else renderExhibitions();
+    toast(item.published ? `"${item.name}" 공개로 전환했어요` : `"${item.name}" 비공개로 전환했어요`);
+  }
+  window.toggleItemPublished = toggleItemPublished;
   function renderProjects() {
     document.getElementById("projects-grid").innerHTML = projects.map(p => siteCard(p, "project")).join("");
   }
@@ -914,13 +1011,20 @@
   // Array-backed (not just N placeholder tiles) so reorder/remove/
   // set-primary are real state changes. No per-photo label/caption --
   // removed per direction: photos are just photos, shared identically by
-  // the public site's GRID VIEW and FULLSCREEN VIEW tabs. The first photo
-  // (⭐) doubles as the item's list-card thumbnail -- no separate thumbnail
+  // the public site's GRID VIEW and FULLSCREEN VIEW tabs. Whichever photo
+  // is marked primary (via its "대표" badge, independent of display order)
+  // doubles as the item's list-card thumbnail -- no separate thumbnail
   // upload field. Keyed by container id since two editors (project/
   // exhibition) share this one function.
+  // Each photo: { url, primary }. `url` is a real local preview
+  // (URL.createObjectURL) once picked via the file input below; existing
+  // items opened for edit start as placeholder slots (url: null -- no real
+  // backend to load actual photos from in this mockup). `primary` starts
+  // false on every photo, for every item -- nothing is auto-designated as
+  // the thumbnail; the badge button on each tile is how you choose one.
   const photoGridState = {};
   function placeholderPhotos(count) {
-    return Array.from({ length: count }, () => ({}));
+    return Array.from({ length: count }, () => ({ url: null, primary: false }));
   }
   function setPhotoGridState(containerId, photos) {
     photoGridState[containerId] = photos;
@@ -929,23 +1033,20 @@
   function photoManagerGrid(containerId) {
     const el = document.getElementById(containerId);
     const photos = photoGridState[containerId] || [];
-    let html = photos.map((photo, idx) => {
-      const isPrimary = idx === 0;
-      return `
-        <div class="photo-tile ${isPrimary ? "is-primary" : ""}">
-          ${isPrimary ? `<div class="photo-tile-badge">⭐ 썸네일</div>` : ""}
+    let html = photos.map((photo, idx) => `
+        <div class="photo-tile ${photo.primary ? "is-active" : ""}">
+          ${photo.url ? `<img class="photo-tile-img" src="${photo.url}" alt="" />` : ""}
+          <button class="photo-tile-badge ${photo.primary ? "active" : ""}" onclick="setPrimaryPhoto('${containerId}', ${idx})" title="대표 사진으로 지정">대표</button>
           <div class="photo-tile-order">
             <button class="photo-tile-mini-btn" ${idx === 0 ? "disabled" : ""} onclick="movePhoto('${containerId}', ${idx}, -1)" title="앞으로">◀</button>
             <button class="photo-tile-mini-btn" ${idx === photos.length - 1 ? "disabled" : ""} onclick="movePhoto('${containerId}', ${idx}, 1)" title="뒤로">▶</button>
           </div>
           <div class="photo-tile-actions">
-            ${!isPrimary ? `<button class="photo-tile-mini-btn" onclick="setPrimaryPhoto('${containerId}', ${idx})" title="썸네일로 지정">⭐</button>` : ""}
             <button class="photo-tile-mini-btn remove" onclick="removePhoto('${containerId}', ${idx})" title="삭제">✕</button>
           </div>
         </div>
-      `;
-    }).join("");
-    html += `<button class="photo-tile-add" onclick="addPhoto('${containerId}')"><div class="plus-circle">＋</div><span style="font-size:13px;">사진 추가</span></button>`;
+      `).join("");
+    html += `<button class="photo-tile-add" onclick="triggerPhotoUpload('${containerId}')"><div class="plus-circle">＋</div><span style="font-size:13px;">사진 추가</span></button>`;
     el.innerHTML = html;
   }
   function movePhoto(containerId, idx, dir) {
@@ -955,57 +1056,71 @@
     [photos[idx], photos[j]] = [photos[j], photos[idx]];
     photoManagerGrid(containerId);
   }
+  // Order (movePhoto) and "which one is the thumbnail" (this) are
+  // independent now -- picking a new primary no longer reshuffles the grid,
+  // it just moves which single badge is active. Only one photo can be
+  // primary per item at a time.
   function setPrimaryPhoto(containerId, idx) {
     const photos = photoGridState[containerId];
-    const [item] = photos.splice(idx, 1);
-    photos.unshift(item);
+    photos.forEach((p, i) => { p.primary = i === idx; });
     photoManagerGrid(containerId);
-    toast("썸네일 사진으로 지정했어요");
+    toast("대표 사진으로 지정했어요");
   }
   function removePhoto(containerId, idx) {
-    photoGridState[containerId].splice(idx, 1);
+    const [removed] = photoGridState[containerId].splice(idx, 1);
+    if (removed && removed.url) URL.revokeObjectURL(removed.url);
     photoManagerGrid(containerId);
   }
-  function addPhoto(containerId) {
-    const photos = photoGridState[containerId];
-    photos.push({});
-    photoManagerGrid(containerId);
-    toast("사진을 추가했어요 (실제로는 업로드 창이 열려요)");
+  // "사진 추가" opens the OS/device's real file picker (hidden input,
+  // triggered by .click() -- the only way to open one from a styled
+  // button) instead of a fake toast. Selected files get a local preview
+  // via URL.createObjectURL; there's no backend in this mockup to actually
+  // upload to.
+  let photoUploadTargetContainer = null;
+  function triggerPhotoUpload(containerId) {
+    photoUploadTargetContainer = containerId;
+    document.getElementById("photo-upload-input").click();
   }
+  document.getElementById("photo-upload-input").addEventListener("change", e => {
+    const files = Array.from(e.target.files || []);
+    const containerId = photoUploadTargetContainer;
+    e.target.value = ""; // reset so selecting the same file again still fires "change"
+    if (!files.length || !containerId) return;
+    const photos = photoGridState[containerId] || (photoGridState[containerId] = []);
+    files.forEach(file => photos.push({ url: URL.createObjectURL(file), primary: false }));
+    photoManagerGrid(containerId);
+    toast(files.length > 1 ? `사진 ${files.length}장을 추가했어요` : "사진을 추가했어요");
+  });
   window.movePhoto = movePhoto;
   window.setPrimaryPhoto = setPrimaryPhoto;
   window.removePhoto = removePhoto;
-  window.addPhoto = addPhoto;
+  window.triggerPhotoUpload = triggerPhotoUpload;
 
   let peIsNew = false;
   let eeIsNew = false;
   function openProjectEditor(id) {
     peIsNew = id === "new";
     const p = peIsNew ? { name: "", dateValue: "", published: false, photos: 0, indexEnabled: false, indexContent: "" } : projects.find(x => x.id === id);
-    document.getElementById("project-editor-title").textContent = peIsNew ? "새 사진 프로젝트" : p.name;
-    document.getElementById("pe-name").value = p.name;
-    document.getElementById("pe-date").value = p.dateValue;
+    document.getElementById("project-editor-title").value = p.name;
+    setMonthPickerValue("pe", p.dateValue);
     document.getElementById("pe-published").classList.toggle("on", p.published);
     document.getElementById("delete-project").style.display = peIsNew ? "none" : "inline-flex";
-    document.getElementById("pe-url-hint").textContent = `/${boardPaths.projects}/${p.slug || "..."}`;
     setIndexTabState("pe", p.indexEnabled, p.indexContent);
     setPhotoGridState("project-photo-grid", placeholderPhotos(p.photos));
     showView("project-editor");
-    if (peIsNew) document.getElementById("pe-name").focus();
+    if (peIsNew) document.getElementById("project-editor-title").focus();
   }
   function openExhibitionEditor(id) {
     eeIsNew = id === "new";
     const x = eeIsNew ? { name: "", dateValue: "", published: false, photos: 0, indexEnabled: false, indexContent: "" } : exhibitions.find(v => v.id === id);
-    document.getElementById("exhibition-editor-title").textContent = eeIsNew ? "새 작업" : x.name;
-    document.getElementById("ee-name").value = x.name;
-    document.getElementById("ee-date").value = x.dateValue;
+    document.getElementById("exhibition-editor-title").value = x.name;
+    setMonthPickerValue("ee", x.dateValue);
     document.getElementById("ee-published").classList.toggle("on", x.published);
     document.getElementById("delete-exhibition").style.display = eeIsNew ? "none" : "inline-flex";
-    document.getElementById("ee-url-hint").textContent = `/${boardPaths.exhibitions}/${x.slug || "..."}`;
     setIndexTabState("ee", x.indexEnabled, x.indexContent);
     setPhotoGridState("exhibition-photo-grid", placeholderPhotos(x.photos));
     showView("exhibition-editor");
-    if (eeIsNew) document.getElementById("ee-name").focus();
+    if (eeIsNew) document.getElementById("exhibition-editor-title").focus();
   }
 
   // Shared INDEX-tab toggle + rich-text section, used identically by both
@@ -1044,39 +1159,88 @@
         .replace(/-+/g, "-") || "untitled"
     );
   }
-  // Single month value ("YYYY-MM" from a native month picker), never a
-  // free-typed range -- keeps the displayed format identical everywhere.
+  // Single month value ("YYYY-MM"), never a free-typed range -- keeps the
+  // displayed format identical everywhere.
   const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   function formatMonth(value) {
     if (!value) return "";
     const [y, m] = value.split("-");
     return `${MONTH_NAMES[+m - 1]} ${y}`;
   }
+
+  // Custom month picker (replaces native input[type=month] -- its calendar
+  // icon/popup is rendered by the OS/browser and can't be restyled to match
+  // this app, see the .month-picker CSS comment). One state object + one set
+  // of functions shared by both editors, keyed by prefix ("pe"/"ee") like
+  // the photo grid and INDEX tab above.
+  const MONTH_NAMES_KO = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
+  const monthPickerState = {};
+  function formatMonthKorean(value) {
+    if (!value) return "날짜 선택";
+    const [y, m] = value.split("-");
+    return `${y}년 ${+m}월`;
+  }
+  function setMonthPickerValue(prefix, value) {
+    monthPickerState[prefix] = monthPickerState[prefix] || {};
+    monthPickerState[prefix].value = value || "";
+    document.getElementById(`${prefix}-date-label`).textContent = formatMonthKorean(value);
+    document.getElementById(`${prefix}-date-picker`).classList.toggle("has-value", !!value);
+    closeAllMonthPickers();
+  }
+  function getMonthPickerValue(prefix) {
+    return (monthPickerState[prefix] && monthPickerState[prefix].value) || "";
+  }
+  function closeAllMonthPickers() {
+    document.querySelectorAll(".month-picker-popover").forEach(p => { p.hidden = true; });
+  }
+  function renderMonthGrid(prefix) {
+    const state = monthPickerState[prefix];
+    document.getElementById(`${prefix}-date-year`).textContent = state.viewYear;
+    const grid = document.getElementById(`${prefix}-date-grid`);
+    grid.innerHTML = MONTH_NAMES_KO.map((label, i) => {
+      const value = `${state.viewYear}-${String(i + 1).padStart(2, "0")}`;
+      return `<button type="button" class="month-picker-cell ${state.value === value ? "selected" : ""}" data-value="${value}">${label}</button>`;
+    }).join("");
+    grid.querySelectorAll("[data-value]").forEach(cell => {
+      cell.addEventListener("click", () => setMonthPickerValue(prefix, cell.dataset.value));
+    });
+  }
+  function initMonthPicker(prefix) {
+    monthPickerState[prefix] = { value: "", viewYear: new Date().getFullYear() };
+    document.getElementById(`${prefix}-date-trigger`).addEventListener("click", e => {
+      e.stopPropagation();
+      const popover = document.getElementById(`${prefix}-date-popover`);
+      const willOpen = popover.hidden;
+      closeAllMonthPickers();
+      if (willOpen) {
+        const state = monthPickerState[prefix];
+        state.viewYear = state.value ? +state.value.split("-")[0] : new Date().getFullYear();
+        renderMonthGrid(prefix);
+        popover.hidden = false;
+      }
+    });
+    document.querySelectorAll(`[data-picker="${prefix}"]`).forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        monthPickerState[prefix].viewYear += Number(btn.dataset.dir);
+        renderMonthGrid(prefix);
+      });
+    });
+  }
+  document.addEventListener("click", () => closeAllMonthPickers());
+  initMonthPicker("pe");
+  initMonthPicker("ee");
+
   let itemIdCounter = 100;
 
   document.getElementById("pe-published").addEventListener("click", e => e.currentTarget.classList.toggle("on"));
   document.getElementById("ee-published").addEventListener("click", e => e.currentTarget.classList.toggle("on"));
 
-  // While creating a new item, both the page title (starts as "새 사진
-  // 프로젝트" placeholder text) and the URL preview update live as the
-  // name is typed, instead of staying generic until the first save.
-  document.getElementById("pe-name").addEventListener("input", e => {
-    if (!peIsNew) return;
-    const name = e.target.value.trim();
-    document.getElementById("project-editor-title").textContent = name || "새 사진 프로젝트";
-    document.getElementById("pe-url-hint").textContent = `/${boardPaths.projects}/${name ? slugify(name) : "..."}`;
-  });
-  document.getElementById("ee-name").addEventListener("input", e => {
-    if (!eeIsNew) return;
-    const name = e.target.value.trim();
-    document.getElementById("exhibition-editor-title").textContent = name || "새 작업";
-    document.getElementById("ee-url-hint").textContent = `/${boardPaths.exhibitions}/${name ? slugify(name) : "..."}`;
-  });
   document.getElementById("save-project").addEventListener("click", () => {
-    const name = document.getElementById("pe-name").value.trim();
+    const name = document.getElementById("project-editor-title").value.trim();
     if (!name) {
       toast("이름을 입력해주세요.", true);
-      document.getElementById("pe-name").focus();
+      document.getElementById("project-editor-title").focus();
       return;
     }
     if (peIsNew) {
@@ -1084,7 +1248,7 @@
         id: "new-" + itemIdCounter++,
         name,
         slug: slugify(name),
-        dateValue: document.getElementById("pe-date").value,
+        dateValue: getMonthPickerValue("pe"),
         published: document.getElementById("pe-published").classList.contains("on"),
         photos: (photoGridState["project-photo-grid"] || []).length,
         indexEnabled: document.getElementById("pe-index-enabled").classList.contains("on"),
@@ -1096,10 +1260,10 @@
     showView("projects");
   });
   document.getElementById("save-exhibition").addEventListener("click", () => {
-    const name = document.getElementById("ee-name").value.trim();
+    const name = document.getElementById("exhibition-editor-title").value.trim();
     if (!name) {
       toast("이름을 입력해주세요.", true);
-      document.getElementById("ee-name").focus();
+      document.getElementById("exhibition-editor-title").focus();
       return;
     }
     if (eeIsNew) {
@@ -1107,7 +1271,7 @@
         id: "new-" + itemIdCounter++,
         name,
         slug: slugify(name),
-        dateValue: document.getElementById("ee-date").value,
+        dateValue: getMonthPickerValue("ee"),
         published: document.getElementById("ee-published").classList.contains("on"),
         photos: (photoGridState["exhibition-photo-grid"] || []).length,
         indexEnabled: document.getElementById("ee-index-enabled").classList.contains("on"),

@@ -63,6 +63,18 @@ This is the phase that closes two loops left open in Phase 1:
 - `next/image` + R2: connect a custom domain to the R2 bucket
   (`R2_PUBLIC_HOSTNAME`), allowlist it in `next.config.ts`
   `images.remotePatterns`.
+- **Must-check when porting `design/admin-mockup.html`'s editor screens to
+  real code**: the mockup's save handlers only ever push a *new* row —
+  editing an *existing* Project/Exhibition and hitting "저장하기" doesn't
+  persist any field (name, date, published, INDEX content, photos) back to
+  the mockup's in-memory array, it just toasts and navigates away. That's
+  an acceptable mockup shortcut (per the user, 2026-07-15: mockups don't
+  need fully correct behavior), but the real Server Action **must** do a
+  proper `update` for existing rows, not only `create` for new ones —
+  verify this explicitly with a real edit-and-reload check before calling
+  the CRUD screens done, since a mockup that silently "worked" by only
+  ever hitting the create path is exactly the kind of gap that's easy to
+  carry into real code unnoticed.
 
 ## Phase 5 — Go live as tenant #1
 
