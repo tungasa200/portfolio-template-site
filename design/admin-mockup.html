@@ -326,9 +326,9 @@
   /* ---------- reorder list ---------- */
   .reorder-list { display: flex; flex-direction: column; gap: 10px; }
   .reorder-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: var(--panel-2); border-radius: var(--radius-sm); }
-  .reorder-arrows { display: flex; flex-direction: column; gap: 2px; }
-  .arrow-btn { width: 26px; height: 22px; border: 1px solid var(--line); background: var(--panel); border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 12px; }
-  .arrow-btn:hover { border-color: var(--ink); color: var(--ink); }
+  .reorder-row.drag-over { outline: 2px dashed var(--accent); outline-offset: -2px; }
+  .reorder-drag-handle { width: 26px; height: 26px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--faint); font-size: 16px; cursor: grab; }
+  .reorder-drag-handle:active { cursor: grabbing; }
   .reorder-main { flex: 1; min-width: 0; }
   .reorder-main strong { font-size: 15.5px; display: block; }
   .reorder-main span { font-size: 13.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
@@ -375,7 +375,12 @@
   .msg-card-date { font-size: 13px; color: var(--faint); flex-shrink: 0; }
   .msg-card-snippet { font-size: 14.5px; color: var(--muted); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .new-pill { display: inline-block; background: var(--accent); color: var(--accent-ink); font-size: 11.5px; font-weight: 800; padding: 2px 9px; border-radius: 100px; margin-left: 8px; vertical-align: middle; }
-  .msg-detail-top { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; border-bottom: 1px solid var(--line-soft); margin-bottom: 20px; }
+  /* padding-right clears the modal's absolutely-positioned close button
+     (top:18px/right:18px, 32px wide -- inset 18-50px from the panel edge,
+     unaffected by .modal-panel's own padding since absolute positioning is
+     relative to the padding box, not the content box) so the date column
+     doesn't sit underneath it. */
+  .msg-detail-top { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; padding-right: 32px; border-bottom: 1px solid var(--line-soft); margin-bottom: 20px; }
   .msg-detail-name { font-size: 20px; font-weight: 700; }
   .msg-detail-email { font-size: 14.5px; color: var(--muted); margin-top: 4px; }
   .msg-detail-date { font-size: 13.5px; color: var(--faint); }
@@ -397,8 +402,8 @@
      silently winning and showing the modal by default. Say it ourselves. */
   .modal-overlay[hidden] { display: none; }
   .modal-panel {
-    position: relative; width: 100%; max-width: 560px; max-height: 85vh; overflow-y: auto;
-    background: var(--panel); border-radius: var(--radius); box-shadow: var(--shadow); padding: 30px;
+    position: relative; width: 100%; max-width: 640px; max-height: 85vh; overflow-y: auto;
+    background: var(--panel); border-radius: var(--radius); box-shadow: var(--shadow); padding: 36px;
   }
   .modal-close-btn {
     position: absolute; top: 18px; right: 18px; width: 32px; height: 32px; border-radius: 50%;
@@ -766,7 +771,6 @@
         <div class="page-head">
           <div class="page-eyebrow">사이트 설정</div>
           <h1 class="page-title">내 사이트 정보</h1>
-          <p class="page-desc">사이트 이름, 연락처, 메뉴 같은 기본 정보를 관리해요.</p>
         </div>
 
         <div class="section-card">
@@ -777,23 +781,22 @@
               <input type="text" value="Dev Tenant Portfolio" />
             </div>
             <div class="field">
-              <label>사진작가 이름</label>
+              <label>이름</label>
               <input type="text" value="Dev Photographer" />
             </div>
             <div class="field">
-              <label>연락처 이메일</label>
+              <label>이메일</label>
               <input type="email" value="dev@example.com" />
             </div>
             <div class="field">
               <label>하단 문구 <span style="font-weight:400; color:var(--muted);">(선택)</span></label>
-              <input type="text" placeholder="© 2026 All rights reserved" />
+              <input type="text" placeholder="© 2026 ALL RIGHTS RESERVED" />
             </div>
           </div>
         </div>
 
         <div class="section-card">
-          <h2>메뉴 순서</h2>
-          <div class="section-desc">방문자가 왼쪽에서 보는 메뉴예요. 이름 자체를 바꾸려면 각 게시판 화면 안의 ✏️를 이용해주세요 — 여기서는 순서와 표시 여부만 관리해요.</div>
+          <h2>메뉴 순서 및 공개</h2>
           <div class="reorder-list" id="nav-list"></div>
         </div>
 
@@ -1471,22 +1474,52 @@
 
   function renderNavList() {
     document.getElementById("nav-list").innerHTML = navItemsData.map((n, i) => `
-      <div class="reorder-row">
-        <div class="reorder-arrows">
-          <button class="arrow-btn" ${i === 0 ? "disabled" : ""} data-nav-up="${i}">▲</button>
-          <button class="arrow-btn" ${i === navItemsData.length - 1 ? "disabled" : ""} data-nav-down="${i}">▼</button>
-        </div>
+      <div class="reorder-row" ondragover="handleNavDragOver(event, '${n.label}')" ondrop="handleNavDrop(event, '${n.label}')">
+        <div class="reorder-drag-handle" draggable="true" ondragstart="handleNavDragStart(event, '${n.label}')" ondragend="handleNavDragEnd()" title="드래그해서 순서 변경">⠿</div>
         <div class="reorder-main"><strong>${n.label}</strong><span>${n.target}</span></div>
         <button class="switch ${n.visible ? "on" : ""}" onclick="toggleNavVisible(${i})"></button>
       </div>
     `).join("");
-    document.querySelectorAll("[data-nav-up]").forEach(el => el.addEventListener("click", () => {
-      const i = +el.dataset.navUp; [navItemsData[i-1], navItemsData[i]] = [navItemsData[i], navItemsData[i-1]]; renderNavList();
-    }));
-    document.querySelectorAll("[data-nav-down]").forEach(el => el.addEventListener("click", () => {
-      const i = +el.dataset.navDown; [navItemsData[i+1], navItemsData[i]] = [navItemsData[i], navItemsData[i+1]]; renderNavList();
-    }));
   }
+  // Only the handle (not the whole row) is draggable=true, so grabbing the
+  // visibility switch never gets mistaken for a drag gesture -- dragover/
+  // drop still listen on the full row so dropping anywhere on it works.
+  let navDragState = null; // { draggedLabel }
+  function handleNavDragStart(e, label) {
+    navDragState = { draggedLabel: label };
+    e.dataTransfer.effectAllowed = "move";
+    // draggable="true" is on the small handle icon (see renderNavList's
+    // comment), so the browser's default drag image would just be that
+    // icon -- not enough to tell which row is actually being moved. Use
+    // the whole row as the drag image instead.
+    const row = e.currentTarget.closest(".reorder-row");
+    if (row) e.dataTransfer.setDragImage(row, 20, row.offsetHeight / 2);
+  }
+  function handleNavDragOver(e, label) {
+    if (!navDragState) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    document.querySelectorAll("#nav-list .reorder-row").forEach(r => r.classList.remove("drag-over"));
+    if (label !== navDragState.draggedLabel) e.currentTarget.classList.add("drag-over");
+  }
+  function handleNavDrop(e, label) {
+    e.preventDefault();
+    if (!navDragState || navDragState.draggedLabel === label) return;
+    const fromIndex = navItemsData.findIndex(n => n.label === navDragState.draggedLabel);
+    const toIndex = navItemsData.findIndex(n => n.label === label);
+    if (fromIndex === -1 || toIndex === -1) return;
+    const [moved] = navItemsData.splice(fromIndex, 1);
+    navItemsData.splice(toIndex, 0, moved);
+    renderNavList();
+  }
+  function handleNavDragEnd() {
+    navDragState = null;
+    document.querySelectorAll("#nav-list .reorder-row").forEach(r => r.classList.remove("drag-over"));
+  }
+  window.handleNavDragStart = handleNavDragStart;
+  window.handleNavDragOver = handleNavDragOver;
+  window.handleNavDrop = handleNavDrop;
+  window.handleNavDragEnd = handleNavDragEnd;
 
   // Quick on/off for each page, right from the dashboard -- reads/writes
   // the same navItemsData as Settings -> 메뉴 순서, applies instantly (no

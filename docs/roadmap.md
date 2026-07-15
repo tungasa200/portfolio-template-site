@@ -63,6 +63,12 @@ This is the phase that closes two loops left open in Phase 1:
 - `next/image` + R2: connect a custom domain to the R2 bucket
   (`R2_PUBLIC_HOSTNAME`), allowlist it in `next.config.ts`
   `images.remotePatterns`.
+- **SiteSettings save action must normalize empty strings to `null`**:
+  `src/components/site/Footer.tsx` already falls back to
+  `` © ${year} ALL RIGHTS RESERVED `` via `footerText ?? ...`, but `??`
+  only triggers on `null`/`undefined`, not `""` — if the admin form saves
+  an empty string when the field is left blank, the fallback silently
+  never fires. The Server Action must coerce `""` -> `null` before writing.
 - **Must-check when porting `design/admin-mockup.html`'s editor screens to
   real code**: the mockup's save handlers only ever push a *new* row —
   editing an *existing* Project/Exhibition and hitting "저장하기" doesn't
