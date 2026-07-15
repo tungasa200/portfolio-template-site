@@ -133,17 +133,22 @@ own already-correct behavior), and the `resolve-tenant.ts` RLS bug this
 surfaced — see [progress.md](./progress.md) for the full list and
 verification steps taken.
 
+**Done (2026-07-15)**: `design/admin-mockup.html` reworked to match —
+data-driven `boards` array (any count, operator-provisioned, no
+add/remove-board UI), generic board-list/item-editor views replacing the
+old duplicated Photo/Work pair, `kind`-conditional editor sections
+(GALLERY_SINGLE hides INDEX and caps photos at 1), `/board/{seq}` path
+display, and visual kind differentiation (sidebar icon, list-header badge,
+1:1 vs 4:3 grid ratio). Safe to build the real admin CRUD screens against
+this mockup now — see [conventions.md](./conventions.md) if that file
+covers mockup-to-real-code handoff notes, otherwise treat the mockup file
+itself as current.
+
 **Still open**:
 - **The admin-facing UI to actually create/configure boards per tenant.**
   Nothing real exists yet (Phase 4 admin CRUD hasn't started). `Board.seq`
   needs to be assigned by whatever provisions a tenant (today: `prisma/seed.ts`,
   written to double as the reference implementation for this).
-- **`design/admin-mockup.html` still assumes exactly 2 fixed boards
-  ("Photo"/"Work") and only one item shape (multi-photo + detail page)** —
-  it hasn't been updated for the new variable-count/two-kind model this
-  round introduced. Revisit the mockup before building the real admin CRUD
-  screens against it, since building real code from a stale mockup would
-  just reintroduce the fixed-2-board assumption this whole round removed.
 - Whether board count is derived from `Tenant.planTier` (reserved enum,
   currently just `FREE`) or is its own independent field the operator sets
   directly — not decided, decide when the provisioning flow is built.
