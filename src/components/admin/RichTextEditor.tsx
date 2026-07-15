@@ -2,8 +2,6 @@
 
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
-import Link from "@tiptap/extension-link";
 import { useState } from "react";
 
 interface RichTextEditorProps {
@@ -22,7 +20,11 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
   const [codeValue, setCodeValue] = useState(value);
 
   const editor = useEditor({
-    extensions: [StarterKit, Underline, Link.configure({ openOnClick: false })],
+    // Tiptap 3's StarterKit already bundles Link/Underline internally —
+    // adding them again as separate extensions (as Tiptap 2 required)
+    // triggered a "Duplicate extension names" console warning. Configure
+    // them through StarterKit's own `link`/`underline` sub-keys instead.
+    extensions: [StarterKit.configure({ link: { openOnClick: false } })],
     content: value,
     immediatelyRender: false,
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
