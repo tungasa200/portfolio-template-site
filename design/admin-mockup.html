@@ -275,6 +275,22 @@
   .site-card-toggle:hover { border-color: var(--ink); color: var(--ink); }
   .site-card-toggle.is-published { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
 
+  /* ---------- grid reorder mode ----------
+     Cards are only draggable while a board's reorder mode is on (see
+     toggleReorderMode) -- otherwise an accidental drag on a card you meant
+     to click (toggle/edit) could silently reshuffle the grid. While active,
+     the toggle/edit buttons are swapped out for a single drag handle so
+     there's nothing on the card BUT dragging to interact with. */
+  .site-card.is-draggable { cursor: grab; }
+  .site-card.is-draggable.is-dragging { opacity: 0.4; cursor: grabbing; }
+  .site-card.drag-over { outline: 2px dashed var(--accent); outline-offset: -2px; }
+  .site-card-drag-handle {
+    position: absolute; top: 10px; left: 10px; z-index: 2;
+    width: 32px; height: 32px; border-radius: 50%; background: var(--paper); border: 1px solid var(--ink);
+    display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--muted);
+    cursor: grab;
+  }
+
   /* ---------- editor ---------- */
   .editor-header { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
   .back-btn { display: flex; align-items: center; gap: 6px; border: none; background: none; color: var(--muted); font-size: 15px; font-weight: 600; cursor: pointer; padding: 6px 0; }
@@ -359,13 +375,37 @@
   .msg-card-date { font-size: 13px; color: var(--faint); flex-shrink: 0; }
   .msg-card-snippet { font-size: 14.5px; color: var(--muted); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .new-pill { display: inline-block; background: var(--accent); color: var(--accent-ink); font-size: 11.5px; font-weight: 800; padding: 2px 9px; border-radius: 100px; margin-left: 8px; vertical-align: middle; }
-  .msg-detail-card { border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; background: var(--panel); }
   .msg-detail-top { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; border-bottom: 1px solid var(--line-soft); margin-bottom: 20px; }
   .msg-detail-name { font-size: 20px; font-weight: 700; }
   .msg-detail-email { font-size: 14.5px; color: var(--muted); margin-top: 4px; }
   .msg-detail-date { font-size: 13.5px; color: var(--faint); }
   .msg-detail-body { font-size: 16px; line-height: 1.8; white-space: pre-wrap; margin-bottom: 24px; }
   .msg-detail-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* ---------- message detail modal ----------
+     A long, ever-growing message list and an inline detail pane below it
+     don't mix -- the detail would end up far from the list it's for. A
+     modal keeps "click a message -> read it" a single, contained action
+     regardless of how many messages have piled up. */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 100; padding: 24px;
+    background: oklch(0.1 0 0 / 0.5);
+    display: flex; align-items: center; justify-content: center;
+  }
+  /* Author styles always beat the UA stylesheet's [hidden]{display:none},
+     even at equal specificity -- our own `display: flex` above was
+     silently winning and showing the modal by default. Say it ourselves. */
+  .modal-overlay[hidden] { display: none; }
+  .modal-panel {
+    position: relative; width: 100%; max-width: 560px; max-height: 85vh; overflow-y: auto;
+    background: var(--panel); border-radius: var(--radius); box-shadow: var(--shadow); padding: 30px;
+  }
+  .modal-close-btn {
+    position: absolute; top: 18px; right: 18px; width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+    display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px;
+  }
+  .modal-close-btn:hover { border-color: var(--ink); color: var(--ink); }
   .empty-note { padding: 60px 20px; text-align: center; color: var(--muted); font-size: 15px; }
 
   /* ---------- toast ---------- */
@@ -479,7 +519,10 @@
               <button class="rename-btn" title="이 게시판 이름 바꾸기" onclick="startRename('projects')">✏️</button>
             </div>
           </div>
-          <button class="btn btn-primary" id="projects-add-btn" data-open-project="new">+ NEW</button>
+          <div style="display:flex; gap:10px;">
+            <button class="btn" id="projects-reorder-btn" onclick="toggleReorderMode('project')">순서 변경</button>
+            <button class="btn btn-primary" id="projects-add-btn" data-open-project="new">+ NEW</button>
+          </div>
         </div>
         <div class="site-grid" id="projects-grid"></div>
       </div>
@@ -576,7 +619,10 @@
               <button class="rename-btn" title="이 게시판 이름 바꾸기" onclick="startRename('exhibitions')">✏️</button>
             </div>
           </div>
-          <button class="btn btn-primary" id="exhibitions-add-btn" data-open-exhibition="new">+ NEW</button>
+          <div style="display:flex; gap:10px;">
+            <button class="btn" id="exhibitions-reorder-btn" onclick="toggleReorderMode('exhibition')">순서 변경</button>
+            <button class="btn btn-primary" id="exhibitions-add-btn" data-open-exhibition="new">+ NEW</button>
+          </div>
         </div>
         <div class="site-grid" id="exhibitions-grid"></div>
       </div>
@@ -711,7 +757,6 @@
           <p class="page-desc">방문자가 연락처 페이지에서 보낸 메시지예요.</p>
         </div>
         <div id="msg-list-wrap"></div>
-        <div id="msg-detail-wrap" style="margin-top:20px;"></div>
       </div>
     </section>
 
@@ -768,6 +813,23 @@
 
 <div class="toast" id="toast">✓ 저장되었습니다</div>
 <input type="file" id="photo-upload-input" accept="image/*" multiple hidden />
+
+<div class="modal-overlay" id="msg-modal-overlay" hidden onclick="handleMsgModalOverlayClick(event)">
+  <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="msg-modal-name">
+    <button class="modal-close-btn" onclick="closeMsgModal()" title="닫기">✕</button>
+    <div class="msg-detail-top">
+      <div>
+        <div class="msg-detail-name" id="msg-modal-name"></div>
+        <div class="msg-detail-email" id="msg-modal-email"></div>
+      </div>
+      <div class="msg-detail-date" id="msg-modal-date"></div>
+    </div>
+    <div class="msg-detail-body" id="msg-modal-body"></div>
+    <div class="msg-detail-actions">
+      <a class="btn btn-primary" id="msg-modal-reply" href="#">이메일로 답장하기</a>
+    </div>
+  </div>
+</div>
 
 <script>
   // Two fixed gallery-type boards (photo/work) whose *display name* is
@@ -976,10 +1038,21 @@
 
   function siteCard(item, kind) {
     const href = kind === "project" ? "openProjectEditor" : "openExhibitionEditor";
+    const dragOn = reorderMode[kind];
+    const dragAttrs = dragOn
+      ? `draggable="true"
+         ondragstart="handleCardDragStart(event, '${kind}', '${item.id}')"
+         ondragover="handleCardDragOver(event, '${kind}', '${item.id}')"
+         ondrop="handleCardDrop(event, '${kind}', '${item.id}')"
+         ondragend="handleCardDragEnd(event, '${kind}')"`
+      : "";
     return `
-      <div class="site-card">
-        <button class="site-card-toggle ${item.published ? "is-published" : ""}" onclick="toggleItemPublished('${kind}', '${item.id}')" title="${item.published ? "비공개로 전환" : "공개로 전환"}">${item.published ? "공개" : "비공개"}</button>
-        <button class="site-card-edit" onclick="${href}('${item.id}')" title="수정하기">✏️</button>
+      <div class="site-card ${dragOn ? "is-draggable" : ""}" ${dragAttrs}>
+        ${dragOn
+          ? `<div class="site-card-drag-handle" title="드래그해서 순서 변경">⠿</div>`
+          : `<button class="site-card-toggle ${item.published ? "is-published" : ""}" onclick="toggleItemPublished('${kind}', '${item.id}')" title="${item.published ? "비공개로 전환" : "공개로 전환"}">${item.published ? "공개" : "비공개"}</button>
+             <button class="site-card-edit" onclick="${href}('${item.id}')" title="수정하기">✏️</button>`
+        }
         <div class="site-card-photo"></div>
         <div class="site-card-body">
           <span class="site-card-title">${item.name}</span>
@@ -1000,6 +1073,60 @@
     else renderExhibitions();
     toast(item.published ? `"${item.name}" 공개로 전환했어요` : `"${item.name}" 비공개로 전환했어요`);
   }
+
+  // Reorder mode -- off by default for both boards. Cards are only
+  // draggable while their board's mode is on (see siteCard's `dragOn`),
+  // so a stray drag can never happen from normal browsing/clicking.
+  const reorderMode = { project: false, exhibition: false };
+  let dragState = null; // { kind, draggedId }
+
+  function toggleReorderMode(kind) {
+    reorderMode[kind] = !reorderMode[kind];
+    const btn = document.getElementById(kind === "project" ? "projects-reorder-btn" : "exhibitions-reorder-btn");
+    btn.textContent = reorderMode[kind] ? "완료" : "순서 변경";
+    btn.classList.toggle("btn-primary", reorderMode[kind]);
+    if (kind === "project") renderProjects();
+    else renderExhibitions();
+    if (!reorderMode[kind]) toast("순서가 저장됐어요");
+  }
+  window.toggleReorderMode = toggleReorderMode;
+
+  function gridElFor(kind) {
+    return document.getElementById(kind === "project" ? "projects-grid" : "exhibitions-grid");
+  }
+  function handleCardDragStart(e, kind, id) {
+    dragState = { kind, draggedId: id };
+    e.currentTarget.classList.add("is-dragging");
+    e.dataTransfer.effectAllowed = "move";
+  }
+  function handleCardDragOver(e, kind, id) {
+    if (!dragState || dragState.kind !== kind) return;
+    e.preventDefault(); // required for this element to be a valid drop target
+    e.dataTransfer.dropEffect = "move";
+    if (id === dragState.draggedId) return;
+    gridElFor(kind).querySelectorAll(".site-card").forEach(c => c.classList.remove("drag-over"));
+    e.currentTarget.classList.add("drag-over");
+  }
+  function handleCardDrop(e, kind, targetId) {
+    e.preventDefault();
+    if (!dragState || dragState.kind !== kind || dragState.draggedId === targetId) return;
+    const list = kind === "project" ? projects : exhibitions;
+    const fromIndex = list.findIndex(x => x.id === dragState.draggedId);
+    const toIndex = list.findIndex(x => x.id === targetId);
+    if (fromIndex === -1 || toIndex === -1) return;
+    const [moved] = list.splice(fromIndex, 1);
+    list.splice(toIndex, 0, moved);
+    if (kind === "project") renderProjects();
+    else renderExhibitions();
+  }
+  function handleCardDragEnd(e, kind) {
+    dragState = null;
+    gridElFor(kind).querySelectorAll(".site-card").forEach(c => c.classList.remove("drag-over", "is-dragging"));
+  }
+  window.handleCardDragStart = handleCardDragStart;
+  window.handleCardDragOver = handleCardDragOver;
+  window.handleCardDrop = handleCardDrop;
+  window.handleCardDragEnd = handleCardDragEnd;
   window.toggleItemPublished = toggleItemPublished;
   function renderProjects() {
     document.getElementById("projects-grid").innerHTML = projects.map(p => siteCard(p, "project")).join("");
@@ -1415,20 +1542,28 @@
   }
   function selectMessage(id) {
     const m = messages.find(x => x.id === id);
+    if (!m) return;
     if (m.status === "NEW") { m.status = "READ"; renderMessages(); renderNavBadge(); }
-    document.getElementById("msg-detail-wrap").innerHTML = `
-      <div class="msg-detail-card">
-        <div class="msg-detail-top">
-          <div><div class="msg-detail-name">${m.name}</div><div class="msg-detail-email">${m.email}</div></div>
-          <div class="msg-detail-date">${m.date}</div>
-        </div>
-        <div class="msg-detail-body">${m.body}</div>
-        <div class="msg-detail-actions">
-          <a class="btn btn-primary" href="mailto:${m.email}">이메일로 답장하기</a>
-        </div>
-      </div>
-    `;
+    document.getElementById("msg-modal-name").textContent = m.name;
+    document.getElementById("msg-modal-email").textContent = m.email;
+    document.getElementById("msg-modal-date").textContent = m.date;
+    document.getElementById("msg-modal-body").textContent = m.body;
+    document.getElementById("msg-modal-reply").href = `mailto:${m.email}`;
+    document.getElementById("msg-modal-overlay").hidden = false;
   }
+  function closeMsgModal() {
+    document.getElementById("msg-modal-overlay").hidden = true;
+  }
+  // Only close on a click that lands on the backdrop itself, not one that
+  // bubbled up from clicking inside the panel.
+  function handleMsgModalOverlayClick(e) {
+    if (e.target.id === "msg-modal-overlay") closeMsgModal();
+  }
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") closeMsgModal();
+  });
+  window.closeMsgModal = closeMsgModal;
+  window.handleMsgModalOverlayClick = handleMsgModalOverlayClick;
   function renderNavBadge() {
     const n = messages.filter(m => m.status === "NEW").length;
     const badge = document.getElementById("nav-badge-messages");
@@ -1445,6 +1580,5 @@
   renderSocialList();
   renderMessages();
   renderNavBadge();
-  selectMessage(messages[0].id);
   refreshBoardLabels();
 </script>
