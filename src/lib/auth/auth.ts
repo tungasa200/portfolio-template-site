@@ -11,7 +11,10 @@ const LOCKOUT_MINUTES = 15;
 // parts low" philosophy in docs/conventions.md.
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
-  pages: { signIn: "/admin/login" },
+  // Browser-facing (proxy.ts rewrites admin.{ROOT_DOMAIN}/login -> /admin/login
+  // invisibly; this value must be the pre-rewrite path the browser actually
+  // navigates to, or the redirect double-prefixes into /admin/admin/login).
+  pages: { signIn: "/login" },
   providers: [
     Credentials({
       credentials: {

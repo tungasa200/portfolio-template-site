@@ -1,32 +1,127 @@
-import { auth } from "@/lib/auth/auth";
+import Link from "next/link";
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
-import { logoutAction } from "@/lib/actions/auth";
+import { r2PublicUrl } from "@/lib/storage/r2";
+import { resolveNavLabel } from "@/lib/site/nav-items";
+import { NavVisibilityList } from "@/components/admin/NavVisibilityList";
 
-// Proves session -> tenant context end-to-end. Real CRUD UI (SiteSettings
-// editor, Board/BoardItem management, ContactSubmission inbox) is a
-// follow-up round, not this one.
-export default async function AdminDashboardPage() {
+const TARGET_LABEL: Record<string, string> = {
+  HOME: "홈 화면",
+  BOARD: "게시판",
+  ABOUT: "소개 페이지",
+  CONTACT: "문의 페이지",
+  EXTERNAL_URL: "외부 링크",
+};
+
+export default async function AdminHomePage() {
   const { tenantId } = await getCurrentTenantContext();
-  const session = await auth();
   const db = forTenant(tenantId);
-  const siteSettings = await db.siteSettings.findUnique({ where: { tenantId } });
+
+  const [siteSettings, boards, navItems, unreadCount] = await Promise.all([
+    db.siteSettings.findUnique({ where: { tenantId } }),
+    db.board.findMany({
+      orderBy: { order: "asc" },
+      include: { _count: { select: { items: { where: { isPublished: true } } } } },
+    }),
+    db.navItem.findMany({
+      orderBy: { order: "asc" },
+      include: { targetBoard: { select: { seq: true, name: true } } },
+    }),
+    db.contactSubmission.count({ where: { status: "NEW" } }),
+  ]);
+
+  const aboutNavItem = navItems.find((n) => n.targetKind === "ABOUT");
+  const heroUrl = siteSettings?.heroImageKey ? r2PublicUrl(siteSettings.heroImageKey) : null;
+
+  const visibilityItems = navItems
+    .filter((n) => n.targetKind !== "HOME")
+    .map((n) => ({
+      id: n.id,
+      label: resolveNavLabel(n),
+      target: TARGET_LABEL[n.targetKind] ?? "",
+      visible: n.isVisible,
+    }));
 
   return (
-    <main className="flex min-h-screen flex-col gap-6 bg-neutral-50 px-10 py-10">
-      <h1 className="text-xl font-semibold text-neutral-900">Admin dashboard</h1>
-      <p className="text-sm text-neutral-600">
-        Signed in as {session?.user?.email} — managing{" "}
-        <strong>{siteSettings?.siteName ?? "(no site name set)"}</strong>.
-      </p>
-      <form action={logoutAction}>
-        <button
-          type="submit"
-          className="w-fit rounded border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
-        >
-          Log out
-        </button>
-      </form>
-    </main>
+    <div className="admin-page">
+      <div className="admin-section-card" style={{ display: "flex", gap: 24, flexWrap: "wrap", marginBottom: 24 }}>
+        {boards.map((board) => (
+          <div key={board.id} style={{ flex: 1, minWidth: 160 }}>
+            <div style={{ fontSize: 34, fontWeight: 700 }}>{board._count.items}</div>
+            <div style={{ fontSize: "14.5px", color: "var(--muted)" }}>{board.name} 게시물 공개 중</div>
+          </div>
+        ))}
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <div
+            style={{
+              fontSize: 34,
+              fontWeight: 700,
+              color: "var(--accent-ink)",
+              background: "var(--accent)",
+              display: "inline-block",
+              padding: "0 10px",
+              borderRadius: 8,
+            }}
+          >
+            {unreadCount}
+          </div>
+          <div style={{ fontSize: "14.5px", color: "var(--muted)", marginTop: 6 }}>
+            새로 온 메시지 ·{" "}
+            <Link href="/messages" style={{ color: "var(--ink)", fontWeight: 700, textDecoration: "underline" }}>
+              확인하기
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>대표 이미지</h2>
+      <div className="admin-home-preview-frame">
+        <div className="admin-browser-chrome">
+          <div className="admin-browser-dot" />
+          <div className="admin-browser-dot" />
+          <div className="admin-browser-dot" />
+          <div className="admin-browser-url">{siteSettings?.siteName ?? ""}</div>
+        </div>
+        <div className="admin-hero-preview-body">
+          <div className="admin-hero-photo-wrap">
+            <div className="admin-hero-photo">
+              {heroUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={heroUrl} alt="대표 사진" />
+              ) : (
+                <span className="admin-tag">대표 사진 (1600×1600)</span>
+              )}
+            </div>
+            <Link href="/settings" className="admin-hero-edit-btn">
+              ✏️ 대표 사진 바꾸기
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div className="admin-section-card" style={{ marginTop: 24 }}>
+        <h2>Quick Menu</h2>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 20 }}>
+          {boards.map((board) => (
+            <Link key={board.id} href={`/board/${board.id}/new`} className="admin-btn">
+              + 새 {board.name} 추가
+            </Link>
+          ))}
+          <Link href="/about" className="admin-btn">
+            {aboutNavItem ? resolveNavLabel(aboutNavItem) : "About"} 페이지 수정
+          </Link>
+          <Link href="/settings" className="admin-btn">
+            사이트 정보 수정
+          </Link>
+        </div>
+      </div>
+
+      <div className="admin-section-card" style={{ marginTop: 20 }}>
+        <h2>페이지 노출</h2>
+        <div style={{ marginTop: 20 }}>
+          <NavVisibilityList items={visibilityItems} />
+        </div>
+      </div>
+    </div>
   );
 }

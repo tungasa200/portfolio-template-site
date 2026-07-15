@@ -1,12 +1,20 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { loginAction, type LoginFormState } from "@/lib/actions/auth";
 
 const initialState: LoginFormState = { status: "idle" };
 
 export function LoginForm() {
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
+
+  // Hard nav (window.location), not the Next.js client router — see
+  // src/lib/actions/auth.ts's top comment for why.
+  useEffect(() => {
+    if (state.status === "success" && state.redirectTo) {
+      window.location.href = state.redirectTo;
+    }
+  }, [state]);
 
   return (
     <form action={formAction} className="flex w-full max-w-sm flex-col gap-4">

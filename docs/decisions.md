@@ -3,6 +3,40 @@
 Chronological. Read this when you're tempted to "simplify" something —
 most of the non-obvious choices here were already argued out once.
 
+## Admin-internal links must never hardcode an `/admin` prefix (2026-07-15)
+
+`proxy.ts` rewrites `admin.{ROOT_DOMAIN}/foo` → `/admin/foo` invisibly to
+the browser (see [architecture.md](./architecture.md#request-routing)). Any
+browser-facing value inside the admin app — `Link` `href`s, `redirect()`
+targets, NextAuth's `pages.signIn`/`signIn`/`signOut` `redirectTo` — must
+therefore be written *without* the `/admin` prefix (root-relative to the
+already-rewritten tree), exactly like the public site's
+`src/lib/site/nav-items.ts` already does for `/s/[tenant]/*`. Writing
+`/admin/board/...` there double-prefixes into a 404
+(`/admin/admin/board/...`) the moment it's exercised on the actual
+`admin.{ROOT_DOMAIN}` subdomain. This bug existed from Phase 4a onward
+(`tenant-context.ts`'s `redirect("/admin/login")`, `auth.ts`'s
+`redirectTo: "/admin"`) but was never caught because every prior
+verification pass curl-tested `localhost:3000/admin/login` directly (root
+domain, no rewrite applied) instead of the sanctioned subdomain — found
+while verifying Phase 4's admin CRUD in a real browser against the real
+subdomain. `revalidatePath("/admin", "layout")` calls are unaffected by
+this — that's Next's internal file-system route path, a different thing
+from the browser-facing URL.
+
+Separately: even with the prefix fixed, a JS-enabled login intermittently
+rendered the *previous* route's cached content for one frame after the
+post-login redirect (a no-JS control run and a raw `curl` with the session
+cookie both correctly returned the dashboard immediately — only the live
+browser's client-side transition showed it wrong, and a manual reload
+always fixed it). Root cause: Next.js's client router transitioning across
+`proxy.ts`'s rewrite boundary after a Server-Action-triggered redirect.
+Rather than debug Next's router internals further, sidestepped it:
+`signIn`/`signOut` now use `redirect: false` and return the target URL,
+and the calling components do a hard `window.location.href` navigation
+instead of letting the client router mediate it. See
+`src/lib/actions/auth.ts`'s top comment.
+
 ## Generic `Board`/`BoardItem` model, not fixed `Project`/`Exhibition` (2026-07-15)
 
 The original schema hand-duplicated `Project`/`ProjectPhoto` (Photo board)

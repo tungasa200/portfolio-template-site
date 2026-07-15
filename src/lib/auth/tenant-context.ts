@@ -9,7 +9,8 @@ import { auth } from "@/lib/auth/auth";
 export async function getCurrentTenantContext() {
   const session = await auth();
   if (!session?.user?.tenantId) {
-    redirect("/admin/login");
+    // Browser-facing path — see src/lib/auth/auth.ts's pages.signIn comment.
+    redirect("/login");
   }
 
   return {

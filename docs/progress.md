@@ -101,7 +101,106 @@ session (on any machine) to know where things actually stand.
 - Needs your Resend API key in `.env` on any other machine — see
   [external-services.md](./external-services.md#3-resend-contact-form-email-notifications--needs-your-api-key).
 
-**Phase 4b — Admin UI design (in progress)**
+**Phase 4 — Admin CRUD + uploads (done, 2026-07-15)**
+- Real admin panel built against `design/admin-mockup.html` as the
+  interaction/copy spec, replacing the Phase 4a proof-of-life stub:
+  Dashboard (Home — stats, hero preview, Quick Menu, page-visibility
+  toggles), per-board item list (`board/[boardId]`, rename/reorder/publish
+  toggle), the shared BoardItem editor (`board/[boardId]/[itemId]`, `new`
+  included — date via a custom month picker, optional INDEX tab for
+  `GALLERY_MULTI` only, photo manager), About editor, Settings (basic info +
+  hero image + nav order/visibility + social links), Messages inbox. All
+  under `src/app/admin/(dashboard)/`, styled by a new
+  `src/app/admin/(dashboard)/admin.css` (mockup's CSS ported near-verbatim
+  under an `.admin-root` scope, same "own theme, don't leak into other
+  areas" principle as the public site's `theme.css`).
+- Rich text (About's content, a `GALLERY_MULTI` item's INDEX content) uses
+  Tiptap (`@tiptap/react` + `starter-kit`/`extension-underline`/
+  `extension-link`, newly added deps) with a visual/HTML-source toggle —
+  the mockup's plain `contentEditable` wasn't sufficient for real code, per
+  the roadmap's own note.
+- Server Actions, one file per concern under `src/lib/actions/`:
+  `site-settings.ts` (normalizes `""` → `null` per the roadmap's explicit
+  warning), `nav-items.ts`, `social-links.ts`, `about.ts`, `boards.ts`
+  (rename only — no create/delete, matching the mockup's deliberate absence
+  of board-provisioning UI), `board-items.ts` (create/update/delete/
+  reorder/publish — `slug` is set once in `createBoardItem` and never
+  touched by `updateBoardItem`, verified by editing an item's name and
+  confirming its detail-page URL didn't change), `board-item-photos.ts`,
+  `messages.ts`.
+- R2 upload pipeline: `src/lib/storage/r2.ts` (presigned PUT, lazily
+  constructed like `resend.ts` so a missing R2 key doesn't crash the app),
+  `src/app/api/admin/upload-url/route.ts` (admin-only Route Handler,
+  derives `tenantId` from the session and builds the R2 key itself — never
+  trusts client input, per the roadmap), `src/lib/admin/upload-client.ts`
+  (browser captures width/height via `Image()` decode, then PUTs directly
+  to R2 with the presigned URL). `next.config.ts`'s `images.remotePatterns`
+  wired to `R2_PUBLIC_HOSTNAME` (conditionally, since it's still unset —
+  see below).
+- **Two real bugs found and fixed while verifying against the actual
+  `admin.{ROOT_DOMAIN}` subdomain (not `localhost:3000/admin` directly —
+  see the next bullet for why that distinction mattered):**
+  1. Every internal admin link/redirect (`Link` hrefs, `redirect()` calls,
+     `NextAuth`'s `pages.signIn`/`signIn`/`signOut` `redirectTo` values —
+     both mine and Phase 4a's pre-existing ones) was hardcoded with an
+     `/admin/...` prefix. `proxy.ts` already rewrites
+     `admin.{ROOT_DOMAIN}/foo` → `/admin/foo` invisibly to the browser, so
+     any browser-facing link containing that prefix double-prefixes into a
+     404 (`/admin/admin/foo`) the moment it's used on the actual subdomain.
+     Every prior "verified end-to-end" claim for Phase 4a's login flow had
+     only ever curl-tested `localhost:3000/admin/login` directly (root
+     domain, no rewrite applied) — never the sanctioned subdomain — so this
+     was never caught. Fixed by stripping the prefix everywhere (all
+     `Link`/`redirect()` targets are now root-relative to the *rewritten*
+     tree, matching the convention `src/lib/site/nav-items.ts` already used
+     for the public site). `revalidatePath("/admin", "layout")` calls were
+     deliberately left alone — that's Next's real file-system route path,
+     unrelated to the browser-facing rewrite.
+  2. Separately, even after fixing (1), a JS-enabled login intermittently
+     rendered the *previous* route's cached content for one frame after the
+     post-login redirect (confirmed via a no-JS control run and a raw
+     `curl` with the session cookie — both correctly returned the
+     dashboard; only the live browser's client-side transition showed the
+     wrong page, and a manual reload always fixed it). Root-caused to
+     Next.js's client router transitioning across `proxy.ts`'s rewrite
+     boundary after a Server-Action-triggered redirect. Rather than debug
+     Next's router further, sidestepped it: `signIn`/`signOut` now use
+     `redirect: false` and return the target URL, and `LoginForm.tsx`/
+     `AdminShell.tsx`'s logout button do a hard `window.location.href` nav
+     instead of letting the client router handle it. See
+     `src/lib/actions/auth.ts`'s top comment.
+- **Also found (data, not code) while verifying**: the real Neon `dev`
+  tenant's `NavItem` table had 4 stale rows left over from the
+  pre-board-redesign schema — the 2026-07-15 board-redesign migration
+  added `targetKind` with `DEFAULT 'HOME'` and backfilled every *old*
+  NavItem row into it without deleting them (its own migration file says
+  as much), leaving a duplicate "HOME" entry and rows mislabeled "PHOTO"/
+  "WORK"/a duplicate "CONTACT" all masquerading as `targetKind='HOME'`.
+  Confirmed by inspection, then deleted (with your go-ahead) — the
+  sidebar's duplicate "HOME" entries were the visible symptom.
+- **Still needs your Cloudflare dashboard input, not fixable in code** —
+  see [external-services.md](./external-services.md#2-cloudflare-r2-object-storage--two-dashboard-steps-still-needed-now-that-phase-4s-upload-flow-exists):
+  the R2 bucket has no CORS policy yet, so the browser-direct-to-R2 upload
+  PUT is blocked (confirmed via the actual browser error, not guessed);
+  and `R2_PUBLIC_HOSTNAME` is still blank, so even a photo that did upload
+  has no URL to render yet — uploaded photos render as an empty placeholder
+  tile until this is set. The upload/presign code itself is verified
+  correct up to that point (presigned URL correctly issued and PUT
+  correctly attempted, request just gets a CORS rejection).
+- Verified end-to-end in a real browser (Playwright against a clean local
+  dev server + the real Neon `dev` tenant, 2026-07-15): login → dashboard
+  stats/hero/quick-menu render, page-visibility toggle flips and survives
+  reload, board item drag-reorder persists after reload, editing an
+  existing item's name saves and is reflected back in the list, creating a
+  new item redirects into its own real (non-`"new"`) edit URL, deleting an
+  item removes it and redirects to the list, About's rich editor
+  (bold + HTML-source-view toggle) saves and survives reload, Settings'
+  basic-info fields save and survive reload, adding a social link persists
+  and survives reload, the Messages inbox renders a real seeded submission
+  and its detail modal opens. Test data (a probe item, a footer-text
+  change, a test social link, an About edit) was cleaned up afterward.
+
+**Phase 4b — Admin UI design (superseded by Phase 4 above, 2026-07-15)**
 - No production code yet — mockup-first per your request, since (unlike
   the public site) there's no existing visual design for admin. Working
   design file: **`design/admin-mockup.html`** — a self-contained clickable
@@ -267,9 +366,11 @@ session (on any machine) to know where things actually stand.
 - ✅ Neon Postgres connected. Real migration `20260714083145_init`
   generated and applied. `DATABASE_URL` (pooled) / `DIRECT_URL` (unpooled,
   CLI-only) both verified reachable.
-- ✅ Cloudflare R2 connected (bucket `portfolio-template`). Credentials
-  verified via a ListObjectsV2 call. `R2_PUBLIC_HOSTNAME` (custom domain
-  for image serving) intentionally left unset — not needed until Phase 4.
+- 🟡 Cloudflare R2 connected (bucket `portfolio-template`, credentials in
+  `.env`) but two dashboard steps are still outstanding now that Phase 4's
+  upload flow actually exists and needs them — CORS policy on the bucket,
+  and `R2_PUBLIC_HOSTNAME` — see
+  [external-services.md](./external-services.md#2-cloudflare-r2-object-storage--two-dashboard-steps-still-needed-now-that-phase-4s-upload-flow-exists).
 - ⬜ Vercel — not yet provisioned.
 
 **Conventions established**
@@ -277,7 +378,14 @@ session (on any machine) to know where things actually stand.
 
 ## Not started
 
-Rest of Phase 4 — see [roadmap.md](./roadmap.md). Next concrete task: admin
-CRUD (SiteSettings editor, Board/BoardItem management + photo reordering,
-ContactSubmission inbox) and the R2 presigned-upload flow, both now
-unblocked by Phase 4a's auth/session foundation.
+Phase 4 (admin CRUD + uploads) is done as of 2026-07-15 — see above. Next up
+per [roadmap.md](./roadmap.md):
+- The two R2 dashboard steps above (not blocking further coding work, but
+  blocking an actual end-to-end photo-upload verification).
+- Phase 5 — go live as tenant #1 (real `Tenant` row, Vercel + domain,
+  populate real content through the now-finished admin panel, the
+  tenant-isolation regression test).
+- The admin-facing UI to actually *provision* boards for a tenant (create/
+  configure, not just manage existing ones) is still unstarted — see
+  roadmap.md's board-redesign section; today `prisma/seed.ts` is the only
+  way a board comes into existence.

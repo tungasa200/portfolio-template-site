@@ -39,69 +39,39 @@ don't approximate from memory.
   views shareable/deep-linkable, a small upgrade over the prototype.
 - All reads go through `forTenant(tenant.id)` — no exceptions.
 
-## Phase 4 — Admin CRUD + uploads
+## Phase 4 — Admin CRUD + uploads — done (2026-07-15)
 
-**Phase 4a (auth + RLS enforcement) is done** — see
-[progress.md](./progress.md#phase-4a--authjs--rls-foundation). Concretely,
-this means `auth()`/`getCurrentTenantContext()`
-(`src/lib/auth/tenant-context.ts`), the `admin.{ROOT_DOMAIN}` session gate
-(`src/app/admin/(dashboard)/layout.tsx`), and RLS-enforcing `forTenant()`
-already exist and work — don't re-plan or re-build any of that. What's
-below is the actual remaining scope: real CRUD pages behind that gate, and
-the upload pipeline they need.
+Real admin panel built and verified end-to-end in a real browser against
+`design/admin-mockup.html`'s interaction/copy spec — see
+[progress.md](./progress.md#phase-4--admin-crud--uploads-done-2026-07-15)
+for the full file-by-file breakdown, the two real bugs found and fixed
+(browser-facing paths on the `admin.{ROOT_DOMAIN}` subdomain were
+double-prefixed; a client-router redirect quirk needing a hard-nav
+workaround), and the stale pre-board-redesign `NavItem` rows found and
+cleaned in the real Neon `dev` tenant. Don't re-plan or re-build any of
+this — what follows is context for *why* it's shaped the way it is, kept
+for future reference:
 
-Current state of `src/app/admin/(dashboard)/page.tsx`: a proof-of-life
-stub only (renders the signed-in tenant's site name + a logout button, per
-its own comment). No real admin page exists yet.
-
-- Admin pages, against `design/admin-mockup.html` (current as of
-  2026-07-15, safe to build from directly) as the interaction/copy spec:
-  - Dashboard (Home), SiteSettings editor (nav items, social links, hero
-    image, contact info, footer text).
-  - **BoardItem CRUD *within* each operator-provisioned board** — rename
-    the board's `name` (only), and create/edit/delete/reorder/publish its
-    `BoardItem`s. **Not in scope**: creating/deleting a board, or changing
-    a board's `kind` or `seq` — those stay operator/seed-only (see the
-    board-redesign section below). The mockup already reflects this split
-    correctly (no add/remove-board control anywhere in it) — if a build
-    session is tempted to add one, that's a regression, not a feature.
-  - Photo upload + reordering (per `BoardItem`, respecting each board's
-    `kind`-based photo cap — 1 for `GALLERY_SINGLE`, unlimited for
-    `GALLERY_MULTI`, same as the mockup's `editorPhotoMax`).
-  - ContactSubmission inbox.
-- **`BoardItem.slug` must only be assigned on create, never re-derived on
-  update** — not enforced by the schema, has to be upheld in the Server
-  Action itself. See
-  [architecture.md](./architecture.md#data-model) for why (bookmarked/
-  shared/indexed URLs silently break otherwise).
-- R2 upload flow: presigned PUT URL issued by an admin-only Route Handler
-  that derives `tenantId` from the session and builds the R2 key itself
-  (`tenants/{tenantId}/...`) — never trust a client-supplied path or
-  tenantId. Client captures image `width`/`height` via `Image()` decode
-  before requesting the presign.
-- `next/image` + R2: connect a custom domain to the R2 bucket
-  (`R2_PUBLIC_HOSTNAME`), allowlist it in `next.config.ts`
-  `images.remotePatterns` — see
-  [external-services.md](./external-services.md#2-cloudflare-r2-object-storage--done-for-this-project)
-  for the dashboard steps (not code, needs your Cloudflare login).
-- **SiteSettings save action must normalize empty strings to `null`**:
-  `src/components/site/Footer.tsx` already falls back to
-  `` © ${year} ALL RIGHTS RESERVED `` via `footerText ?? ...`, but `??`
-  only triggers on `null`/`undefined`, not `""` — if the admin form saves
-  an empty string when the field is left blank, the fallback silently
-  never fires. The Server Action must coerce `""` -> `null` before writing.
-- **Must-check when porting `design/admin-mockup.html`'s editor screens to
-  real code**: the mockup's save handlers only ever push a *new* row —
-  editing an *existing* `BoardItem` and hitting "저장하기" doesn't persist
-  any field (name, date, published, INDEX content, photos) back to the
-  mockup's in-memory array, it just toasts and navigates away. That's an
-  acceptable mockup shortcut (per the user, 2026-07-15: mockups don't need
-  fully correct behavior), but the real Server Action **must** do a proper
-  `update` for existing rows, not only `create` for new ones — verify this
-  explicitly with a real edit-and-reload check before calling the CRUD
-  screens done, since a mockup that silently "worked" by only ever hitting
-  the create path is exactly the kind of gap that's easy to carry into
-  real code unnoticed.
+- `BoardItem.slug` is assigned once in `createBoardItem`
+  (`src/lib/actions/board-items.ts`) and never touched by `updateBoardItem`
+  — verified by editing an existing item's name and confirming its
+  detail-page URL didn't change. See
+  [architecture.md](./architecture.md#data-model) for why this matters.
+- R2 upload flow (`src/lib/storage/r2.ts`,
+  `src/app/api/admin/upload-url/route.ts`,
+  `src/lib/admin/upload-client.ts`) is implemented and was exercised for
+  real, but **can't be fully verified yet** — the R2 bucket needs a CORS
+  policy added (confirmed via an actual browser CORS rejection, not
+  guessed) and `R2_PUBLIC_HOSTNAME` is still unset, both dashboard-only
+  steps only you can do. See
+  [external-services.md](./external-services.md#2-cloudflare-r2-object-storage--two-dashboard-steps-still-needed-now-that-phase-4s-upload-flow-exists).
+- `updateSiteSettings` (`src/lib/actions/site-settings.ts`) normalizes
+  `""` → `null` for `footerText`, per the concern originally raised here
+  about `Footer.tsx`'s `??` fallback.
+- Editing an existing `BoardItem` and saving does a real `update` (not
+  just `create`) — verified explicitly with an edit-then-reload check
+  against real Neon, not just the mockup's own (acceptable, documented)
+  create-only shortcut.
 
 ## Phase 5 — Go live as tenant #1
 
