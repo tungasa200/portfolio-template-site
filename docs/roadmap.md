@@ -113,3 +113,43 @@ Explicitly out of scope until there's a reason to build it:
 - Apex-domain custom domains (CNAME-only for now — bare apex/ALIAS handling
   varies too much by registrar for a solo AI-coding maintainer to support
   well).
+
+## Pending design decision — per-tenant board count set at onboarding (not started)
+
+2026-07-15: user wants pricing tiers (roughly 2 so far, not finalized) to
+differ partly by **how many boards** a tenant gets. Important clarification
+after initial confusion: this is **not** a tenant-facing self-service
+feature. The tenant/photographer never sees an "add a board" button or an
+upgrade/limit prompt in their own admin. Instead, **the operator (the user
+selling this, not the end customer) sets the board count as a custom
+setting each time they provision a new customer's tenant** — the same
+seed/internal-only path tenants are already created through (see Phase 6's
+"self-serve tenant signup" item — still not needed). A tenant's admin
+simply renders however many boards were configured for it; there's nothing
+for the tenant to hit a limit on.
+
+This still **reopens** the Phase 4b mockup decision in
+[progress.md](./progress.md) that boards are "exactly 2 fixed gallery-type
+boards, not a user-defined N-board CMS" — the count needs to become a
+per-tenant, operator-set value instead of a hardcoded 2 — but the scope is
+much smaller than a self-service N-board CMS would have been. No upsell
+UI, no runtime limit-hit handling, no tenant-facing plan awareness at all.
+
+Explicitly decided (2026-07-15): keep working on the current detail-screen
+polish pass with the fixed-2-board assumption for now; design this as a
+**separate, later round**. When that round starts:
+- Add a per-tenant board configuration (e.g. a `boardCount` field, or a
+  small config listing which board types are enabled) — likely on `Tenant`
+  or `SiteSettings` in `prisma/schema.prisma`.
+- The admin UI (sidebar, dashboard) needs to render N board sections driven
+  by that config instead of two hardcoded ones. The mockup's own routing
+  comment already anticipated boards resolving through one generic dynamic
+  route rather than fixed `/photo`, `/work` folders — revisit whether that
+  generic-board approach is now the right level of investment, or whether
+  a lighter-weight "config picks which of a small fixed set of board types
+  are on" model covers what's actually needed.
+- `Tenant.planTier` (`prisma/schema.prisma`) already exists as a reserved
+  enum, currently just `FREE` — decide whether board count is derived from
+  planTier or is its own independent field the operator sets directly
+  (simpler, and matches "operator sets a custom setting per package" more
+  literally than deriving it from a plan label).
