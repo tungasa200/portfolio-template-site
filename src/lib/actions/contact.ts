@@ -1,7 +1,7 @@
 "use server";
 
 import { forTenant } from "@/lib/db/tenant-scoped-client";
-import { resend } from "@/lib/email/resend";
+import { getResendClient } from "@/lib/email/resend";
 
 export interface ContactFormState {
   status: "idle" | "success" | "error";
@@ -61,8 +61,11 @@ export async function submitContactForm(
   // notification, so failures are logged, not surfaced to the (anonymous)
   // visitor as an error.
   try {
+    const resend = getResendClient();
     const siteSettings = await db.siteSettings.findUnique({ where: { tenantId } });
-    if (siteSettings?.contactEmail) {
+    if (!resend) {
+      console.warn("[contact] RESEND_API_KEY not set — skipping email notification");
+    } else if (siteSettings?.contactEmail) {
       await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev",
         to: siteSettings.contactEmail,
