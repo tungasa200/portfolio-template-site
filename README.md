@@ -22,6 +22,8 @@ have prior conversation context:**
   worth knowing before writing Next.js 16 / Prisma 7 code here.
 - [`docs/external-services.md`](./docs/external-services.md) — Neon / R2 /
   Vercel setup steps, and how to get a new machine working.
+- [`docs/improvements.md`](./docs/improvements.md) — deferred optimization
+  ideas for things that work but aren't optimal yet (not a bug list).
 
 ## Quick start (already-provisioned services)
 
@@ -60,6 +62,9 @@ resulting `prisma/migrations/` folder.
 ## Status
 
 See [`docs/progress.md`](./docs/progress.md) for the up-to-date checklist.
-Short version: Phase 0/1 (scaffolding + multi-tenancy foundation) done and
-verified; Neon and Cloudflare R2 are connected; Vercel is not yet set up;
-Phase 2 (porting the public-site design) hasn't started.
+Short version: Phases 0–4 (scaffolding, multi-tenancy foundation, public
+site, auth/RLS, and the admin CRUD panel + R2 upload pipeline) are done and
+verified; Neon and Cloudflare R2 are connected (R2 still needs a CORS
+policy + a public hostname set — see
+[`docs/external-services.md`](./docs/external-services.md)); Vercel is not
+yet set up. Next up is Phase 5 (go live as tenant #1).
