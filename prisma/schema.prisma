@@ -1,5 +1,6 @@
 // Prisma schema — multi-tenant photographer portfolio SaaS
-// See C:\Users\YJMEDIA\.claude\plans\wiggly-fluttering-sunset.md for the architecture this implements.
+// See docs/architecture.md and docs/decisions.md for the reasoning behind
+// this structure.
 
 generator client {
   provider = "prisma-client"
@@ -36,13 +37,13 @@ model Tenant {
 
   users              User[]
   siteSettings       SiteSettings?
+  aboutPage          AboutPage?
   navItems           NavItem[]
   socialLinks        SocialLink[]
-  projects           Project[]
-  exhibitions        Exhibition[]
+  boards             Board[]
+  boardItems         BoardItem[]
+  boardItemPhotos    BoardItemPhoto[]
   contactSubmissions ContactSubmission[]
-  projectPhotos      ProjectPhoto[]
-  exhibitionPhotos   ExhibitionPhoto[]
 }
 
 enum UserRole {
@@ -89,16 +90,21 @@ model SiteSettings {
   themeName        String  @default("editorial-default") // reserved for future per-tenant theming
 }
 
-enum NavItemType {
-  INTERNAL_PAGE
-  EXTERNAL_URL
+// Static, non-repeating page — not a board (no items, no photo grid).
+model AboutPage {
+  id       String @id @default(uuid())
+  tenantId String @unique
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  content String @db.Text // trusted admin-authored rich HTML
 }
 
-enum InternalPage {
+enum NavTargetKind {
   HOME
-  PHOTO
-  WORK
+  ABOUT
   CONTACT
+  BOARD
+  EXTERNAL_URL
 }
 
 model NavItem {
@@ -106,12 +112,17 @@ model NavItem {
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  label      String
-  type       NavItemType
-  targetPage InternalPage?
-  url        String?
-  order      Int
-  isVisible  Boolean       @default(true)
+  // Used for HOME/ABOUT/CONTACT/EXTERNAL_URL. For BOARD targets this column
+  // is present but not authoritative — render with targetBoard.name instead
+  // (see src/lib/site/nav-items.ts's resolveNavLabel) so a board rename
+  // can't drift out of sync with its own nav entry.
+  label         String
+  targetKind    NavTargetKind
+  targetBoardId String? // set iff targetKind == BOARD
+  targetBoard   Board?        @relation(fields: [targetBoardId], references: [id], onDelete: Cascade)
+  url           String? // set iff targetKind == EXTERNAL_URL
+  order         Int
+  isVisible     Boolean       @default(true)
 
   @@index([tenantId, order])
 }
@@ -128,82 +139,78 @@ model SocialLink {
   @@index([tenantId, order])
 }
 
-model Project {
+enum BoardKind {
+  GALLERY_MULTI // item has N photos + its own detail page (INDEX/GRID/FULLSCREEN tabs)
+  GALLERY_SINGLE // item has exactly 1 photo, no detail page, grid-only static tile
+}
+
+model Board {
   id       String @id @default(uuid())
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  slug        String
+  // Stable per-tenant sequence driving the fixed /board/{seq} route — set
+  // once at creation, never user-editable (URL paths are intentionally
+  // frozen; only `name` is editable — see docs/progress.md's 2026-07-15 note).
+  seq         Int
   name        String
-  category    String
-  period      String
+  kind        BoardKind @default(GALLERY_MULTI)
   order       Int
-  isPublished Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isPublished Boolean   @default(true)
 
-  photos ProjectPhoto[]
+  items    BoardItem[]
+  navItems NavItem[]
 
-  @@unique([tenantId, slug])
+  @@unique([tenantId, seq])
   @@index([tenantId, order])
 }
 
-model ProjectPhoto {
+model BoardItem {
   id       String @id @default(uuid())
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  projectId String
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  boardId String
+  board   Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
 
-  r2Key  String
-  label  String?
-  order  Int
-  width  Int
-  height Int
+  // Only meaningful for GALLERY_MULTI (drives the item's detail-page URL).
+  // Set once on create via slugify(name) — must NEVER be re-derived on
+  // update, or renaming an item silently breaks its own bookmarked/shared
+  // detail URL (the exact failure mode board-path editing was removed for).
+  slug String?
 
-  @@index([tenantId])
-  @@index([projectId, order])
+  name         String
+  dateValue    String? // "YYYY-MM"
+  order        Int
+  isPublished  Boolean @default(false)
+  // Only meaningful for GALLERY_MULTI.
+  indexEnabled Boolean @default(false)
+  indexContent String? @db.Text // trusted admin-authored rich HTML
+
+  photos BoardItemPhoto[]
+
+  @@unique([tenantId, boardId, slug])
+  @@index([tenantId, boardId, order])
 }
 
-model Exhibition {
+model BoardItemPhoto {
   id       String @id @default(uuid())
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  slug            String
-  name            String
-  venue           String
-  period          String
-  description     String   @db.Text
-  coverPhotoR2Key String?
-  order           Int
-  isPublished     Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  boardItemId String
+  boardItem   BoardItem @relation(fields: [boardItemId], references: [id], onDelete: Cascade)
 
-  photos ExhibitionPhoto[]
-
-  @@unique([tenantId, slug])
-  @@index([tenantId, order])
-}
-
-model ExhibitionPhoto {
-  id       String @id @default(uuid())
-  tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  exhibitionId String
-  exhibition   Exhibition @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
-
-  r2Key  String
-  label  String?
-  order  Int
-  width  Int
-  height Int
+  r2Key     String
+  // Thumbnail/cover-photo selection — independent of display `order` (an
+  // admin can star any photo as primary without reordering the grid).
+  isPrimary Boolean @default(false)
+  order     Int
+  width     Int
+  height    Int
 
   @@index([tenantId])
-  @@index([exhibitionId, order])
+  @@index([boardItemId, order])
 }
 
 enum ContactStatus {

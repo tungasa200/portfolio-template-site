@@ -1,10 +1,82 @@
 # Progress
 
-Status as of 2026-07-14. Update this file whenever a phase in
+Status as of 2026-07-15. Update this file whenever a phase in
 [roadmap.md](./roadmap.md) moves forward — it's the fastest way for a fresh
 session (on any machine) to know where things actually stand.
 
 ## Done
+
+**Board/BoardItem schema redesign (replaces Project/Exhibition)**
+- Real migration against Neon: dropped `Project`/`ProjectPhoto`/
+  `Exhibition`/`ExhibitionPhoto`, added `Board`/`BoardItem`/
+  `BoardItemPhoto`/`AboutPage`, reshaped `NavItem` around a
+  `NavTargetKind` enum (`HOME`/`ABOUT`/`CONTACT`/`BOARD`/`EXTERNAL_URL`)
+  with a `targetBoardId` FK — plus a DB-level `CHECK` constraint enforcing
+  exactly one target payload is set per row. See
+  [decisions.md](./decisions.md#generic-boardboarditem-model-not-fixed-projectexhibition-2026-07-15)
+  for why.
+- `prisma/security/rls.sql` and `TENANT_SCOPED_MODELS`
+  (`tenant-scoped-client.ts`) updated to the new table set and re-applied
+  to Neon, in that order (RLS before the app-layer guardrail — a
+  deliberate sequencing rule, see the file comments) — verified via a
+  throwaway script: app-layer cross-tenant reads return null/0 rows *and*
+  an unscoped `app_runtime`-role query (no `set_config`) independently
+  returns 0 rows (the RLS backstop working on its own).
+- Routes: `photo/`, `work/` deleted; `board/[seq]/page.tsx`,
+  `board/[seq]/[itemSlug]/page.tsx` (only reachable for `GALLERY_MULTI`
+  boards — `notFound()`s otherwise), `about/page.tsx` added. `seq` is
+  validated as a positive integer *before* the Prisma call so a garbage
+  URL 404s instead of 500ing.
+- `PhotoGrid` dropped the category/venue tag badge (items no longer have
+  one) and made `href` optional (`GALLERY_SINGLE` items render as static,
+  non-clickable tiles — no detail page exists to link to). New
+  `IndexTab.tsx` generalizes the old Work-only, page-local `indexSlot`
+  JSX into a real shared component driven by `BoardItem.indexEnabled`/
+  `indexContent`, usable by any `GALLERY_MULTI` board's detail page —
+  `DetailTabs`'s tab list is now built per-item instead of hardcoded per
+  page type.
+- `nav-items.ts` gained `resolveNavLabel()` alongside `resolveNavHref()`:
+  for `BOARD`-kind nav items, the *board's own* `name` is authoritative,
+  not `NavItem.label` — closes the exact label-drift bug already found
+  and fixed once for `design/admin-mockup.html` (renaming a board used to
+  require updating its name in two places that could disagree).
+  `about/page.tsx` and `contact/page.tsx` apply the same fix directly
+  (look up their own `NavItem` by `targetKind` for the page heading,
+  rather than a hardcoded "ABOUT"/"CONTACT" string).
+- **Found and fixed a real production bug while verifying this** (not
+  something this change introduced — it predates it): `resolve-tenant.ts`
+  fetched `siteSettings`/`navItems`/`socialLinks` as an `include` on the
+  same unscoped Tenant-lookup query. Since RLS requires `forTenant()`'s
+  `SET LOCAL` to have run first, and that query never went through
+  `forTenant()`, **every tenant's nav links, social links, and site
+  settings were silently empty** — masked because every consumer either
+  optional-chained to a fallback (`?? tenant.slug`) or mapped over an
+  empty array with no visible error. Only caught by grepping actual
+  rendered HTML for expected nav text, not by the HTTP-200 checks used in
+  every earlier verification pass. Fixed by splitting into two queries
+  (unscoped tenant lookup, then everything else through
+  `forTenant(tenant.id)`) — see decisions.md for detail. **Lesson: a 200
+  status code proves the page rendered, not that it rendered the right
+  data — check actual content, not just status, especially for anything
+  behind RLS.**
+- `prisma/seed.ts` rewritten: 2 `GALLERY_MULTI` boards ("WORK 1"/"WORK 2")
+  + 1 `GALLERY_SINGLE` board ("GALLERY", proves the new kind end-to-end)
+  + an `AboutPage` singleton, all seeded with `seq` assigned sequentially
+  — written to double as the reference implementation for "operator
+  provisions N boards for a new tenant" (see roadmap.md), not just
+  throwaway seed logic.
+- Verified end-to-end against real Neon (2026-07-15): full production
+  `next build` succeeds, all new routes curl-tested (200s; invalid/unknown
+  `seq` 404s, not 500s), INDEX tab only appears for items with
+  `indexEnabled=true`, fullscreen deep-link (`?view=fullscreen&photo=N`)
+  still works, nav/social links/site settings now genuinely render
+  (previously silently empty per the bug above).
+- **Not done yet**: the admin-facing UI to actually let an operator
+  create/configure boards per tenant (still `design/admin-mockup.html`
+  only, and that mockup itself still assumes exactly 2 fixed boards — it
+  hasn't been updated for the new variable-board-count/kind model yet).
+  Schema and public-site rendering are ready for it; the provisioning UI
+  itself is unstarted. See [roadmap.md](./roadmap.md).
 
 **Contact form → email notification (Resend)**
 - `submitContactForm` (`src/lib/actions/contact.ts`) now sends a real email

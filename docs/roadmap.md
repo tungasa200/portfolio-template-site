@@ -53,8 +53,9 @@ This is the phase that closes two loops left open in Phase 1:
   variable first, so the RLS policies in `prisma/security/rls.sql` become
   load-bearing. Only *after* this lands: apply `rls.sql` to Neon.
 - Admin pages: dashboard, SiteSettings editor (nav items, social links,
-  hero image, contact info, footer text), Project CRUD, Exhibition CRUD,
-  photo upload + reordering, ContactSubmission inbox.
+  hero image, contact info, footer text), Board/BoardItem CRUD (per-tenant
+  board provisioning — see the board-redesign section below), photo upload
+  + reordering, ContactSubmission inbox.
 - R2 upload flow: presigned PUT URL issued by an admin-only Route Handler
   that derives `tenantId` from the session and builds the R2 key itself
   (`tenants/{tenantId}/...`) — never trust a client-supplied path or
@@ -114,53 +115,37 @@ Explicitly out of scope until there's a reason to build it:
   varies too much by registrar for a solo AI-coding maintainer to support
   well).
 
-## Pending design decision — per-tenant board count set at onboarding (not started)
+## Board redesign — schema/routing done (2026-07-15), admin CRUD still open
 
-2026-07-15: user wants pricing tiers (roughly 2 so far, not finalized) to
-differ partly by **how many boards** a tenant gets. Important clarification
-after initial confusion: this is **not** a tenant-facing self-service
-feature. The tenant/photographer never sees an "add a board" button or an
-upgrade/limit prompt in their own admin. Instead, **the operator (the user
-selling this, not the end customer) sets the board count as a custom
-setting each time they provision a new customer's tenant** — the same
-seed/internal-only path tenants are already created through (see Phase 6's
-"self-serve tenant signup" item — still not needed). A tenant's admin
-simply renders however many boards were configured for it; there's nothing
-for the tenant to hit a limit on.
+Originated from: operator-configured board count per pricing tier (not
+tenant-facing self-service — the operator sets it per package at
+provisioning, same internal/seed-only path tenants are already created
+through), plus wanting a second board *kind* (single-photo grid tiles, no
+detail page, alongside the existing multi-photo/detail-page kind). Full
+reasoning in [decisions.md](./decisions.md#generic-boardboarditem-model-not-fixed-projectexhibition-2026-07-15).
 
-This still **reopens** the Phase 4b mockup decision in
-[progress.md](./progress.md) that boards are "exactly 2 fixed gallery-type
-boards, not a user-defined N-board CMS" — the count needs to become a
-per-tenant, operator-set value instead of a hardcoded 2 — but the scope is
-much smaller than a self-service N-board CMS would have been. No upsell
-UI, no runtime limit-hit handling, no tenant-facing plan awareness at all.
+**Done**: `Board`/`BoardItem`/`BoardItemPhoto`/`AboutPage` schema, real
+migration against Neon, RLS + guardrail updated, all public routes
+(`/board/{seq}`, `/board/{seq}/{itemSlug}`, `/about`), `PhotoGrid`/
+`DetailTabs`/new `IndexTab` component updates, `nav-items.ts`'s
+`resolveNavLabel()` fix (board name is single-sourced, matches the mockup's
+own already-correct behavior), and the `resolve-tenant.ts` RLS bug this
+surfaced — see [progress.md](./progress.md) for the full list and
+verification steps taken.
 
-Explicitly decided (2026-07-15): keep working on the current detail-screen
-polish pass with the fixed-2-board assumption for now; design this as a
-**separate, later round**. When that round starts:
-- Add a per-tenant board configuration (e.g. a `boardCount` field, or a
-  small config listing which board types are enabled) — likely on `Tenant`
-  or `SiteSettings` in `prisma/schema.prisma`.
-- The admin UI (sidebar, dashboard) needs to render N board sections driven
-  by that config instead of two hardcoded ones. The mockup's own routing
-  comment already anticipated boards resolving through one generic dynamic
-  route rather than fixed `/photo`, `/work` folders — revisit whether that
-  generic-board approach is now the right level of investment, or whether
-  a lighter-weight "config picks which of a small fixed set of board types
-  are on" model covers what's actually needed.
-- `Tenant.planTier` (`prisma/schema.prisma`) already exists as a reserved
-  enum, currently just `FREE` — decide whether board count is derived from
-  planTier or is its own independent field the operator sets directly
-  (simpler, and matches "operator sets a custom setting per package" more
-  literally than deriving it from a plan label).
-- **Found while discussing this (2026-07-15), fix regardless of when board
-  count becomes configurable**: page names are not fully parameter-driven
-  yet in the real app. `src/components/site/Nav.tsx` is already correct —
-  it renders whatever `NavItem.label` values come from the DB. But
-  `src/app/s/[tenant]/photo/page.tsx` and `work/page.tsx` hardcode their
-  own heading as literal `<SectionHeader title="PHOTO" />` /
-  `title="WORK"` — renaming a board's `NavItem.label` wouldn't change the
-  board's own page heading. Fix by deriving the title from the same
-  `NavItem`/board-name source Nav.tsx already uses, not a hardcoded
-  string. (The admin mockup doesn't have this bug — `boardTitles` is
-  already single-sourced there — this is a real-app-only gap.)
+**Still open**:
+- **The admin-facing UI to actually create/configure boards per tenant.**
+  Nothing real exists yet (Phase 4 admin CRUD hasn't started). `Board.seq`
+  needs to be assigned by whatever provisions a tenant (today: `prisma/seed.ts`,
+  written to double as the reference implementation for this).
+- **`design/admin-mockup.html` still assumes exactly 2 fixed boards
+  ("Photo"/"Work") and only one item shape (multi-photo + detail page)** —
+  it hasn't been updated for the new variable-count/two-kind model this
+  round introduced. Revisit the mockup before building the real admin CRUD
+  screens against it, since building real code from a stale mockup would
+  just reintroduce the fixed-2-board assumption this whole round removed.
+- Whether board count is derived from `Tenant.planTier` (reserved enum,
+  currently just `FREE`) or is its own independent field the operator sets
+  directly — not decided, decide when the provisioning flow is built.
+- No upsell UI, no runtime limit-hit handling, no tenant-facing plan
+  awareness needed for any of this (confirmed not tenant-facing).

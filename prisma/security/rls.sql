@@ -32,8 +32,8 @@ DECLARE
   t text;
 BEGIN
   FOREACH t IN ARRAY ARRAY[
-    'SiteSettings', 'NavItem', 'SocialLink', 'Project', 'ProjectPhoto',
-    'Exhibition', 'ExhibitionPhoto', 'ContactSubmission'
+    'SiteSettings', 'NavItem', 'SocialLink', 'AboutPage', 'Board',
+    'BoardItem', 'BoardItemPhoto', 'ContactSubmission'
   ]
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);

@@ -52,8 +52,18 @@ See `prisma/schema.prisma` for the authoritative source. Summary:
   for superadmins).
 - **Tenant-scoped** (every row carries `tenantId`, denormalized onto child
   tables even where a parent join could derive it): `SiteSettings` (1:1),
-  `NavItem`, `SocialLink`, `Project` + `ProjectPhoto`, `Exhibition` +
-  `ExhibitionPhoto`, `ContactSubmission`.
+  `AboutPage` (1:1, static rich-text page — not a board), `NavItem`,
+  `SocialLink`, `Board` + `BoardItem` + `BoardItemPhoto`, `ContactSubmission`.
+
+  `Board` (2026-07-15, replaces the earlier fixed `Project`/`Exhibition`
+  pair) is generic and data-driven: `kind` is `GALLERY_MULTI` (item has N
+  photos + its own `/board/{seq}/{itemSlug}` detail page with INDEX/GRID
+  VIEW/FULLSCREEN VIEW tabs) or `GALLERY_SINGLE` (item has exactly 1 photo,
+  no detail page, static grid tile). `seq` is a stable per-tenant integer
+  driving the fixed `/board/{seq}` route — set once, never user-editable
+  (only `name` is); this is what lets an operator provision however many
+  boards a tenant's package includes without a code change. See
+  [decisions.md](./decisions.md) and [roadmap.md](./roadmap.md) for why.
 
 ## Cross-tenant isolation (two layers)
 

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Playfair_Display, Inter, JetBrains_Mono } from "next/font/google";
 import { requireTenant } from "@/lib/tenant/resolve-tenant";
-import { resolveNavHref } from "@/lib/site/nav-items";
+import { resolveNavHref, resolveNavLabel } from "@/lib/site/nav-items";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import "./theme.css";
@@ -41,9 +41,9 @@ export default async function TenantSiteLayout({
 
   const navItems = tenant.navItems.map((item) => ({
     id: item.id,
-    label: item.label,
+    label: resolveNavLabel(item),
     href: resolveNavHref(item),
-    external: item.type === "EXTERNAL_URL",
+    external: item.targetKind === "EXTERNAL_URL",
   }));
 
   const socialLinks = tenant.socialLinks.map((link) => ({

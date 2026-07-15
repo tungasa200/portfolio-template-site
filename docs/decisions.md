@@ -3,6 +3,33 @@
 Chronological. Read this when you're tempted to "simplify" something —
 most of the non-obvious choices here were already argued out once.
 
+## Generic `Board`/`BoardItem` model, not fixed `Project`/`Exhibition` (2026-07-15)
+
+The original schema hand-duplicated `Project`/`ProjectPhoto` (Photo board)
+and `Exhibition`/`ExhibitionPhoto` (Work board) as separate models, with
+matching separate `/photo` and `/work` route pairs. Reopened once three
+things became explicit in the same conversation: (1) board *count* per
+tenant needs to be operator-configured per package, not fixed at 2; (2) a
+new board *kind* was wanted — single-photo-per-item grid tiles with no
+detail page, alongside the existing multi-photo/detail-page kind; (3) board
+URL paths had just been made immutable (see the path-editing reversal
+below), which meant a stable `/board/{seq}` numeric route made more sense
+than semantic per-board route folders anyway.
+
+Replaced with one `Board` (+ `kind: GALLERY_MULTI | GALLERY_SINGLE`) +
+`BoardItem` + `BoardItemPhoto` model and one route pair
+(`board/[seq]/page.tsx`, `board/[seq]/[itemSlug]/page.tsx`) instead of two.
+Also fixed, in the same pass, a real cross-tenant-data bug this surfaced:
+`resolve-tenant.ts` was fetching `siteSettings`/`navItems`/`socialLinks` as
+an `include` on the same unscoped query used to identify the tenant —
+since RLS requires `forTenant()`'s `SET LOCAL` to have run, and that query
+never ran through `forTenant()`, every tenant's nav/social links/site
+settings were silently empty in production. Fixed by splitting into two
+queries: identify the tenant unscoped (the one sanctioned exception), then
+fetch everything else through `forTenant(tenant.id)` like every other
+query in the app. See [architecture.md](./architecture.md#data-model) and
+[roadmap.md](./roadmap.md) for the schema and remaining admin-CRUD work.
+
 ## Multi-tenant SaaS from day one, not a single-tenant site
 
 Started as "just my own portfolio," but there's a concrete plan to sell this

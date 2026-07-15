@@ -10,10 +10,10 @@ const TENANT_SCOPED_MODELS = new Set([
   "SiteSettings",
   "NavItem",
   "SocialLink",
-  "Project",
-  "ProjectPhoto",
-  "Exhibition",
-  "ExhibitionPhoto",
+  "AboutPage",
+  "Board",
+  "BoardItem",
+  "BoardItemPhoto",
   "ContactSubmission",
 ]);
 
