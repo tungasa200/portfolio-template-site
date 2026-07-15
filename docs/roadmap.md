@@ -153,3 +153,14 @@ polish pass with the fixed-2-board assumption for now; design this as a
   planTier or is its own independent field the operator sets directly
   (simpler, and matches "operator sets a custom setting per package" more
   literally than deriving it from a plan label).
+- **Found while discussing this (2026-07-15), fix regardless of when board
+  count becomes configurable**: page names are not fully parameter-driven
+  yet in the real app. `src/components/site/Nav.tsx` is already correct —
+  it renders whatever `NavItem.label` values come from the DB. But
+  `src/app/s/[tenant]/photo/page.tsx` and `work/page.tsx` hardcode their
+  own heading as literal `<SectionHeader title="PHOTO" />` /
+  `title="WORK"` — renaming a board's `NavItem.label` wouldn't change the
+  board's own page heading. Fix by deriving the title from the same
+  `NavItem`/board-name source Nav.tsx already uses, not a hardcoded
+  string. (The admin mockup doesn't have this bug — `boardTitles` is
+  already single-sourced there — this is a real-app-only gap.)

@@ -467,11 +467,11 @@
         <div class="section-card" style="display:flex; gap:24px; flex-wrap:wrap; margin-bottom:24px;">
           <div style="flex:1; min-width:160px;">
             <div style="font-size:34px; font-weight:700;">6</div>
-            <div style="font-size:14.5px; color:var(--muted);" id="home-stat-projects">사진 프로젝트 공개 중</div>
+            <div style="font-size:14.5px; color:var(--muted);" id="home-stat-projects">WORK 1 게시물 공개 중</div>
           </div>
           <div style="flex:1; min-width:160px;">
             <div style="font-size:34px; font-weight:700;">4</div>
-            <div style="font-size:14.5px; color:var(--muted);" id="home-stat-exhibitions">작업 공개 중</div>
+            <div style="font-size:14.5px; color:var(--muted);" id="home-stat-exhibitions">WORK 2 게시물 공개 중</div>
           </div>
           <div style="flex:1; min-width:160px;">
             <div style="font-size:34px; font-weight:700; color:var(--accent-ink); background:var(--accent); display:inline-block; padding:0 10px; border-radius:8px;">2</div>
@@ -498,7 +498,7 @@
           <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:20px;">
             <button class="btn" id="home-add-project-btn" data-open-project="new">+ 새 프로젝트 추가</button>
             <button class="btn" id="home-add-exhibition-btn" data-open-exhibition="new">+ 새 항목 추가</button>
-            <button class="btn" id="home-about-btn" data-nav="about">소개 페이지 수정</button>
+            <button class="btn" id="home-about-btn" data-nav="about">ABOUT 페이지 수정</button>
             <button class="btn" data-nav="settings">사이트 정보 수정</button>
           </div>
         </div>
@@ -520,7 +520,7 @@
               <button class="path-edit-btn" title="주소 바꾸기" onclick="startRenamePath('projects')">✏️</button>
             </div>
             <div class="page-title-row">
-              <h1 class="page-title" id="projects-title-display">사진</h1>
+              <h1 class="page-title" id="projects-title-display">WORK 1</h1>
               <button class="rename-btn" title="이 게시판 이름 바꾸기" onclick="startRename('projects')">✏️</button>
             </div>
           </div>
@@ -537,10 +537,10 @@
     <section class="view" id="view-project-editor">
       <div class="page">
         <div class="editor-header">
-          <button class="back-btn" data-nav="projects">← <span id="back-to-projects-label">사진</span> 목록으로</button>
+          <button class="back-btn" data-nav="projects">← <span id="back-to-projects-label">WORK 1</span> 목록으로</button>
         </div>
         <div class="page-head">
-          <input class="item-title-input" id="project-editor-title" type="text" placeholder="새 사진 프로젝트" />
+          <input class="item-title-input" id="project-editor-title" type="text" placeholder="새 프로젝트" />
         </div>
 
         <div class="section-card">
@@ -620,7 +620,7 @@
               <button class="path-edit-btn" title="주소 바꾸기" onclick="startRenamePath('exhibitions')">✏️</button>
             </div>
             <div class="page-title-row">
-              <h1 class="page-title" id="exhibitions-title-display">작업</h1>
+              <h1 class="page-title" id="exhibitions-title-display">WORK 2</h1>
               <button class="rename-btn" title="이 게시판 이름 바꾸기" onclick="startRename('exhibitions')">✏️</button>
             </div>
           </div>
@@ -637,10 +637,10 @@
     <section class="view" id="view-exhibition-editor">
       <div class="page">
         <div class="editor-header">
-          <button class="back-btn" data-nav="exhibitions">← <span id="back-to-exhibitions-label">작업</span> 목록으로</button>
+          <button class="back-btn" data-nav="exhibitions">← <span id="back-to-exhibitions-label">WORK 2</span> 목록으로</button>
         </div>
         <div class="page-head">
-          <input class="item-title-input" id="exhibition-editor-title" type="text" placeholder="새 작업" />
+          <input class="item-title-input" id="exhibition-editor-title" type="text" placeholder="새 프로젝트" />
         </div>
 
         <div class="section-card">
@@ -719,7 +719,7 @@
             <button class="path-edit-btn" title="주소 바꾸기" onclick="startRenamePath('about')">✏️</button>
           </div>
           <div class="page-title-row">
-            <h1 class="page-title" id="about-title-display">소개</h1>
+            <h1 class="page-title" id="about-title-display">ABOUT</h1>
             <button class="rename-btn" title="이 페이지 이름 바꾸기" onclick="startRename('about')">✏️</button>
           </div>
         </div>
@@ -840,7 +840,7 @@
   // source of truth for both the sidebar label and each board's own page
   // heading, mirroring how the real implementation would read NavItem.label
   // (already free-text in the schema) for both.
-  const boardTitles = { projects: "사진", exhibitions: "작업", about: "소개" };
+  const boardTitles = { projects: "WORK 1", exhibitions: "WORK 2", about: "ABOUT" };
 
   // URL path per board -- also user-editable, not just the display name.
   // Real implementation: every board (photo/work/about alike) resolves
@@ -858,7 +858,7 @@
   // equivalent, so they always stay pinned after the site-nav items rather
   // than participating in the reorder.
   let NAV_ITEMS = [
-    { id: "home", boardKey: null, fixedLabel: "홈", navDataLabel: "HOME", icon: "M2 8.5 8 3l6 5.5M3.5 7.5V13a.5.5 0 0 0 .5.5h3v-4h2v4h3a.5.5 0 0 0 .5-.5V7.5" },
+    { id: "home", boardKey: null, fixedLabel: "HOME", navDataLabel: "HOME", icon: "M2 8.5 8 3l6 5.5M3.5 7.5V13a.5.5 0 0 0 .5.5h3v-4h2v4h3a.5.5 0 0 0 .5-.5V7.5" },
     { id: "projects", boardKey: "projects", navDataLabel: "PHOTO", icon: "M1.8 3.2h12.4v9.6H1.8zM4.4 9.6l2.2-2.4 1.8 1.8 2-2.6 1.8 2" },
     { id: "exhibitions", boardKey: "exhibitions", navDataLabel: "WORK", icon: "M2.2 2.2h8.6v8.6H2.2z" },
     { id: "about", boardKey: "about", navDataLabel: "ABOUT", icon: "M3.2 1.8h7.2l2.4 2.4v9.4a.6.6 0 0 1-.6.6H3.2a.6.6 0 0 1-.6-.6V2.4a.6.6 0 0 1 .6-.6ZM4.8 7.4h6.4M4.8 9.8h6.4M4.8 5h3.2" },
@@ -891,8 +891,8 @@
   ];
   const navItemsData = [
     { label: "HOME", target: "홈 화면", visible: true },
-    { label: "PHOTO", target: "사진 목록", visible: true },
-    { label: "WORK", target: "작업 목록", visible: true },
+    { label: "PHOTO", target: "게시판 1", visible: true },
+    { label: "WORK", target: "게시판 2", visible: true },
     { label: "ABOUT", target: "소개 페이지", visible: true },
     { label: "CONTACT", target: "문의 페이지", visible: true },
   ];
@@ -1532,11 +1532,11 @@
   // the same navItemsData as Settings -> 메뉴 순서, applies instantly (no
   // separate save step, unlike the list/editor pages).
   const NAV_DISPLAY_NAME = {
-    HOME: () => "홈",
+    HOME: () => "HOME",
     PHOTO: () => boardTitles.projects,
     WORK: () => boardTitles.exhibitions,
     ABOUT: () => boardTitles.about,
-    CONTACT: () => "문의",
+    CONTACT: () => "CONTACT",
   };
   function renderHomeVisibility() {
     const rows = navItemsData
