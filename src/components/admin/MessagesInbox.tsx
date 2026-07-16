@@ -17,9 +17,11 @@ export interface MessageItem {
 export function MessagesInbox({
   messages: initialMessages,
   canReply,
+  settingsHref,
 }: {
   messages: MessageItem[];
   canReply: boolean;
+  settingsHref: string;
 }) {
   const [messages, setMessages] = useState(initialMessages);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -91,7 +93,7 @@ export function MessagesInbox({
               />
             ) : (
               <div className="admin-empty-note">
-                답장하려면 <a href="/admin/settings">설정 페이지</a>에서 이메일 연동을 켜주세요.
+                답장하려면 <a href={settingsHref}>설정 페이지</a>에서 이메일 연동을 켜주세요.
               </div>
             )}
           </div>

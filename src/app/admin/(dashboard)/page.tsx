@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
+import { getAdminBasePath } from "@/lib/auth/admin-base-path";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
 import { r2PublicUrl } from "@/lib/storage/r2";
 import { resolveNavLabel } from "@/lib/site/nav-items";
@@ -16,6 +17,7 @@ const TARGET_LABEL: Record<string, string> = {
 export default async function AdminHomePage() {
   const { tenantId } = await getCurrentTenantContext();
   const db = forTenant(tenantId);
+  const adminBasePath = await getAdminBasePath();
 
   const [siteSettings, boards, navItems, unreadCount] = await Promise.all([
     db.siteSettings.findUnique({ where: { tenantId } }),
@@ -67,7 +69,7 @@ export default async function AdminHomePage() {
           </div>
           <div style={{ fontSize: "14.5px", color: "var(--muted)", marginTop: 6 }}>
             새로 온 메시지 ·{" "}
-            <Link href="/messages" style={{ color: "var(--ink)", fontWeight: 700, textDecoration: "underline" }}>
+            <Link href={`${adminBasePath}/messages`} style={{ color: "var(--ink)", fontWeight: 700, textDecoration: "underline" }}>
               확인하기
             </Link>
           </div>
@@ -92,7 +94,7 @@ export default async function AdminHomePage() {
                 <span className="admin-tag">대표 사진 (1600×1600)</span>
               )}
             </div>
-            <Link href="/settings" className="admin-hero-edit-btn">
+            <Link href={`${adminBasePath}/settings`} className="admin-hero-edit-btn">
               ✏️ 대표 사진 바꾸기
             </Link>
           </div>
@@ -103,14 +105,14 @@ export default async function AdminHomePage() {
         <h2>Quick Menu</h2>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 20 }}>
           {boards.map((board) => (
-            <Link key={board.id} href={`/board/${board.id}/new`} className="admin-btn">
+            <Link key={board.id} href={`${adminBasePath}/board/${board.id}/new`} className="admin-btn">
               + 새 {board.name} 추가
             </Link>
           ))}
-          <Link href="/about" className="admin-btn">
+          <Link href={`${adminBasePath}/about`} className="admin-btn">
             {aboutNavItem ? resolveNavLabel(aboutNavItem) : "About"} 페이지 수정
           </Link>
-          <Link href="/settings" className="admin-btn">
+          <Link href={`${adminBasePath}/settings`} className="admin-btn">
             사이트 정보 수정
           </Link>
         </div>

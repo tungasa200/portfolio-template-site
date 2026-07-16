@@ -24,6 +24,7 @@ interface BoardItemEditorProps {
   boardName: string;
   kind: "GALLERY_MULTI" | "GALLERY_SINGLE";
   item: ExistingItem | null;
+  adminBasePath: string;
 }
 
 const initialState: ActionFormState = { status: "idle" };
@@ -35,7 +36,7 @@ const initialState: ActionFormState = { status: "idle" };
 // to, unlike the mockup's in-memory-only photo staging (see
 // src/lib/actions/board-items.ts's createBoardItem, which redirects straight
 // into this same editor for the newly created item).
-export function BoardItemEditor({ boardId, boardName, kind, item }: BoardItemEditorProps) {
+export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath }: BoardItemEditorProps) {
   const isNew = item === null;
   const isMulti = kind === "GALLERY_MULTI";
   const action = isNew ? createBoardItem : updateBoardItem;
@@ -69,7 +70,7 @@ export function BoardItemEditor({ boardId, boardName, kind, item }: BoardItemEdi
   return (
     <div className="admin-page">
       <div className="admin-editor-header">
-        <Link href={`/board/${boardId}`} className="admin-back-btn">
+        <Link href={`${adminBasePath}/board/${boardId}`} className="admin-back-btn">
           ← {boardName} 목록으로
         </Link>
       </div>

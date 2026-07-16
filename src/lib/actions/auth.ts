@@ -2,6 +2,7 @@
 
 import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/lib/auth/auth";
+import { getAdminBasePath } from "@/lib/auth/admin-base-path";
 
 export interface LoginFormState {
   status: "idle" | "error" | "success";
@@ -24,13 +25,14 @@ export async function loginAction(
   formData: FormData
 ): Promise<LoginFormState> {
   try {
+    const homeTarget = (await getAdminBasePath()) || "/";
     const url = await signIn("credentials", {
       email: formData.get("email"),
       password: formData.get("password"),
       redirect: false,
-      redirectTo: "/",
+      redirectTo: homeTarget,
     });
-    return { status: "success", redirectTo: url ?? "/" };
+    return { status: "success", redirectTo: url ?? homeTarget };
   } catch (error) {
     if (error instanceof AuthError) {
       return { status: "error", message: "Invalid email or password, or account temporarily locked." };
@@ -40,10 +42,11 @@ export async function loginAction(
 }
 
 export async function logoutAction(): Promise<string> {
-  const res = await signOut({ redirect: false, redirectTo: "/login" });
+  const loginTarget = `${await getAdminBasePath()}/login`;
+  const res = await signOut({ redirect: false, redirectTo: loginTarget });
   // next-auth's signOut() returns the raw Auth() response when
   // redirect:false — its redirect target lives on `.redirect`, not `.url`
   // (see node_modules/next-auth/lib/actions.js). See this file's top
   // comment for why the caller does a hard nav with it.
-  return (res as { redirect?: string })?.redirect ?? "/login";
+  return (res as { redirect?: string })?.redirect ?? loginTarget;
 }

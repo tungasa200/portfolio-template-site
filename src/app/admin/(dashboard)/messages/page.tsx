@@ -1,4 +1,5 @@
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
+import { getAdminBasePath } from "@/lib/auth/admin-base-path";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
 import { MessagesInbox } from "@/components/admin/MessagesInbox";
 
@@ -19,6 +20,7 @@ export default async function AdminMessagesPage() {
   ]);
 
   const canReply = Boolean(siteSettings?.replyEmailAddress && siteSettings?.replyEmailAppPasswordEnc);
+  const settingsHref = `${await getAdminBasePath()}/settings`;
 
   return (
     <div className="admin-page" style={{ maxWidth: 900 }}>
@@ -29,6 +31,7 @@ export default async function AdminMessagesPage() {
       </div>
       <MessagesInbox
         canReply={canReply}
+        settingsHref={settingsHref}
         messages={submissions.map((s) => ({
           id: s.id,
           name: s.name,

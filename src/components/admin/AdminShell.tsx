@@ -9,6 +9,12 @@ import { AdminNavIcon, ADMIN_ICON_PATHS } from "@/components/admin/icons";
 export interface AdminNavEntry {
   id: string;
   href: string;
+  // Canonical path for active-tab highlighting — always the resolved
+  // /admin/* route regardless of how the browser reached it (bare root vs
+  // admin.{ROOT_DOMAIN} subdomain), since usePathname() reflects the
+  // post-rewrite route either way. `href` itself varies by access mode
+  // (see src/lib/auth/admin-base-path.ts), so it can't double as this.
+  matchPath: string;
   label: string;
   iconPath: string;
   badge?: number;
@@ -22,9 +28,9 @@ interface AdminShellProps {
   children: ReactNode;
 }
 
-function isActive(pathname: string, href: string): boolean {
-  if (href === "/") return pathname === "/";
-  return pathname === href || pathname.startsWith(`${href}/`);
+function isActive(pathname: string, matchPath: string): boolean {
+  if (matchPath === "/admin") return pathname === "/admin";
+  return pathname === matchPath || pathname.startsWith(`${matchPath}/`);
 }
 
 export function AdminShell({ siteName, userEmail, siteUrl, navItems, children }: AdminShellProps) {
@@ -46,7 +52,7 @@ export function AdminShell({ siteName, userEmail, siteUrl, navItems, children }:
             <Link
               key={item.id}
               href={item.href}
-              className={`admin-nav-item ${isActive(pathname, item.href) ? "active" : ""}`}
+              className={`admin-nav-item ${isActive(pathname, item.matchPath) ? "active" : ""}`}
             >
               <AdminNavIcon path={item.iconPath} />
               <span className="admin-nav-label">{item.label}</span>

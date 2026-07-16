@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { auth } from "@/lib/auth/auth";
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
+import { getAdminBasePath } from "@/lib/auth/admin-base-path";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
 import { prisma } from "@/lib/db/client";
 import { ToastProvider } from "@/components/admin/Toast";
@@ -14,6 +15,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
   const { tenantId } = await getCurrentTenantContext();
   const session = await auth();
   const db = forTenant(tenantId);
+  const adminBasePath = await getAdminBasePath();
 
   // Tenant itself carries no tenantId column (platform-level model, see
   // prisma/schema.prisma) — the one other sanctioned unscoped lookup besides
@@ -33,19 +35,27 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
 
   const boardIcon = (kind: string) => (kind === "GALLERY_SINGLE" ? ADMIN_ICON_PATHS.boardSingle : ADMIN_ICON_PATHS.boardMulti);
 
-  // Browser-facing hrefs — proxy.ts rewrites admin.{ROOT_DOMAIN}/* -> /admin/*
-  // invisibly, so these must NOT include the /admin prefix themselves (same
-  // reasoning as src/lib/auth/auth.ts's pages.signIn, and the same
-  // convention the public site already follows in
-  // src/lib/site/nav-items.ts's resolveNavHref).
+  // href is browser-facing and varies by access mode (see
+  // src/lib/auth/admin-base-path.ts); matchPath is the canonical
+  // /admin/* route AdminShell compares against usePathname() for active-tab
+  // highlighting, which stays the same regardless of access mode.
   const dynamicNavItems: AdminNavEntry[] = navItems
     .map((n): AdminNavEntry | null => {
-      if (n.targetKind === "HOME") return { id: n.id, href: "/", label: "HOME", iconPath: ADMIN_ICON_PATHS.home };
-      if (n.targetKind === "ABOUT") return { id: n.id, href: "/about", label: n.label, iconPath: ADMIN_ICON_PATHS.about };
+      if (n.targetKind === "HOME")
+        return { id: n.id, href: adminBasePath || "/", matchPath: "/admin", label: "HOME", iconPath: ADMIN_ICON_PATHS.home };
+      if (n.targetKind === "ABOUT")
+        return {
+          id: n.id,
+          href: `${adminBasePath}/about`,
+          matchPath: "/admin/about",
+          label: n.label,
+          iconPath: ADMIN_ICON_PATHS.about,
+        };
       if (n.targetKind === "BOARD" && n.targetBoard) {
         return {
           id: n.id,
-          href: `/board/${n.targetBoard.id}`,
+          href: `${adminBasePath}/board/${n.targetBoard.id}`,
+          matchPath: `/admin/board/${n.targetBoard.id}`,
           label: n.targetBoard.name,
           iconPath: boardIcon(n.targetBoard.kind),
         };
@@ -58,12 +68,19 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
     ...dynamicNavItems,
     {
       id: "messages",
-      href: "/messages",
+      href: `${adminBasePath}/messages`,
+      matchPath: "/admin/messages",
       label: "메시지",
       iconPath: ADMIN_ICON_PATHS.messages,
       badge: unreadCount,
     },
-    { id: "settings", href: "/settings", label: "설정", iconPath: ADMIN_ICON_PATHS.settings },
+    {
+      id: "settings",
+      href: `${adminBasePath}/settings`,
+      matchPath: "/admin/settings",
+      label: "설정",
+      iconPath: ADMIN_ICON_PATHS.settings,
+    },
   ];
 
   const rootDomain = process.env.ROOT_DOMAIN ?? "localhost:3000";

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
+import { getAdminBasePath } from "@/lib/auth/admin-base-path";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
 import { r2PublicUrl } from "@/lib/storage/r2";
 import { formatBoardDate } from "@/lib/site/format-date";
@@ -15,6 +16,7 @@ export default async function BoardListPage({ params }: { params: Promise<{ boar
   const { boardId } = await params;
   const { tenantId } = await getCurrentTenantContext();
   const db = forTenant(tenantId);
+  const adminBasePath = await getAdminBasePath();
 
   const board = await db.board.findFirst({
     where: { id: boardId },
@@ -42,7 +44,7 @@ export default async function BoardListPage({ params }: { params: Promise<{ boar
       <div className="admin-page-head">
         <BoardRenameHeading boardId={board.id} seq={board.seq} name={board.name} kindLabel={KIND_LABEL[board.kind]} />
       </div>
-      <BoardItemGrid boardId={board.id} kind={board.kind} items={items} />
+      <BoardItemGrid boardId={board.id} kind={board.kind} items={items} adminBasePath={adminBasePath} />
     </div>
   );
 }

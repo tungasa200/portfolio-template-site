@@ -17,12 +17,13 @@ interface BoardItemGridProps {
   boardId: string;
   kind: "GALLERY_MULTI" | "GALLERY_SINGLE";
   items: BoardGridItem[];
+  adminBasePath: string;
 }
 
 // GALLERY_SINGLE boards drop the title/date row and become square tiles —
 // see design/admin-mockup.html's siteCard() comment: a one-photo-per-item
 // gallery reads as a pure image wall, name/date move to a hover tooltip.
-export function BoardItemGrid({ boardId, kind, items: initialItems }: BoardItemGridProps) {
+export function BoardItemGrid({ boardId, kind, items: initialItems, adminBasePath }: BoardItemGridProps) {
   const [items, setItems] = useState(initialItems);
   const [reorderMode, setReorderMode] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -66,7 +67,7 @@ export function BoardItemGrid({ boardId, kind, items: initialItems }: BoardItemG
         <button type="button" className={`admin-btn ${reorderMode ? "admin-btn-primary" : ""}`} onClick={toggleReorderMode}>
           {reorderMode ? "완료" : "순서 변경"}
         </button>
-        <Link href={`/board/${boardId}/new`} className="admin-btn admin-btn-primary">
+        <Link href={`${adminBasePath}/board/${boardId}/new`} className="admin-btn admin-btn-primary">
           + NEW
         </Link>
       </div>
@@ -104,7 +105,7 @@ export function BoardItemGrid({ boardId, kind, items: initialItems }: BoardItemG
                 >
                   {item.isPublished ? "공개" : "비공개"}
                 </button>
-                <Link href={`/board/${boardId}/${item.id}`} className="admin-site-card-edit" title="수정하기">
+                <Link href={`${adminBasePath}/board/${boardId}/${item.id}`} className="admin-site-card-edit" title="수정하기">
                   ✏️
                 </Link>
               </>
