@@ -30,7 +30,16 @@ export function proxy(request: NextRequest) {
   const host = hostWithoutPort(request.headers.get("host") ?? "");
 
   if (host === ROOT_DOMAIN || host === `www.${ROOT_DOMAIN}`) {
-    if (!ROOT_TENANT_SLUG) {
+    // /admin must stay reachable at the bare root domain — this is the
+    // *only* way to reach it on a deployment with no wildcard-subdomain
+    // custom domain (e.g. Vercel's shared *.vercel.app default domain,
+    // where `admin.{root}` can never resolve to this project at all,
+    // unlike a real custom domain with a wildcard DNS record). Without
+    // this exception, ROOT_TENANT_SLUG's blanket rewrite below would
+    // rewrite /admin/* into the tenant site tree too, making admin
+    // completely unreachable the moment ROOT_TENANT_SLUG is set on such
+    // a deployment.
+    if (!ROOT_TENANT_SLUG || pathname === "/admin" || pathname.startsWith("/admin/")) {
       return NextResponse.next();
     }
     const url = request.nextUrl.clone();

@@ -96,16 +96,39 @@ gitignored and must never be committed.**
    `prisma studio` edit) to your own Resend signup email first, or sandbox
    mode will silently drop the notification.
 
-## 4. Vercel — ⬜ not yet done for this project
+## 4. Vercel — 🟡 deployed on the shared default domain, no custom domain (by choice)
 
 1. Import this repo as a Vercel project (or connect it from an existing
-   local clone with `vercel link`).
+   local clone with `vercel link`). **Done** — deployed at
+   `https://portfolio-template-site.vercel.app`, Vercel's own shared
+   `*.vercel.app` domain, **not** a custom domain — this project is being
+   run as a dev/master template (see
+   [decisions.md](./decisions.md#per-customer-fork--dedicated-vercel-deployment-not-one-shared-multi-tenant-instance-2026-07-16)),
+   not a real tenant-facing deployment, so a real domain was deliberately
+   skipped for now.
 2. Set every variable from `.env` in the Vercel project settings
    (Production **and** Preview environments) — Vercel does not read your
    local `.env` file.
-3. Add your apex domain and a wildcard domain (`*.yourdomain.com`) under
-   Project Settings → Domains — required for subdomain-based tenant
-   routing to work in production.
+3. **⬜ No wildcard domain — and none is possible on the shared default
+   domain.** Subdomain-based routing (`admin.{root}`, `{slug}.{root}`)
+   needs a real custom domain with a wildcard DNS record (`*.yourdomain.com`)
+   under Project Settings → Domains; `admin.portfolio-template-site.vercel.app`
+   can never resolve to this project since Vercel only assigns the exact
+   `*.vercel.app` slug it gave you, not a wildcard under it. Consequence:
+   **the admin panel is only reachable at
+   `https://portfolio-template-site.vercel.app/admin/...` directly** (no
+   `admin.` prefix) — `proxy.ts` was fixed (2026-07-16, see
+   [decisions.md](./decisions.md#admin-must-stay-reachable-at-the-bare-root-domain-not-only-adminroot_domain-2026-07-16))
+   to keep `/admin/*` reachable at the bare root domain specifically for
+   this scenario. The public tenant site itself only works if
+   `ROOT_TENANT_SLUG` is set (serves that one tenant at the bare root
+   domain too) — there's no way to reach a *second* tenant's site without
+   a real wildcard domain.
+4. **R2 CORS**: the `AllowedOrigins` list (see section 2 above) must
+   include `https://portfolio-template-site.vercel.app` (no `admin.`
+   prefix, per the point above) alongside the existing
+   `http://admin.localhost:3000` dev entry, or the browser upload flow
+   will fail with a CORS error on this deployment specifically.
 4. Set `ROOT_DOMAIN` to your real apex domain (e.g. `myplatform.com`) in
    the Vercel env vars — locally it stays `localhost:3000`.
 

@@ -3,6 +3,33 @@
 Chronological. Read this when you're tempted to "simplify" something —
 most of the non-obvious choices here were already argued out once.
 
+## `/admin` must stay reachable at the bare root domain, not only `admin.{ROOT_DOMAIN}` (2026-07-16)
+
+Found deploying the master dev project to Vercel's shared default domain
+(`portfolio-template-site.vercel.app`, see the fork-per-customer decision
+below — no custom domain bought for this one on purpose). `admin.{root}`
+subdomain routing (`proxy.ts`) fundamentally cannot work there:
+`admin.portfolio-template-site.vercel.app` is a hostname nobody has
+claimed — Vercel only assigns the project its own single `*.vercel.app`
+slug, not a wildcard, so that subdomain never reaches this deployment at
+all (unlike a real custom domain with a wildcard DNS record, which is what
+subdomain routing actually requires — see
+[external-services.md](./external-services.md)'s Vercel section).
+
+Made worse by `ROOT_TENANT_SLUG` (added just before this): when set, it
+unconditionally rewrote *every* path under the root domain — including
+`/admin/*` — into the tenant site tree, which would make `/admin` 404
+outright even by direct path, not just via the broken subdomain. Fixed by
+carving out `/admin` and `/admin/*` from that rewrite in `proxy.ts`, so
+`{root-domain}/admin/...` is always reachable directly regardless of
+`ROOT_TENANT_SLUG` — the fallback access path for any deployment without a
+wildcard-subdomain custom domain. Verified against a fresh local dev
+server restart (env changes needed a restart to be picked up either way):
+`admin.localhost:3000/login` (existing subdomain path) and
+`localhost:3000/admin/login` (new fallback) both work, and
+`localhost:3000/` still correctly shows the `ROOT_TENANT_SLUG` tenant site
+rather than 404ing on `/admin`.
+
 ## Per-customer fork + dedicated Vercel deployment, not one shared multi-tenant instance (2026-07-16)
 
 This repo is being run as a **dev master template**: no custom domain is
