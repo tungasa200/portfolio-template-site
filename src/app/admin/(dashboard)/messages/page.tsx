@@ -10,10 +10,15 @@ export default async function AdminMessagesPage() {
   const { tenantId } = await getCurrentTenantContext();
   const db = forTenant(tenantId);
 
-  const submissions = await db.contactSubmission.findMany({
-    where: { status: { in: ["NEW", "READ"] } },
-    orderBy: { createdAt: "desc" },
-  });
+  const [submissions, siteSettings] = await Promise.all([
+    db.contactSubmission.findMany({
+      where: { status: { in: ["NEW", "READ"] } },
+      orderBy: { createdAt: "desc" },
+    }),
+    db.siteSettings.findUnique({ where: { tenantId } }),
+  ]);
+
+  const canReply = Boolean(siteSettings?.replyEmailAddress && siteSettings?.replyEmailAppPasswordEnc);
 
   return (
     <div className="admin-page" style={{ maxWidth: 900 }}>
@@ -23,6 +28,7 @@ export default async function AdminMessagesPage() {
         <p className="admin-page-desc">방문자가 연락처 페이지에서 보낸 메시지예요.</p>
       </div>
       <MessagesInbox
+        canReply={canReply}
         messages={submissions.map((s) => ({
           id: s.id,
           name: s.name,
@@ -30,6 +36,7 @@ export default async function AdminMessagesPage() {
           message: s.message,
           dateLabel: formatKoreanDate(s.createdAt),
           isNew: s.status === "NEW",
+          replyMessage: s.replyMessage,
         }))}
       />
     </div>

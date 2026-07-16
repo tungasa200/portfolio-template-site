@@ -5,6 +5,7 @@ import { resolveNavLabel } from "@/lib/site/nav-items";
 import { SettingsForm } from "@/components/admin/SettingsForm";
 import { NavVisibilityList } from "@/components/admin/NavVisibilityList";
 import { SocialLinksManager } from "@/components/admin/SocialLinksManager";
+import { ReplyEmailSettings } from "@/components/admin/ReplyEmailSettings";
 
 const TARGET_LABEL: Record<string, string> = {
   HOME: "홈 화면",
@@ -61,6 +62,8 @@ export default async function AdminSettingsPage() {
         <h2>SNS 링크</h2>
         <SocialLinksManager links={socialLinks.map((s) => ({ id: s.id, platform: s.platform, url: s.url }))} />
       </div>
+
+      <ReplyEmailSettings connectedEmail={siteSettings?.replyEmailAddress ?? null} />
     </div>
   );
 }

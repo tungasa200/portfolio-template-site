@@ -89,6 +89,13 @@ model SiteSettings {
   contactEmail     String
   footerText       String?
   themeName        String  @default("editorial-default") // reserved for future per-tenant theming
+
+  // Opt-in Gmail SMTP reply-from-your-own-address feature (see
+  // src/lib/email/gmail-smtp.ts). Both null unless the tenant has connected
+  // an account in Settings — the reply UI stays hidden until then.
+  // App password is encrypted at rest (src/lib/crypto/secret-box.ts).
+  replyEmailAddress        String?
+  replyEmailAppPasswordEnc String?
 }
 
 // Static, non-repeating page — not a board (no items, no photo grid).
@@ -231,6 +238,11 @@ model ContactSubmission {
   attachmentR2Key String?
   status          ContactStatus @default(NEW)
   createdAt       DateTime      @default(now())
+
+  // One-shot admin reply — sent once via the tenant's own connected Gmail
+  // (see SiteSettings.replyEmailAddress), then locked (no thread/undo).
+  replyMessage String?   @db.Text
+  repliedAt    DateTime?
 
   @@index([tenantId, status])
 }
