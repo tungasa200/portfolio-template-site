@@ -46,9 +46,12 @@ def random_password(length: int, avoid_ambiguous: bool) -> str:
     return "".join(password_chars)
 
 
-def random_email(domain: str) -> str:
+DEFAULT_RANDOM_EMAIL_DOMAIN = "example.com"
+
+
+def random_email() -> str:
     local = f"admin-{secrets.token_hex(4)}"
-    return f"{local}@{domain}"
+    return f"{local}@{DEFAULT_RANDOM_EMAIL_DOMAIN}"
 
 
 def hash_password(password: str) -> str:
@@ -77,14 +80,20 @@ class App(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title("Admin Credential Generator")
-        self.geometry("640x620")
-        self.resizable(False, False)
 
         self._build_credentials_section()
         self._build_role_tenant_section()
         self._build_output_section()
         self._build_actions_section()
         self._build_status_bar()
+
+        # Size to fit actual content instead of a hardcoded guess — a fixed
+        # geometry() clips whatever doesn't fit instead of erroring, so any
+        # future addition here would silently cut off again.
+        self.resizable(True, True)
+        self.update_idletasks()
+        self.geometry(f"640x{self.winfo_reqheight()}")
+        self.minsize(640, self.winfo_reqheight())
 
     # ---------------------------------------------------------------- UI ---
 
@@ -96,10 +105,7 @@ class App(tk.Tk):
         ttk.Label(frame, text="Admin email (login ID)").grid(row=0, column=0, sticky="w")
         self.email_var = tk.StringVar()
         ttk.Entry(frame, textvariable=self.email_var, width=40).grid(row=1, column=0, columnspan=2, sticky="we", pady=(2, 0))
-        ttk.Label(frame, text="domain:").grid(row=1, column=2, padx=(8, 2))
-        self.email_domain_var = tk.StringVar(value="example.com")
-        ttk.Entry(frame, textvariable=self.email_domain_var, width=16).grid(row=1, column=3)
-        ttk.Button(frame, text="Random", command=self._fill_random_email).grid(row=1, column=4, padx=(8, 0))
+        ttk.Button(frame, text="Random", command=self._fill_random_email).grid(row=1, column=2, padx=(8, 0))
 
         # Password row
         ttk.Label(frame, text="Password").grid(row=2, column=0, sticky="w", pady=(10, 0))
@@ -191,8 +197,7 @@ class App(tk.Tk):
             self.tenant_entry.config(state="normal")
 
     def _fill_random_email(self) -> None:
-        domain = self.email_domain_var.get().strip() or "example.com"
-        self.email_var.set(random_email(domain))
+        self.email_var.set(random_email())
 
     def _fill_random_password(self) -> None:
         length = max(8, int(self.password_length_var.get()))
