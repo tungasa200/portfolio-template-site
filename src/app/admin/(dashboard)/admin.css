@@ -2,7 +2,7 @@
    interaction/copy spec, see docs/roadmap.md Phase 4). Deliberately scoped
    under .admin-root (not :root/body) and imported only by
    src/app/admin/(dashboard)/layout.tsx, so it never leaks into the public
-   tenant site (src/app/s/[tenant]/theme.css) or the marketing/login pages —
+   tenant site (src/app/s/[tenant]/theme.css) or the login page —
    same scoping principle as theme.css, see docs/conventions.md. */
 
 .admin-root {
@@ -349,6 +349,9 @@
 .admin-msg-detail-date { font-size: 13.5px; color: var(--faint); }
 .admin-msg-detail-body { font-size: 16px; line-height: 1.8; white-space: pre-wrap; margin-bottom: 24px; }
 .admin-msg-detail-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.admin-msg-reply-sent { padding: 16px; border: 1px solid var(--line-soft); border-radius: var(--radius-sm); background: var(--panel-2); }
+.admin-msg-reply-sent-label { font-size: 13.5px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+.admin-msg-reply-sent .admin-msg-detail-body { margin-bottom: 0; font-size: 15px; }
 
 .admin-modal-overlay {
   position: fixed; inset: 0; z-index: 100; padding: 24px;

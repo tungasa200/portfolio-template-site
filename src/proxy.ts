@@ -7,9 +7,9 @@ import type { NextRequest } from "next/server";
 // tenant lookup happens in src/app/s/[tenant]/layout.tsx (Node runtime),
 // keeping proxy fast and free of DB driver constraints.
 //
-//   {root}                  -> ROOT_TENANT_SLUG set: rewritten to /s/{slug}/*
-//                              (root domain serves that tenant's site directly)
-//                              unset: passthrough, served by src/app/ (marketing)
+//   {root}                  -> rewritten to /s/{ROOT_TENANT_SLUG}/* (the
+//                              operator's own tenant site — there is no
+//                              separate marketing page in this project)
 //   admin.{root}            -> rewritten to /admin/*
 //   {slug}.{root}           -> rewritten to /s/{slug}/*
 //   {custom-domain}         -> rewritten to /s/{custom-domain}/*

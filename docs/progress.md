@@ -6,6 +6,25 @@ session (on any machine) to know where things actually stand.
 
 ## Done
 
+**Marketing placeholder page removed; root domain always serves the operator's tenant site (2026-07-16)**
+- Confirmed with the user: this project will not build a separate public
+  marketing/signup site. Deleted `src/app/page.tsx` (the "coming in Phase 6"
+  placeholder). `proxy.ts` no longer has a passthrough fallback for the bare
+  root domain — it always rewrites to `/s/{ROOT_TENANT_SLUG}/*` (the
+  operator's own tenant site), except `/admin*` paths, which stay reachable
+  at the bare root domain (needed on a shared `*.vercel.app` domain, where
+  `admin.{root}` can never resolve). `ROOT_TENANT_SLUG` is now a required
+  env var (`.env.example` updated) — if unset, the root domain 404s (other
+  than `/admin`). Updated `README.md` and `docs/architecture.md`'s routing
+  table to match; stripped stale "marketing" wording from
+  `admin.css`/`theme.css` comments. Verified locally not yet re-checked
+  against the live Vercel deployment — Vercel's `ROOT_TENANT_SLUG` env var
+  must be set for the fix to take effect there (see the earlier report that
+  `portfolio-template-site.vercel.app` was still showing the marketing
+  placeholder — that was because the previous fallback-based `proxy.ts`
+  needed `ROOT_TENANT_SLUG` set on Vercel too, and this hasn't been
+  confirmed set yet).
+
 **R2_PUBLIC_HOSTNAME set (Public Development URL) + a real crash found and fixed (2026-07-16)**
 - `R2_PUBLIC_HOSTNAME` is now set in `.env` to a `pub-<hash>.r2.dev` Public
   Development URL (your choice over waiting for a real Custom Domain — see

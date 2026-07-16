@@ -1,9 +1,11 @@
 # Photographer Portfolio Platform
 
 Multi-tenant photographer portfolio builder — one Next.js deployment serves
-the marketing site, every tenant's public portfolio, and a shared admin
-panel. Started as a personal portfolio site, designed from day one to be
-sold as a product to other photographers.
+every tenant's public portfolio (including the operator's own site at the
+bare root domain, via `ROOT_TENANT_SLUG`) and a shared admin panel. There is
+no separate public marketing/signup site in this project. Started as a
+personal portfolio site, designed from day one to be sold as a product to
+other photographers.
 
 **Full project docs live in [`docs/`](./docs/) — read these before making
 architectural changes, especially from a fresh clone/session that doesn't
@@ -37,8 +39,9 @@ npm run dev
 ```
 
 Visit `http://dev.localhost:3000` (tenant site), `http://admin.localhost:3000`
-(admin), `http://localhost:3000` (marketing). `*.localhost` resolves to
-127.0.0.1 automatically in Chrome/Firefox — no `/etc/hosts` edits needed.
+(admin), `http://localhost:3000` (root domain — serves the `ROOT_TENANT_SLUG`
+tenant's site directly). `*.localhost` resolves to 127.0.0.1 automatically in
+Chrome/Firefox — no `/etc/hosts` edits needed.
 
 `.env` is gitignored on purpose and won't come along with `git clone` — see
 [`docs/external-services.md`](./docs/external-services.md#setting-up-a-new-machine)

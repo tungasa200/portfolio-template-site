@@ -1,7 +1,7 @@
 /* Public tenant-site design tokens — ported 1:1 from
    design/Photographer Portfolio.dc.html. Its own `@import "tailwindcss"`
    entry point (Tailwind v4 supports several independent ones per project)
-   keeps these tokens out of the admin/marketing bundles: this file is only
+   keeps these tokens out of the admin bundle: this file is only
    ever imported by src/app/s/[tenant]/layout.tsx, so Next.js only ships it
    on that route segment. Do not import it from src/app/globals.css. */
 @import "tailwindcss";

@@ -1,7 +1,9 @@
 # Architecture
 
-Multi-tenant photographer portfolio SaaS: one Next.js deployment serves the
-marketing site, every tenant's public portfolio, and the shared admin panel.
+Multi-tenant photographer portfolio SaaS: one Next.js deployment serves every
+tenant's public portfolio (including the operator's own site at the bare
+root domain) and the shared admin panel. There is no separate public
+marketing/signup site in this project.
 
 ## Platform choices
 
@@ -25,7 +27,8 @@ the request path, invisibly to the browser:
 
 | Host | Rewritten to | Handled by |
 |---|---|---|
-| `{ROOT_DOMAIN}` / `www.{ROOT_DOMAIN}` | *(no rewrite)* | `src/app/page.tsx` — marketing site |
+| `{ROOT_DOMAIN}` / `www.{ROOT_DOMAIN}`, path `/admin*` | *(no rewrite)* | `src/app/admin/` — kept reachable at the bare root domain since a shared `*.vercel.app` domain has no working `admin.{root}` subdomain |
+| `{ROOT_DOMAIN}` / `www.{ROOT_DOMAIN}`, any other path | `/s/{ROOT_TENANT_SLUG}/*` | `src/app/s/[tenant]/` — the operator's own tenant site (no separate marketing page) |
 | `admin.{ROOT_DOMAIN}` | `/admin/*` | `src/app/admin/` — shared admin panel |
 | `{slug}.{ROOT_DOMAIN}` | `/s/{slug}/*` | `src/app/s/[tenant]/` — tenant public site |
 | any other host (custom domain) | `/s/{hostname}/*` | same `src/app/s/[tenant]/` tree |
