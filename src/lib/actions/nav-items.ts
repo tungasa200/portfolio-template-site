@@ -1,9 +1,9 @@
 "use server";
 
-import { revalidatePath, updateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
-import { tenantCacheTag } from "@/lib/tenant/site-cache";
+import { revalidateTenantSite } from "@/lib/tenant/site-cache";
 
 // Admin mutations for NavItem — read-only resolvers for the public site live
 // in src/lib/site/nav-items.ts (resolveNavHref/resolveNavLabel), a separate
@@ -16,7 +16,7 @@ export async function toggleNavItemVisibility(navItemId: string): Promise<void> 
   if (!item) return;
   await db.navItem.update({ where: { id: navItemId }, data: { isVisible: !item.isVisible } });
   revalidatePath("/admin", "layout");
-  updateTag(tenantCacheTag(tenantId));
+  await revalidateTenantSite(tenantId);
 }
 
 // Same navItemsData powers both Settings' reorder list and Home's
@@ -30,5 +30,5 @@ export async function reorderNavItems(orderedIds: string[]): Promise<void> {
     orderedIds.map((id, index) => db.navItem.update({ where: { id }, data: { order: index } }))
   );
   revalidatePath("/admin", "layout");
-  updateTag(tenantCacheTag(tenantId));
+  await revalidateTenantSite(tenantId);
 }

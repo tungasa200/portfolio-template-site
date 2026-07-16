@@ -1,9 +1,9 @@
 "use server";
 
-import { revalidatePath, updateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
-import { tenantCacheTag } from "@/lib/tenant/site-cache";
+import { revalidateTenantSite } from "@/lib/tenant/site-cache";
 import type { ActionFormState } from "@/lib/actions/site-settings";
 
 // Only `name` is mutable here — Board.seq/kind are operator/seed-provisioned
@@ -21,6 +21,6 @@ export async function renameBoard(boardId: string, name: string): Promise<Action
   await db.board.update({ where: { id: boardId }, data: { name: trimmed } });
 
   revalidatePath("/admin", "layout");
-  updateTag(tenantCacheTag(tenantId));
+  await revalidateTenantSite(tenantId);
   return { status: "success", message: "이름이 바뀌었어요" };
 }

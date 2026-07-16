@@ -1,9 +1,9 @@
 "use server";
 
-import { revalidatePath, updateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
-import { tenantCacheTag } from "@/lib/tenant/site-cache";
+import { revalidateTenantSite } from "@/lib/tenant/site-cache";
 import type { ActionFormState } from "@/lib/actions/site-settings";
 
 export async function createSocialLink(
@@ -22,7 +22,7 @@ export async function createSocialLink(
   await db.socialLink.create({ data: { tenantId, platform, url, order: count } });
 
   revalidatePath("/admin", "layout");
-  updateTag(tenantCacheTag(tenantId));
+  await revalidateTenantSite(tenantId);
   return { status: "success", message: "SNS 링크를 추가했어요" };
 }
 
@@ -31,7 +31,7 @@ export async function deleteSocialLink(id: string): Promise<void> {
   const db = forTenant(tenantId);
   await db.socialLink.delete({ where: { id } });
   revalidatePath("/admin", "layout");
-  updateTag(tenantCacheTag(tenantId));
+  await revalidateTenantSite(tenantId);
 }
 
 export async function reorderSocialLinks(orderedIds: string[]): Promise<void> {
@@ -41,5 +41,5 @@ export async function reorderSocialLinks(orderedIds: string[]): Promise<void> {
     orderedIds.map((id, index) => db.socialLink.update({ where: { id }, data: { order: index } }))
   );
   revalidatePath("/admin", "layout");
-  updateTag(tenantCacheTag(tenantId));
+  await revalidateTenantSite(tenantId);
 }

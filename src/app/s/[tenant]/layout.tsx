@@ -26,6 +26,21 @@ const jetbrainsMono = JetBrains_Mono({
   weight: ["400", "500"],
 });
 
+// No paths known at build time (tenants are created dynamically, long after
+// this app is deployed) — returning [] here is what makes Next treat
+// /s/[tenant]/** as statically renderable with an on-demand ISR fallback
+// (dynamicParams defaults to true) instead of fully dynamic SSR-per-request.
+// Without this export, the route can't be cached at the page/route level at
+// all, no matter what revalidate is set to.
+export async function generateStaticParams() {
+  return [];
+}
+
+// Real freshness comes from revalidateTenantSite() (called by every admin
+// mutation) via revalidatePath, not from this timer — this is just a
+// safety net in case an invalidation call is ever missed.
+export const revalidate = 86400; // 1 day, in seconds — must be a literal, not an expression
+
 // Reached via proxy.ts rewriting {slug}.{ROOT_DOMAIN}/* and custom domains
 // to /s/{tenant}/*. This layout resolves the tenant once (cached, shared
 // with page.tsx below it) and renders the shared sidebar/footer chrome

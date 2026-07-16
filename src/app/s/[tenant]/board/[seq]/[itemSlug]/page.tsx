@@ -7,21 +7,30 @@ import { SectionHeader } from "@/components/site/SectionHeader";
 import { DetailTabs } from "@/components/site/DetailTabs";
 import type { TabItem } from "@/components/site/Tabs";
 
+// [itemSlug] is its own dynamic segment nested under [tenant]/[seq] — needs
+// its own generateStaticParams for this route to be ISR-cacheable.
+export async function generateStaticParams() {
+  return [];
+}
+
 // Only reachable for GALLERY_MULTI boards — GALLERY_SINGLE items have no
 // detail page (see docs/roadmap.md). Nothing links here for a
 // GALLERY_SINGLE board's items, but the route itself still exists (Next.js
 // can't conditionally omit a nested segment based on the parent's data), so
 // it explicitly 404s if the board isn't GALLERY_MULTI rather than rendering
 // something nonsensical for a directly-typed URL.
+//
+// Deliberately does NOT take a `searchParams` prop — reading it here would
+// force this whole route to server-render dynamically on every visit and
+// every tab/photo click. DetailTabs reads ?view=/&photo= client-side via
+// useSearchParams() instead, so this page stays static/ISR-cacheable just
+// like the rest of the tenant site.
 export default async function BoardItemDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ tenant: string; seq: string; itemSlug: string }>;
-  searchParams: Promise<{ view?: string; photo?: string }>;
 }) {
   const { tenant: tenantKey, seq, itemSlug } = await params;
-  const { view, photo } = await searchParams;
   const seqNum = Number(seq);
   if (!Number.isInteger(seqNum) || seqNum <= 0) {
     notFound();
@@ -53,14 +62,8 @@ export default async function BoardItemDetailPage({
     { key: "grid", label: "GRID VIEW" },
     { key: "fullscreen", label: "SLIDE VIEW" },
   ];
-  const validViews = new Set(tabs.map((t) => t.key));
   const defaultView = item.indexEnabled ? "index" : "grid";
-  const activeView = view && validViews.has(view) ? view : defaultView;
 
-  const activePhotoIndex = Math.min(
-    Math.max(Number(photo) || 0, 0),
-    Math.max(item.photos.length - 1, 0)
-  );
   const gridPhotos = item.photos.map((p, i) => ({
     id: p.id,
     label: `PHOTO ${String(i + 1).padStart(2, "0")}`,
@@ -72,9 +75,8 @@ export default async function BoardItemDetailPage({
       <SectionHeader title={item.name} marginBottom="mb-8" />
       <DetailTabs
         tabs={tabs}
-        activeView={activeView}
+        defaultView={defaultView}
         gridPhotos={gridPhotos}
-        activePhotoIndex={activePhotoIndex}
         indexContent={item.indexEnabled ? item.indexContent : null}
       />
     </section>

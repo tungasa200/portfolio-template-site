@@ -7,6 +7,13 @@ import { SectionHeader } from "@/components/site/SectionHeader";
 import { PhotoGrid } from "@/components/site/PhotoGrid";
 import { formatBoardDate } from "@/lib/site/format-date";
 
+// [seq] is its own dynamic segment nested under [tenant] — needs its own
+// generateStaticParams (same reasoning as layout.tsx) for this route to be
+// ISR-cacheable rather than SSR'd on every request.
+export async function generateStaticParams() {
+  return [];
+}
+
 // Replaces the old fixed /photo, /work routes -- one template for every
 // board regardless of kind or how many a tenant has (see docs/roadmap.md's
 // board redesign notes). `seq` is a stable per-tenant sequence, not a

@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense, useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Tabs, type TabItem } from "./Tabs";
 import { PhotoGridDetail } from "./PhotoGridDetail";
@@ -8,9 +9,9 @@ import { IndexTab } from "./IndexTab";
 
 interface DetailTabsProps {
   tabs: TabItem[];
-  activeView: string;
+  /** Tab shown before the URL's ?view= is read (and whenever it's absent/invalid). */
+  defaultView: string;
   gridPhotos: FullscreenPhoto[];
-  activePhotoIndex: number;
   /** Per-item INDEX content (BoardItem.indexContent) — pass null/undefined
    * when the item has indexEnabled=false; the page building `tabs` already
    * omits the "index" tab in that case, this just backs its content. */
@@ -20,23 +21,53 @@ interface DetailTabsProps {
 // Shared URL-synced controller for every GALLERY_MULTI board's item detail
 // page. Sync active tab / active fullscreen photo to ?view=&photo= so a
 // fullscreen photo is a shareable/deep-linkable URL, per docs/roadmap.md
-// Phase 3. Tabs/PhotoGridDetail/FullscreenViewer stay pure/controlled.
-export function DetailTabs({ tabs, activeView, gridPhotos, activePhotoIndex, indexContent }: DetailTabsProps) {
+// Phase 3.
+//
+// useSearchParams() is isolated to the inner component below and wrapped in
+// Suspense so the server page above never reads searchParams itself — that
+// requirement is what forces a whole route to server-render on every
+// request (see Next's useSearchParams docs). Keeping it client-side and
+// Suspense-boundary-scoped is what lets board/[seq]/[itemSlug] stay
+// static/ISR-cacheable like the rest of the tenant site. The fallback
+// renders the item's default tab, which is also the final state for every
+// visit except a deep link with ?view=/&photo= already in the URL.
+export function DetailTabs(props: DetailTabsProps) {
+  return (
+    <Suspense fallback={<DetailTabsView {...props} activeView={props.defaultView} activePhotoIndex={0} />}>
+      <DetailTabsUrlSynced {...props} />
+    </Suspense>
+  );
+}
+
+function DetailTabsUrlSynced({ tabs, defaultView, gridPhotos, indexContent }: DetailTabsProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const pushParams = (next: Record<string, string | null>) => {
-    const params = new URLSearchParams(searchParams.toString());
-    for (const [key, value] of Object.entries(next)) {
-      if (value === null) {
-        params.delete(key);
-      } else {
-        params.set(key, value);
+  const validViews = new Set(tabs.map((t) => t.key));
+  const viewParam = searchParams.get("view");
+  const activeView = viewParam && validViews.has(viewParam) ? viewParam : defaultView;
+
+  const photoParam = Number(searchParams.get("photo"));
+  const activePhotoIndex = Math.min(
+    Math.max(Number.isFinite(photoParam) ? photoParam : 0, 0),
+    Math.max(gridPhotos.length - 1, 0)
+  );
+
+  const pushParams = useCallback(
+    (next: Record<string, string | null>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      for (const [key, value] of Object.entries(next)) {
+        if (value === null) {
+          params.delete(key);
+        } else {
+          params.set(key, value);
+        }
       }
-    }
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
-  };
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
 
   const setView = (key: string) => {
     pushParams({ view: key, photo: key === "fullscreen" ? String(activePhotoIndex) : null });
@@ -47,8 +78,40 @@ export function DetailTabs({ tabs, activeView, gridPhotos, activePhotoIndex, ind
   };
 
   return (
+    <DetailTabsView
+      tabs={tabs}
+      activeView={activeView}
+      gridPhotos={gridPhotos}
+      activePhotoIndex={activePhotoIndex}
+      indexContent={indexContent}
+      onSetView={setView}
+      onSetPhotoIndex={setPhotoIndex}
+    />
+  );
+}
+
+interface DetailTabsViewProps {
+  tabs: TabItem[];
+  activeView: string;
+  gridPhotos: FullscreenPhoto[];
+  activePhotoIndex: number;
+  indexContent?: string | null;
+  onSetView?: (key: string) => void;
+  onSetPhotoIndex?: (index: number) => void;
+}
+
+function DetailTabsView({
+  tabs,
+  activeView,
+  gridPhotos,
+  activePhotoIndex,
+  indexContent,
+  onSetView,
+  onSetPhotoIndex,
+}: DetailTabsViewProps) {
+  return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <Tabs tabs={tabs} active={activeView} onChange={setView} />
+      <Tabs tabs={tabs} active={activeView} onChange={onSetView ?? (() => {})} />
       {/* min-h-0 + overflow-y-auto: INDEX/GRID VIEW content can be taller
           than the fixed-viewport section above and gets a scroll fallback
           here instead of growing the page. SLIDE VIEW (FullscreenViewer)
@@ -58,7 +121,11 @@ export function DetailTabs({ tabs, activeView, gridPhotos, activePhotoIndex, ind
         {activeView === "index" && indexContent && <IndexTab contentHtml={indexContent} />}
         {activeView === "grid" && <PhotoGridDetail photos={gridPhotos} />}
         {activeView === "fullscreen" && (
-          <FullscreenViewer photos={gridPhotos} activeIndex={activePhotoIndex} onSelect={setPhotoIndex} />
+          <FullscreenViewer
+            photos={gridPhotos}
+            activeIndex={activePhotoIndex}
+            onSelect={onSetPhotoIndex ?? (() => {})}
+          />
         )}
       </div>
     </div>
