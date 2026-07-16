@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireTenant } from "@/lib/tenant/resolve-tenant";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
+import { cacheForTenant } from "@/lib/tenant/site-cache";
 import { SectionHeader } from "@/components/site/SectionHeader";
 
 // Static, non-repeating page — not a board (no items, no photo grid). Title
@@ -14,14 +15,18 @@ export default async function AboutPage({
 }) {
   const { tenant: tenantKey } = await params;
   const tenant = await requireTenant(tenantKey);
-  const db = forTenant(tenant.id);
 
-  const about = await db.aboutPage.findUnique({ where: { tenantId: tenant.id } });
+  const { about, navItem } = await cacheForTenant(["about-page"], tenant.id, async () => {
+    const db = forTenant(tenant.id);
+    const [about, navItem] = await Promise.all([
+      db.aboutPage.findUnique({ where: { tenantId: tenant.id } }),
+      db.navItem.findFirst({ where: { targetKind: "ABOUT" } }),
+    ]);
+    return { about, navItem };
+  });
   if (!about) {
     notFound();
   }
-
-  const navItem = await db.navItem.findFirst({ where: { targetKind: "ABOUT" } });
 
   return (
     <section className="box-border min-h-[calc(100vh-65px)] px-16 py-10">

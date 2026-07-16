@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireTenant } from "@/lib/tenant/resolve-tenant";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
+import { cacheForTenant } from "@/lib/tenant/site-cache";
 import { r2PublicUrl } from "@/lib/storage/r2";
 import { SectionHeader } from "@/components/site/SectionHeader";
 import { PhotoGrid } from "@/components/site/PhotoGrid";
@@ -24,18 +25,19 @@ export default async function BoardPage({
   }
 
   const tenant = await requireTenant(tenantKey);
-  const db = forTenant(tenant.id);
 
-  const board = await db.board.findFirst({
-    where: { seq: seqNum, isPublished: true },
-    include: {
-      items: {
-        where: { isPublished: true },
-        orderBy: { order: "asc" },
-        include: { photos: { where: { isPrimary: true }, take: 1 } },
+  const board = await cacheForTenant(["board", String(seqNum)], tenant.id, () =>
+    forTenant(tenant.id).board.findFirst({
+      where: { seq: seqNum, isPublished: true },
+      include: {
+        items: {
+          where: { isPublished: true },
+          orderBy: { order: "asc" },
+          include: { photos: { where: { isPrimary: true }, take: 1 } },
+        },
       },
-    },
-  });
+    })
+  );
   if (!board) {
     notFound();
   }

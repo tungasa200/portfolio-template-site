@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireTenant } from "@/lib/tenant/resolve-tenant";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
+import { cacheForTenant } from "@/lib/tenant/site-cache";
 import { r2PublicUrl } from "@/lib/storage/r2";
 import { SectionHeader } from "@/components/site/SectionHeader";
 import { DetailTabs } from "@/components/site/DetailTabs";
@@ -27,17 +28,20 @@ export default async function BoardItemDetailPage({
   }
 
   const tenant = await requireTenant(tenantKey);
-  const db = forTenant(tenant.id);
 
-  const board = await db.board.findFirst({ where: { seq: seqNum, isPublished: true } });
+  const board = await cacheForTenant(["board-kind", String(seqNum)], tenant.id, () =>
+    forTenant(tenant.id).board.findFirst({ where: { seq: seqNum, isPublished: true } })
+  );
   if (!board || board.kind !== "GALLERY_MULTI") {
     notFound();
   }
 
-  const item = await db.boardItem.findFirst({
-    where: { boardId: board.id, slug: itemSlug, isPublished: true },
-    include: { photos: { orderBy: { order: "asc" } } },
-  });
+  const item = await cacheForTenant(["board-item", String(seqNum), itemSlug], tenant.id, () =>
+    forTenant(tenant.id).boardItem.findFirst({
+      where: { boardId: board.id, slug: itemSlug, isPublished: true },
+      include: { photos: { orderBy: { order: "asc" } } },
+    })
+  );
   if (!item) {
     notFound();
   }

@@ -1,9 +1,10 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
+import { tenantCacheTag } from "@/lib/tenant/site-cache";
 import { deleteR2Object } from "@/lib/storage/r2";
 import type { ActionFormState } from "@/lib/actions/site-settings";
 
@@ -78,6 +79,7 @@ export async function createBoardItem(
   });
 
   revalidatePath("/admin", "layout");
+  updateTag(tenantCacheTag(tenantId));
   // Browser-facing — the admin.{ROOT_DOMAIN} subdomain's proxy.ts rewrite
   // already prepends /admin invisibly, so this must NOT include it (unlike
   // the revalidatePath calls above, which key off Next's real file-system
@@ -116,6 +118,7 @@ export async function updateBoardItem(
   });
 
   revalidatePath("/admin", "layout");
+  updateTag(tenantCacheTag(tenantId));
   return { status: "success", message: `"${name}" 저장되었습니다` };
 }
 
@@ -127,6 +130,7 @@ export async function deleteBoardItem(itemId: string, boardId: string): Promise<
   await Promise.all(photos.map((p) => deleteR2Object(p.r2Key)));
 
   revalidatePath("/admin", "layout");
+  updateTag(tenantCacheTag(tenantId));
   redirect(`/board/${boardId}`); // browser-facing, see createBoardItem's comment above
 }
 
@@ -137,6 +141,7 @@ export async function toggleBoardItemPublished(itemId: string): Promise<void> {
   if (!item) return;
   await db.boardItem.update({ where: { id: itemId }, data: { isPublished: !item.isPublished } });
   revalidatePath("/admin", "layout");
+  updateTag(tenantCacheTag(tenantId));
 }
 
 export async function reorderBoardItems(boardId: string, orderedIds: string[]): Promise<void> {
@@ -148,4 +153,5 @@ export async function reorderBoardItems(boardId: string, orderedIds: string[]): 
     )
   );
   revalidatePath("/admin", "layout");
+  updateTag(tenantCacheTag(tenantId));
 }

@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
+import { tenantCacheTag } from "@/lib/tenant/site-cache";
 import { deleteR2Object } from "@/lib/storage/r2";
 
 export interface ActionFormState {
@@ -40,6 +41,7 @@ export async function updateSiteSettings(
   });
 
   revalidatePath("/admin", "layout");
+  updateTag(tenantCacheTag(tenantId));
   return { status: "success", message: "저장되었습니다" };
 }
 
@@ -48,6 +50,7 @@ export async function updateHeroImage(r2Key: string): Promise<ActionFormState> {
   const db = forTenant(tenantId);
   await db.siteSettings.update({ where: { tenantId }, data: { heroImageKey: r2Key } });
   revalidatePath("/admin", "layout");
+  updateTag(tenantCacheTag(tenantId));
   return { status: "success", message: "대표 사진을 바꿨어요" };
 }
 
@@ -58,6 +61,7 @@ export async function updateLogoImage(r2Key: string): Promise<ActionFormState> {
   await db.siteSettings.update({ where: { tenantId }, data: { logoImageKey: r2Key } });
   if (previous?.logoImageKey) await deleteR2Object(previous.logoImageKey);
   revalidatePath("/admin", "layout");
+  updateTag(tenantCacheTag(tenantId));
   return { status: "success", message: "로고를 바꿨어요" };
 }
 
@@ -68,5 +72,6 @@ export async function removeLogoImage(): Promise<ActionFormState> {
   await db.siteSettings.update({ where: { tenantId }, data: { logoImageKey: null } });
   if (previous?.logoImageKey) await deleteR2Object(previous.logoImageKey);
   revalidatePath("/admin", "layout");
+  updateTag(tenantCacheTag(tenantId));
   return { status: "success", message: "로고를 제거하고 사이트 이름으로 되돌렸어요" };
 }

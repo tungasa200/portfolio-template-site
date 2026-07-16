@@ -1,5 +1,6 @@
 import { requireTenant } from "@/lib/tenant/resolve-tenant";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
+import { cacheForTenant } from "@/lib/tenant/site-cache";
 import { submitContactForm } from "@/lib/actions/contact";
 import { SectionHeader } from "@/components/site/SectionHeader";
 import { ContactForm } from "@/components/site/ContactForm";
@@ -18,8 +19,9 @@ export default async function TenantContactPage({
 
   // Same single-source-of-truth fix as the board/about pages — title
   // follows the tenant's own CONTACT NavItem.label, not a hardcoded string.
-  const db = forTenant(tenant.id);
-  const navItem = await db.navItem.findFirst({ where: { targetKind: "CONTACT" } });
+  const navItem = await cacheForTenant(["contact-page"], tenant.id, () =>
+    forTenant(tenant.id).navItem.findFirst({ where: { targetKind: "CONTACT" } })
+  );
 
   return (
     <section className="box-border flex h-[calc(100vh-80px)] max-h-[calc(100vh-80px)] flex-col overflow-hidden px-16 py-10">

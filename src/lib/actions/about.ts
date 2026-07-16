@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
+import { tenantCacheTag } from "@/lib/tenant/site-cache";
 import type { ActionFormState } from "@/lib/actions/site-settings";
 
 export async function updateAboutContent(
@@ -16,6 +17,7 @@ export async function updateAboutContent(
   await db.aboutPage.update({ where: { tenantId }, data: { content } });
 
   revalidatePath("/admin", "layout");
+  updateTag(tenantCacheTag(tenantId));
   return { status: "success", message: "저장되었습니다" };
 }
 
@@ -33,5 +35,6 @@ export async function renameAboutPage(navItemId: string, name: string): Promise<
   await db.navItem.update({ where: { id: navItemId }, data: { label: trimmed } });
 
   revalidatePath("/admin", "layout");
+  updateTag(tenantCacheTag(tenantId));
   return { status: "success", message: "이름이 바뀌었어요" };
 }

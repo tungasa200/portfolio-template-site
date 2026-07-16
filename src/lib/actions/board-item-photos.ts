@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
+import { tenantCacheTag } from "@/lib/tenant/site-cache";
 import { deleteR2Object } from "@/lib/storage/r2";
 
 export interface AddPhotoResult {
@@ -53,6 +54,7 @@ export async function addBoardItemPhoto(
   });
 
   revalidatePath("/admin", "layout");
+  updateTag(tenantCacheTag(tenantId));
   return { status: "success", photoId: photo.id };
 }
 
@@ -74,6 +76,7 @@ export async function removeBoardItemPhoto(photoId: string): Promise<void> {
   }
 
   revalidatePath("/admin", "layout");
+  updateTag(tenantCacheTag(tenantId));
 }
 
 export async function setPrimaryBoardItemPhoto(boardItemId: string, photoId: string): Promise<void> {
@@ -86,6 +89,7 @@ export async function setPrimaryBoardItemPhoto(boardItemId: string, photoId: str
     )
   );
   revalidatePath("/admin", "layout");
+  updateTag(tenantCacheTag(tenantId));
 }
 
 export async function reorderBoardItemPhotos(boardItemId: string, orderedIds: string[]): Promise<void> {
@@ -97,4 +101,5 @@ export async function reorderBoardItemPhotos(boardItemId: string, orderedIds: st
     )
   );
   revalidatePath("/admin", "layout");
+  updateTag(tenantCacheTag(tenantId));
 }
