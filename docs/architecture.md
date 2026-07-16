@@ -15,7 +15,7 @@ marketing/signup site in this project.
 | ORM | Prisma 7 | Declarative schema; Client Extensions give a clean tenant-isolation guardrail |
 | Auth | Auth.js (NextAuth v5), Credentials provider | Self-hosted by explicit choice (see [decisions.md](./decisions.md)) — accept the DIY security surface over an external auth vendor |
 | Object storage | Cloudflare R2 (S3-compatible) | Already decided by the user; presigned direct-to-R2 uploads |
-| Transactional email | Resend | Contact-form notifications only (see below); simplest standard option for a Next.js app, free tier |
+| Transactional email | Tenant's own Gmail (SMTP via nodemailer) | No platform-wide sender/domain to verify — see "Contact form / reply email" below |
 | Styling | Tailwind CSS v4 | Native `oklch()` support matches the design mockup's color tokens exactly |
 | Multi-tenancy model | Pooled (shared tables + `tenantId` column) | Lowest operational overhead at this scale vs. schema/DB-per-tenant |
 
@@ -128,23 +128,39 @@ trusts a client-supplied path), so the browser uploads directly to R2.
 `next/image` will read through a custom R2 domain (`R2_PUBLIC_HOSTNAME`)
 allowlisted in `next.config.ts`.
 
-## Contact form → email notification
+## Contact form / reply email — tenant's own Gmail, opt-in
 
-`src/lib/actions/contact.ts` (`submitContactForm`) writes the
-`ContactSubmission` row first — that's the source of truth, a visitor's
-message is never lost even if the email step below fails — then best-effort
-sends a notification via Resend (`src/lib/email/resend.ts`) to the tenant's
-`SiteSettings.contactEmail`, with `replyTo` set to the visitor's own address
-so the photographer can just hit reply. A failed send is logged
-server-side, never surfaced as an error to the (anonymous) visitor. The
-form's `ATTACHMENT` field is read directly out of the submitted `FormData`
-and attached straight to that email (size/MIME-type validated,
-≤10MB/JPG/PNG/PDF matching the form's own copy) — deliberately not routed
-through R2, since that upload flow is a separate, larger piece of Phase 4
-and this is a one-off attachment, not part of the photo gallery. Server
-Actions cap request bodies at 1MB by default, raised in `next.config.ts`
-(`experimental.serverActions.bodySizeLimit`) to actually support the
-advertised 10MB.
+There is no platform-wide email sender. Each tenant connects their own
+Gmail (address + an app password, `SiteSettings.replyEmailAddress` /
+`replyEmailAppPasswordEnc`, encrypted at rest via
+`src/lib/crypto/secret-box.ts`) in Settings
+(`src/lib/actions/reply-email.ts`); both outgoing email paths send through
+that account via nodemailer/Gmail SMTP (`src/lib/email/gmail-smtp.ts`). A
+tenant who hasn't connected Gmail just doesn't get notification emails or
+the in-app reply option — every message still lands in the admin Messages
+page regardless, since the DB write is the source of truth.
+
+- **`src/lib/actions/contact.ts`** (`submitContactForm`) writes the
+  `ContactSubmission` row first — a visitor's message is never lost even if
+  the email step below fails — then best-effort sends a notification to
+  the tenant's `SiteSettings.contactEmail`, with `replyTo` set to the
+  visitor's own address so the photographer can just hit reply from their
+  own inbox even without ever opening the admin Messages page. A failed
+  send is logged server-side, never surfaced as an error to the (anonymous)
+  visitor. The form's `ATTACHMENT` field is read directly out of the
+  submitted `FormData` and attached straight to that email (size/MIME-type
+  validated, ≤10MB/JPG/PNG/PDF matching the form's own copy) — deliberately
+  not routed through R2, since that upload flow is a separate, larger piece
+  of Phase 4 and this is a one-off attachment, not part of the photo
+  gallery. Server Actions cap request bodies at 1MB by default, raised in
+  `next.config.ts` (`experimental.serverActions.bodySizeLimit`) to actually
+  support the advertised 10MB.
+- **`src/lib/actions/messages.ts`** (`sendMessageReply`) lets the admin
+  reply to a message from inside `/admin/messages` instead of their own
+  inbox. One-shot only — `ContactSubmission.repliedAt` locks a message
+  against a second reply, no thread. `MessagesInbox` hides the reply form
+  entirely until Gmail is connected; `sendMessageReply` re-checks
+  server-side as a backstop.
 
 ## What's deferred / explicitly out of scope for now
 

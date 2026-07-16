@@ -80,21 +80,25 @@ gitignored and must never be committed.**
    Domains, e.g. `images.myplatform.com`) once a real domain exists via
    Vercel (see section 4 below), and update `R2_PUBLIC_HOSTNAME` to match.
 
-## 3. Resend (contact-form email notifications) — ⬜ needs your API key
+## 3. Email (tenant's own Gmail) — ⬜ needs `ENCRYPTION_KEY`, no third-party signup
 
-1. Sign up at [resend.com](https://resend.com) (free tier, no card).
-2. Dashboard → API Keys → create one → set `RESEND_API_KEY`.
-3. Sending address: `RESEND_FROM_EMAIL` defaults to Resend's sandbox address
-   `onboarding@resend.dev`, which works immediately but **only delivers to
-   the email you signed up to Resend with** — fine for local dev, not for
-   real tenants. Before going live, verify a domain (Dashboard → Domains →
-   Add Domain, add the DNS records it gives you) and set
-   `RESEND_FROM_EMAIL` to an address on it.
-4. For local testing to actually land somewhere you can check: the seeded
-   `dev` tenant's `SiteSettings.contactEmail` is the placeholder
-   `dev@example.com` — update it (via `prisma/seed.ts` or a one-off
-   `prisma studio` edit) to your own Resend signup email first, or sandbox
-   mode will silently drop the notification.
+There's no platform-wide email provider to sign up for — each tenant
+connects their own Gmail from inside the admin (Settings → "이메일 답장 연동"),
+not through anything in this file. See
+[architecture.md](./architecture.md#contact-form--reply-email--tenants-own-gmail-opt-in)
+for how that flow works.
+
+The one thing this project needs from you here is `ENCRYPTION_KEY`, which
+encrypts each tenant's Gmail app password at rest
+(`src/lib/crypto/secret-box.ts`) — generate it once:
+
+```
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+
+Set it in `.env` locally and in Vercel's project env vars before any real
+tenant connects Gmail (changing it later makes existing stored app
+passwords undecryptable — they'd need to reconnect).
 
 ## 4. Vercel — 🟡 deployed on the shared default domain, no custom domain (by choice)
 
@@ -144,8 +148,9 @@ another machine:
    credentials already exist (steps 1–2 above are done) — retrieve them
    from the Neon/Cloudflare dashboards again, or copy them from the other
    machine's `.env` out-of-band (password manager, not git/chat).
-   `RESEND_API_KEY` is retrievable again from the Resend dashboard (API
-   Keys) if lost.
+   `ENCRYPTION_KEY` has no external source if lost — copy it from the other
+   machine's `.env` (losing it permanently locks out every tenant's stored
+   Gmail app password; they'd have to reconnect).
    `app_runtime`'s password specifically isn't shown in the Neon dashboard
    (it's a role this project created, not one Neon generated for you) — copy
    it from the other machine's `.env`, or reset it from the Neon SQL editor

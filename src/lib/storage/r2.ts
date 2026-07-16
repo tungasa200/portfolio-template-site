@@ -4,10 +4,9 @@ import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-// Lazily constructed, same reasoning as src/lib/email/resend.ts: importing
-// this module must not throw just because R2 credentials aren't configured
-// yet on a given machine (see docs/external-services.md#2). Every caller
-// must handle a null client.
+// Lazily constructed: importing this module must not throw just because R2
+// credentials aren't configured yet on a given machine (see
+// docs/external-services.md#2). Every caller must handle a null client.
 let client: S3Client | null | undefined;
 
 function getR2Client(): S3Client | null {

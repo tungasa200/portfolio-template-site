@@ -6,6 +6,38 @@ session (on any machine) to know where things actually stand.
 
 ## Done
 
+**Resend removed; contact-form notifications and admin replies both go through the tenant's own Gmail (2026-07-16)**
+- Confirmed with the user: this template is meant to be sold to non-technical
+  photographers, so requiring each buyer to sign up for Resend and verify a
+  sending domain (impossible without a domain of their own, and a blocker
+  for the "everything configurable via the admin UI" goal) wasn't viable.
+  Resend's sandbox address (`onboarding@resend.dev`) can't fill the gap
+  either — it can only deliver to the Resend account owner's own address,
+  never to arbitrary tenant `contactEmail`s.
+- Replaced with an opt-in Gmail SMTP connection per tenant (Settings →
+  "이메일 답장 연동"): tenant enters their Gmail address + an app password
+  (Google Account → Security → 2-Step Verification → App passwords), stored
+  encrypted at rest (`SiteSettings.replyEmailAddress` /
+  `replyEmailAppPasswordEnc`, AES-256-GCM via new `src/lib/crypto/secret-box.ts`,
+  keyed by a new required `ENCRYPTION_KEY` env var). Sends go through
+  nodemailer's Gmail transport (`src/lib/email/gmail-smtp.ts`).
+- Two things now depend on that connection: contact-form notifications
+  (`src/lib/actions/contact.ts`) and in-app admin replies
+  (`src/lib/actions/messages.ts`, one-shot — `ContactSubmission.repliedAt`
+  locks a message against a second reply). A tenant who hasn't connected
+  Gmail gets neither — messages still land in `/admin/messages`
+  unconditionally (DB write is the source of truth either way), they just
+  don't get an inbox notification or the in-app reply option until they
+  connect.
+- Removed the `resend` package and `src/lib/email/resend.ts` entirely, and
+  `RESEND_API_KEY`/`RESEND_FROM_EMAIL` from `.env`/`.env.example`.
+- Verified locally: Playwright-driven pass through Settings (connect/see
+  "연동됨"/disconnect) and Messages (reply form hidden before connecting,
+  shown after, one-shot lock after a successful send, friendly error on bad
+  credentials) — no real Gmail account was used for auth verification
+  itself (that needs a real app password, not yet in hand), only the
+  around-it wiring.
+
 **Marketing placeholder page removed; root domain always serves the operator's tenant site (2026-07-16)**
 - Confirmed with the user: this project will not build a separate public
   marketing/signup site. Deleted `src/app/page.tsx` (the "coming in Phase 6"

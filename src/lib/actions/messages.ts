@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
 import { decryptSecret } from "@/lib/crypto/secret-box";
-import { sendGmailReply } from "@/lib/email/gmail-smtp";
+import { sendViaGmail } from "@/lib/email/gmail-smtp";
+import { escapeHtml } from "@/lib/email/escape-html";
 
 // Mirrors design/admin-mockup.html's selectMessage: opening a NEW message
 // marks it READ; already-READ/ARCHIVED messages are left alone.
@@ -50,7 +51,7 @@ export async function sendMessageReply(id: string, replyMessage: string): Promis
   }
 
   try {
-    await sendGmailReply({
+    await sendViaGmail({
       fromEmail: siteSettings.replyEmailAddress,
       appPassword: decryptSecret(siteSettings.replyEmailAppPasswordEnc),
       to: submission.email,
@@ -73,13 +74,4 @@ export async function sendMessageReply(id: string, replyMessage: string): Promis
   revalidatePath("/admin", "layout");
 
   return { status: "success", message: "답장을 보냈어요." };
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }

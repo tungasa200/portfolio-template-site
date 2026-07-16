@@ -1,7 +1,9 @@
 "use server";
 
 import { forTenant } from "@/lib/db/tenant-scoped-client";
-import { getResendClient } from "@/lib/email/resend";
+import { decryptSecret } from "@/lib/crypto/secret-box";
+import { sendViaGmail } from "@/lib/email/gmail-smtp";
+import { escapeHtml } from "@/lib/email/escape-html";
 
 export interface ContactFormState {
   status: "idle" | "success" | "error";
@@ -57,17 +59,18 @@ export async function submitContactForm(
   await db.contactSubmission.create({ data: { tenantId, name, email, message } });
 
   // The DB write above is the source of truth — a visitor's message is
-  // never lost even if the email below fails. Email is a best-effort
-  // notification, so failures are logged, not surfaced to the (anonymous)
-  // visitor as an error.
+  // never lost even if the email below fails. Email is best-effort and
+  // opt-in: a tenant who hasn't connected Gmail in Settings (see
+  // src/lib/actions/reply-email.ts) still gets every message, just via the
+  // admin Messages page rather than an inbox notification.
   try {
-    const resend = getResendClient();
     const siteSettings = await db.siteSettings.findUnique({ where: { tenantId } });
-    if (!resend) {
-      console.warn("[contact] RESEND_API_KEY not set — skipping email notification");
-    } else if (siteSettings?.contactEmail) {
-      await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev",
+    if (!siteSettings?.replyEmailAddress || !siteSettings.replyEmailAppPasswordEnc) {
+      console.warn(`[contact] tenant ${tenantId} hasn't connected Gmail — notification not sent`);
+    } else if (siteSettings.contactEmail) {
+      await sendViaGmail({
+        fromEmail: siteSettings.replyEmailAddress,
+        appPassword: decryptSecret(siteSettings.replyEmailAppPasswordEnc),
         to: siteSettings.contactEmail,
         replyTo: email,
         subject: `New message from ${name} — ${siteSettings.siteName}`,
@@ -87,13 +90,4 @@ export async function submitContactForm(
   }
 
   return { status: "success", message: "Message sent — thank you." };
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }
