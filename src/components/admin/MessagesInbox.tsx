@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { markMessageRead, sendMessageReply } from "@/lib/actions/messages";
-import { useToast } from "@/components/admin/Toast";
+import { markMessageRead } from "@/lib/actions/messages";
 
 export interface MessageItem {
   id: string;
@@ -11,7 +10,6 @@ export interface MessageItem {
   message: string;
   dateLabel: string;
   isNew: boolean;
-  replyMessage: string | null;
 }
 
 export function MessagesInbox({ messages: initialMessages }: { messages: MessageItem[] }) {
@@ -74,72 +72,14 @@ export function MessagesInbox({ messages: initialMessages }: { messages: Message
               <div className="admin-msg-detail-date">{selected.dateLabel}</div>
             </div>
             <div className="admin-msg-detail-body">{selected.message}</div>
-            <ReplyPanel
-              key={selected.id}
-              messageId={selected.id}
-              existingReply={selected.replyMessage}
-              onSent={(replyMessage) =>
-                setMessages((prev) => prev.map((m) => (m.id === selected.id ? { ...m, replyMessage } : m)))
-              }
-            />
+            <div className="admin-msg-detail-actions">
+              <a className="admin-btn admin-btn-primary" href={`mailto:${selected.email}`}>
+                이메일로 답장하기
+              </a>
+            </div>
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function ReplyPanel({
-  messageId,
-  existingReply,
-  onSent,
-}: {
-  messageId: string;
-  existingReply: string | null;
-  onSent: (replyMessage: string) => void;
-}) {
-  const [draft, setDraft] = useState("");
-  const [isPending, startTransition] = useTransition();
-  const toast = useToast();
-
-  if (existingReply) {
-    return (
-      <div className="admin-msg-reply-sent">
-        <div className="admin-msg-reply-sent-label">✓ 답장 완료</div>
-        <div className="admin-msg-detail-body">{existingReply}</div>
-      </div>
-    );
-  }
-
-  function send() {
-    if (!draft.trim() || isPending) return;
-    startTransition(async () => {
-      const result = await sendMessageReply(messageId, draft);
-      toast(result.message, result.status === "error");
-      if (result.status === "success") onSent(draft.trim());
-    });
-  }
-
-  return (
-    <div className="admin-field">
-      <label>이메일로 답장하기</label>
-      <textarea
-        rows={4}
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        placeholder="답장 내용을 입력하세요"
-        disabled={isPending}
-      />
-      <div className="admin-msg-detail-actions">
-        <button
-          type="button"
-          className="admin-btn admin-btn-primary"
-          onClick={send}
-          disabled={isPending || !draft.trim()}
-        >
-          {isPending ? "보내는 중…" : "답장 보내기"}
-        </button>
-      </div>
     </div>
   );
 }

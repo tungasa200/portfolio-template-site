@@ -30,7 +30,6 @@ export default async function AdminMessagesPage() {
           message: s.message,
           dateLabel: formatKoreanDate(s.createdAt),
           isNew: s.status === "NEW",
-          replyMessage: s.replyMessage,
         }))}
       />
     </div>

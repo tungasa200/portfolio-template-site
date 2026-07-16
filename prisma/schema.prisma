@@ -232,9 +232,5 @@ model ContactSubmission {
   status          ContactStatus @default(NEW)
   createdAt       DateTime      @default(now())
 
-  // One-shot admin reply — sent once via Resend, then locked (no thread/undo).
-  replyMessage String?   @db.Text
-  repliedAt    DateTime?
-
   @@index([tenantId, status])
 }
