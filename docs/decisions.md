@@ -62,6 +62,19 @@ from listing/reading the whole bucket). Separate buckets cost nothing
 extra (R2 has no per-bucket fee and a generous bucket-count limit), so
 there's no real trade-off against doing it.
 
+Second consequence (2026-07-16): **`tools/admin-credential-tool/` (the
+Python bcrypt-hash/SQL generator GUI for creating admin `User` rows) must
+NOT be copied into a customer fork.** It exists only so *this* dev master
+can generate the hash + `INSERT` SQL for its own admin login without
+hand-writing bcrypt; customers are intentionally never given a way to
+self-provision additional admin accounts (no "add another admin" feature
+is planned — see [roadmap.md](./roadmap.md)'s `TENANT_ADMIN` note, still
+reserved/unused). The tool itself is DB-connection-free (generates SQL
+text only, run manually against the DB), but the capability it hands out
+— minting valid admin credentials for this schema — is still master-only
+by policy. When cutting a customer fork, delete `tools/` entirely before
+handing it over.
+
 ## Admin-internal links must never hardcode an `/admin` prefix (2026-07-15)
 
 `proxy.ts` rewrites `admin.{ROOT_DOMAIN}/foo` → `/admin/foo` invisibly to

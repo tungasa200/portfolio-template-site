@@ -51,6 +51,35 @@ effort.
   worth it once the network hop is Vercel-edge-to-Neon instead of
   home-machine-to-Neon.
 
+## Admin credential tool only generates SQL, doesn't write to the DB
+
+**Found:** 2026-07-16, while building `tools/admin-credential-tool/` (see
+[decisions.md](./decisions.md)'s "Per-customer fork" entry for why this
+tool is master-only and never ships to a customer fork).
+
+**What's happening:** The tool generates a bcrypt hash + `INSERT` statement
+for a new admin `User` row, but doesn't connect to the DB or run it — you
+copy the SQL and run it yourself in psql/Neon's SQL editor. An earlier
+version did connect directly (via `DIRECT_URL`, owner-role) and could
+insert/test the connection/list tenants from a dropdown, but that was
+deliberately stripped back down to local-only.
+
+**Why deferred:** At current scale (this dev master project, handled by
+one person) manually pasting SQL into Neon's editor per fork is fine and
+keeps the tool free of DB credentials/connection code entirely. Not worth
+the added complexity (dependency on `psycopg2`, reading `DIRECT_URL` from
+`.env`, connection error handling) until manual inserts actually become a
+bottleneck.
+
+**Possible approaches, not decided:** Once the number of forked
+customer projects grows enough that manually running SQL per admin
+account becomes tedious, revisit re-adding direct DB execution (the
+removed "Test connection" / "Load tenants from DB" / "Insert into
+database" functionality is still in git history — see the commit that
+stripped it — as a starting point) — likely per-project (each fork has
+its own `DIRECT_URL`), not centralized, since forks are separate Vercel +
+Neon deployments by design.
+
 ## Explicit non-goals for this file
 
 Anything that's actually blocking (a missing external-service config step,
