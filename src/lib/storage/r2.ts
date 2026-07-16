@@ -42,18 +42,35 @@ export function extensionForContentType(contentType: string): string | null {
   return ALLOWED_IMAGE_TYPES[contentType] ?? null;
 }
 
+// board-item uploads nest by boardId/itemId (each post gets its own R2
+// folder) instead of a flat tenant-wide bucket — otherwise every photo
+// from every board/item for a tenant lands in one undifferentiated pile,
+// distinguishable in the R2 dashboard only by random UUID filename.
+export type R2UploadScope =
+  | { kind: "board-item"; boardId: string; itemId: string }
+  | { kind: "site"; slot: "hero" | "logo" };
+
+// boardId/itemId arrive as client input to the presign route (unlike
+// tenantId, which is always session-derived) — they're only ever used as
+// path segments here, never trusted for authorization, but still validated
+// as real UUIDs so a malformed/adversarial value can't inject extra path
+// segments (e.g. "../") into the R2 key.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function isValidR2PathSegment(value: string): boolean {
+  return UUID_RE.test(value);
+}
+
 // Key convention from docs/architecture.md#storage-cloudflare-r2 — always
 // server-built from a session-derived tenantId, never a client-supplied path.
-export function buildR2Key(
-  tenantId: string,
-  scope: "board-items" | "site",
-  contentType: string
-): string {
+export function buildR2Key(tenantId: string, scope: R2UploadScope, contentType: string): string {
   const ext = extensionForContentType(contentType);
   if (!ext) {
     throw new Error(`[r2] unsupported content type: ${contentType}`);
   }
-  return `tenants/${tenantId}/${scope}/${randomUUID()}.${ext}`;
+  const filename = `${randomUUID()}.${ext}`;
+  return scope.kind === "board-item"
+    ? `tenants/${tenantId}/board-items/${scope.boardId}/${scope.itemId}/${filename}`
+    : `tenants/${tenantId}/site/${scope.slot}/${filename}`;
 }
 
 export async function getPresignedUploadUrl(key: string, contentType: string): Promise<string> {
@@ -80,7 +97,16 @@ export async function deleteR2Object(key: string): Promise<void> {
   }
 }
 
+// next.config.ts's remotePatterns restricts next/image to pathname
+// "/tenants/**" — a real key from buildR2Key() always matches that, but a
+// stale/foreign r2Key value (e.g. prisma/seed.ts's pre-Phase-4 placeholder
+// rows, which predate the real upload pipeline and never match this shape)
+// would make next/image throw and 500 the whole page instead of just
+// showing a broken image. Guard here so any key that isn't ours to begin
+// with degrades to "no image" (the existing placeholder-pattern fallback)
+// instead of crashing.
 export function r2PublicUrl(key: string): string | null {
   const hostname = process.env.R2_PUBLIC_HOSTNAME;
-  return hostname ? `https://${hostname}/${key}` : null;
+  if (!hostname || !key.startsWith("tenants/")) return null;
+  return `https://${hostname}/${key}`;
 }

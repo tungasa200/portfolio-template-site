@@ -17,6 +17,7 @@ export interface ManagedPhoto {
 }
 
 interface PhotoManagerProps {
+  boardId: string;
   boardItemId: string;
   kind: "GALLERY_MULTI" | "GALLERY_SINGLE";
   initialPhotos: ManagedPhoto[];
@@ -28,7 +29,7 @@ interface PhotoManagerProps {
 // thumbnail among. The server action re-enforces this cap independently
 // (src/lib/actions/board-item-photos.ts) since a client-side cap is UX, not
 // a security boundary.
-export function PhotoManager({ boardItemId, kind, initialPhotos }: PhotoManagerProps) {
+export function PhotoManager({ boardId, boardItemId, kind, initialPhotos }: PhotoManagerProps) {
   const [photos, setPhotos] = useState(initialPhotos);
   const [uploading, setUploading] = useState(false);
   const [, startTransition] = useTransition();
@@ -50,7 +51,7 @@ export function PhotoManager({ boardItemId, kind, initialPhotos }: PhotoManagerP
     setUploading(true);
     try {
       for (const file of toUpload) {
-        const uploaded = await uploadImageToR2(file, "board-items");
+        const uploaded = await uploadImageToR2(file, { kind: "board-item", boardId, itemId: boardItemId });
         const result = await addBoardItemPhoto(boardItemId, uploaded.r2Key, uploaded.width, uploaded.height);
         if (result.status === "success" && result.photoId) {
           setPhotos((prev) => [

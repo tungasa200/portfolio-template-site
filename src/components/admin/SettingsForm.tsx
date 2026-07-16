@@ -43,7 +43,7 @@ export function SettingsForm({
   async function handleHeroFile(file: File) {
     setUploadingHero(true);
     try {
-      const uploaded = await uploadImageToR2(file, "site");
+      const uploaded = await uploadImageToR2(file, { kind: "site", slot: "hero" });
       const result = await updateHeroImage(uploaded.r2Key);
       setHeroUrl(uploaded.publicUrl);
       if (result.message) toast(result.message, result.status === "error");
@@ -57,7 +57,7 @@ export function SettingsForm({
   async function handleLogoFile(file: File) {
     setUploadingLogo(true);
     try {
-      const uploaded = await uploadImageToR2(file, "site");
+      const uploaded = await uploadImageToR2(file, { kind: "site", slot: "logo" });
       const result = await updateLogoImage(uploaded.r2Key);
       setLogoUrl(uploaded.publicUrl);
       if (result.message) toast(result.message, result.status === "error");

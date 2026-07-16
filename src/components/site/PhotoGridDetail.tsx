@@ -1,6 +1,9 @@
+import Image from "next/image";
+
 export interface PhotoGridDetailItem {
   id: string;
   label: string;
+  imageUrl?: string | null;
 }
 
 interface PhotoGridDetailProps {
@@ -14,8 +17,17 @@ export function PhotoGridDetail({ photos }: PhotoGridDetailProps) {
       {photos.map((photo) => (
         <div
           key={photo.id}
-          className="relative flex aspect-square items-end overflow-hidden border border-site-ink bg-site-paper site-placeholder-pattern"
+          className={`relative flex aspect-square items-end overflow-hidden border border-site-ink bg-site-paper ${photo.imageUrl ? "" : "site-placeholder-pattern"}`}
         >
+          {photo.imageUrl && (
+            <Image
+              src={photo.imageUrl}
+              alt={photo.label}
+              fill
+              sizes="(min-width: 768px) 33vw, 100vw"
+              className="object-cover"
+            />
+          )}
           <div className="relative flex w-full items-end justify-between px-4 py-3.5">
             <span className="border border-site-ink bg-site-paper px-2 py-1 font-site-mono text-[11px] tracking-wide text-site-ink-soft">
               {photo.label}

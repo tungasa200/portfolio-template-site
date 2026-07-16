@@ -35,7 +35,7 @@ gitignored and must never be committed.**
    (the owner role's `BYPASSRLS` attribute silently makes the policies a
    no-op). Already done for this project (2026-07-14).
 
-## 2. Cloudflare R2 (object storage) — ⬜ two dashboard steps still needed now that Phase 4's upload flow exists
+## 2. Cloudflare R2 (object storage) — ✅ done for local dev
 
 1. Create a bucket in the Cloudflare dashboard → R2. **Done.**
 2. Create an R2 API token (Account → R2 → Manage API Tokens) scoped to that
@@ -43,25 +43,42 @@ gitignored and must never be committed.**
    fill `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ACCOUNT_ID`,
    `R2_BUCKET_NAME`, `R2_ENDPOINT` (`https://<account id>.r2.cloudflarestorage.com`).
    **Done.**
-3. **⬜ CORS policy on the bucket — needed now, not previously.** The admin
-   photo-upload flow (`src/lib/admin/upload-client.ts`) uploads directly
-   from the browser to R2 via a presigned PUT URL, which means the *browser*
-   (not our server) makes the PUT request — and R2 rejects it with no
-   `Access-Control-Allow-Origin` header until you add a CORS policy.
-   Confirmed hitting this exact error verifying Phase 4's photo upload
-   (2026-07-15): `Access to fetch at '...r2.cloudflarestorage.com/...'
-   ... has been blocked by CORS policy`. Dashboard → your bucket → Settings
-   → CORS Policy → add an entry allowing `PUT` (and `GET` for completeness)
-   from `http://admin.localhost:3000` (dev) and your real
-   `admin.{ROOT_DOMAIN}` origin once deployed. The upload code itself is
-   verified correct otherwise — this is purely the missing dashboard step.
-4. **⬜ Connect a custom domain to the bucket** (R2 bucket settings → Custom
-   Domains), e.g. `images.myplatform.com` — this is what lets `next/image`
-   optimize photos, and is also what `r2PublicUrl()`
-   (`src/lib/storage/r2.ts`) needs to render any uploaded photo at all. Set
-   `R2_PUBLIC_HOSTNAME` to it (currently blank — was fine to defer through
-   Phase 3, but Phase 4's admin photo manager needs it now to actually show
-   thumbnails instead of blank tiles).
+3. **✅ CORS policy on the bucket (2026-07-16).** The admin photo-upload flow
+   (`src/lib/admin/upload-client.ts`) uploads directly from the browser to
+   R2 via a presigned PUT URL, which means the *browser* (not our server)
+   makes the PUT request — R2 rejects it with no
+   `Access-Control-Allow-Origin` header without a CORS policy (confirmed
+   hitting exactly that error verifying Phase 4, 2026-07-15). Current
+   policy (Dashboard → bucket → Settings → CORS Policy):
+   ```json
+   [
+     {
+       "AllowedOrigins": ["http://admin.localhost:3000"],
+       "AllowedMethods": ["PUT", "GET"],
+       "AllowedHeaders": ["*"],
+       "MaxAgeSeconds": 3600
+     }
+   ]
+   ```
+   Verified for real (2026-07-16): simulated the exact browser preflight
+   (`OPTIONS` with `Origin`/`Access-Control-Request-Method`/`-Headers`)
+   against a real presigned URL and got back a `204` with matching
+   `Access-Control-Allow-Origin`/`-Methods`/`-Headers`; the actual `PUT`
+   with an `Origin` header also came back `200` with the CORS header
+   present — this is the real signal a browser checks, not just "the PUT
+   succeeded" (`curl` without `Origin` would succeed regardless of CORS
+   config, since CORS is enforced browser-side). **Add
+   `https://admin.{ROOT_DOMAIN}` to `AllowedOrigins` once a real domain
+   exists via Vercel (see section 4) — the current policy is
+   `localhost`-only.**
+4. **✅ Public URL — done via the Public Development URL, not a custom
+   domain (2026-07-16).** Dashboard → your bucket → Settings → Public
+   Development URL → Enable gives a `pub-<hash>.r2.dev` hostname
+   immediately, no domain required. `R2_PUBLIC_HOSTNAME` is set to it in
+   `.env`. Cloudflare explicitly discourages this for production (rate
+   limited) — swap to a real Custom Domain (R2 bucket settings → Custom
+   Domains, e.g. `images.myplatform.com`) once a real domain exists via
+   Vercel (see section 4 below), and update `R2_PUBLIC_HOSTNAME` to match.
 
 ## 3. Resend (contact-form email notifications) — ⬜ needs your API key
 

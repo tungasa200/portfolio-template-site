@@ -124,7 +124,7 @@ export function BoardItemEditor({ boardId, boardName, kind, item }: BoardItemEdi
         <div className="admin-section-card">
           <h2>사진</h2>
           {item ? (
-            <PhotoManager boardItemId={item.id} kind={kind} initialPhotos={item.photos} />
+            <PhotoManager boardId={boardId} boardItemId={item.id} kind={kind} initialPhotos={item.photos} />
           ) : (
             <p className="admin-field-help">사진은 이름을 입력하고 먼저 저장한 뒤에 추가할 수 있어요.</p>
           )}

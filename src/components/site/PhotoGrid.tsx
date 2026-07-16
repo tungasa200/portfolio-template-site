@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -8,6 +9,9 @@ export interface PhotoGridItem {
   href?: string;
   title: string;
   meta: string;
+  /** Cover photo's public R2 URL — null/undefined renders the striped
+   * placeholder (no photo uploaded yet, or R2_PUBLIC_HOSTNAME unset). */
+  imageUrl?: string | null;
 }
 
 interface PhotoGridProps {
@@ -34,7 +38,17 @@ export function PhotoGrid({ items }: PhotoGridProps) {
     <div className="grid grid-cols-3 gap-4 animate-site-intro-fade" style={{ animationDelay: "0.5s" }}>
       {items.map((item) => (
         <CardShell key={item.id} href={item.href}>
-          <div className="relative aspect-[4/3] overflow-hidden site-placeholder-pattern" />
+          <div className={`relative aspect-[4/3] overflow-hidden ${item.imageUrl ? "" : "site-placeholder-pattern"}`}>
+            {item.imageUrl && (
+              <Image
+                src={item.imageUrl}
+                alt={item.title}
+                fill
+                sizes="(min-width: 768px) 33vw, 100vw"
+                className="object-cover"
+              />
+            )}
+          </div>
           <div className="flex items-baseline justify-between border-t border-site-ink px-[22px] py-5">
             <span className="font-site-display text-xl">{item.title}</span>
             <span className="font-site-mono text-[11px] tracking-wide text-site-ink-muted">

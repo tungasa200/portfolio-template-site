@@ -6,6 +6,152 @@ session (on any machine) to know where things actually stand.
 
 ## Done
 
+**R2_PUBLIC_HOSTNAME set (Public Development URL) + a real crash found and fixed (2026-07-16)**
+- `R2_PUBLIC_HOSTNAME` is now set in `.env` to a `pub-<hash>.r2.dev` Public
+  Development URL (your choice over waiting for a real Custom Domain — see
+  [external-services.md](./external-services.md#2-cloudflare-r2-object-storage--one-dashboard-step-still-open-cors)).
+  `next.config.ts`'s `images.remotePatterns` only reads this at process
+  start, so the dev server had to be restarted (not hot-reloadable) —
+  restarting it is what surfaced the bug below.
+- **Real bug, not just a config gap**: the moment `R2_PUBLIC_HOSTNAME` was
+  set and the dev server restarted, `/board/[seq]/[itemSlug]?view=fullscreen`
+  started 500ing. Root cause: `prisma/seed.ts`'s sample photos predate
+  Phase 4's real upload pipeline and carry fake `r2Key` values like
+  `placeholder/nord-audio/shot-1` (never real R2 objects). Once
+  `r2PublicUrl()` started producing real URLs for real Neon rows (this
+  session's earlier "public site renders real photos" work), it produced a
+  URL for this fake key too — `https://pub-.../placeholder/nord-audio/shot-1`
+  — whose path doesn't match `next.config.ts`'s `pathname: "/tenants/**"`
+  restriction, so `next/image` threw `Invalid src prop ... hostname is not
+  configured` and crashed the whole page instead of degrading. Any
+  malformed/foreign `r2Key` value would trigger the same crash, not just
+  this specific seed data. Fixed by moving the validation into
+  `r2PublicUrl()` itself: it now returns `null` (→ existing placeholder
+  fallback) for any key that doesn't start with `tenants/`, instead of
+  handing next/image a URL it can't render — the seed placeholders (left
+  as-is, not reseeded — the DB row is authoritative either way) now
+  correctly show the placeholder pattern again instead of 500ing.
+- **Verified genuinely end-to-end** (2026-07-16): presigned + PUT a real
+  test image to a real board-item's real R2 path via the actual admin API
+  (`curl`, bypasses browser CORS — the still-open CORS dashboard step
+  doesn't block this kind of test), confirmed the object is publicly
+  fetchable via the new `pub-*.r2.dev` hostname, temporarily pointed one
+  seeded `BoardItemPhoto` row at it (direct Neon write, owner role,
+  reverted after), and confirmed the real photo renders through
+  `next/image`'s optimizer (`/_next/image?url=...`) with real PNG bytes
+  coming back — in the board list cover, GRID VIEW, and SLIDE VIEW
+  (`object-contain`, confirming that tab's aspect-ratio-preserving sizing
+  from the earlier SLIDE VIEW work actually behaves as intended with a
+  real photo, not just in theory). Test data and the test R2 object were
+  cleaned up afterward; `next build` still passes.
+- **Still open**: the CORS policy dashboard step (see
+  external-services.md) — this session's verification used `curl`
+  throughout, which isn't subject to browser CORS, so an actual browser
+  upload through the admin UI is still unconfirmed until that's added.
+
+**R2 uploads now nest by board/item (and hero/logo) instead of one flat pile (2026-07-16)**
+- **Found from a direct question, not a bug report**: `buildR2Key()`
+  (`src/lib/storage/r2.ts`) only ever took a broad `"board-items" | "site"`
+  scope, so every photo from every board/item for a tenant landed in one
+  flat `tenants/{tenantId}/board-items/` folder — distinguishable in the
+  R2 dashboard only by random UUID filename, with zero way to tell which
+  post a given file belonged to just by browsing the bucket. `"site"` was
+  the same for hero and logo images (both landed in one `.../site/`
+  folder). None of this affected the app itself (`BoardItemPhoto.r2Key` in
+  the DB is the real source of truth, not the folder path) — purely a
+  bucket-hygiene/manual-browsing problem.
+- `buildR2Key()` now takes a discriminated `R2UploadScope`:
+  `{ kind: "board-item", boardId, itemId }` →
+  `tenants/{tenantId}/board-items/{boardId}/{itemId}/{uuid}.ext`, or
+  `{ kind: "site", slot: "hero" | "logo" }` →
+  `tenants/{tenantId}/site/{hero|logo}/{uuid}.ext}`. Threaded through
+  `POST /api/admin/upload-url` (now parses/validates the scope object
+  instead of a bare string), `uploadImageToR2()`
+  (`src/lib/admin/upload-client.ts`), `PhotoManager.tsx` (gained a
+  required `boardId` prop, passed down from `BoardItemEditor.tsx`, which
+  already had it), and `SettingsForm.tsx`'s two upload handlers
+  (`hero`/`logo` slots).
+- `boardId`/`itemId` arrive as ordinary client input to the presign route
+  (unlike `tenantId`, always session-derived) and are only ever used as R2
+  key path segments, never for authorization — but validated as real UUIDs
+  (`isValidR2PathSegment()`) before use, so a malformed/adversarial value
+  (e.g. `../../evil`) can't inject extra path segments into the key.
+  `slot` is constrained to the 2-value enum the same way.
+- **Existing already-uploaded photos keep their old flat-structure keys**
+  — no migration/re-key of files already in R2, since `BoardItemPhoto.r2Key`
+  in the DB is what's authoritative either way, not the folder they happen
+  to sit in. Only new uploads from this point on use the nested structure.
+- Verified against the real admin API (2026-07-16): presigned a real
+  board-item upload and confirmed the returned key nests under the real
+  boardId/itemId; presigned hero and logo uploads and confirmed
+  `site/hero/`/`site/logo/` respectively; confirmed a path-traversal
+  attempt in `boardId`, an invalid `slot` value, and the old flat-string
+  scope shape are all rejected with 400. Full `next build` passes.
+
+**Public site now renders real photos, not just placeholders (2026-07-16)**
+- **Found while doing the SLIDE VIEW height work below**: despite Phase 4's
+  admin upload pipeline being fully wired (R2 presign, `width`/`height`
+  captured per `BoardItemPhoto`), the entire public site — hero, board list
+  grid, item detail's GRID VIEW, item detail's SLIDE VIEW + its thumbnail
+  strip — was still 100% placeholder-pattern boxes. Nothing had ever wired a
+  real `<Image>` using `r2PublicUrl()`. Not previously documented as an open
+  item anywhere; found by inspection, not by a bug report.
+- Fixed across all four: `PhotoGrid.tsx`, `PhotoGridDetail.tsx`,
+  `FullscreenViewer.tsx` (main photo + thumbnails), and the home hero
+  (`src/app/s/[tenant]/page.tsx`) now take an optional `imageUrl` and render
+  `next/image` when it's non-null, falling back to the existing
+  `site-placeholder-pattern` box when it's null (no photo yet, or
+  `R2_PUBLIC_HOSTNAME` unset — see below). URLs are always computed
+  server-side via `r2PublicUrl()` in the page component and passed down as a
+  plain string prop — none of these are Server Components importing the
+  `server-only` `r2.ts` module directly.
+  - Cover photos (`PhotoGrid` list tiles) query
+    `photos: { where: { isPrimary: true }, take: 1 }` — the same pattern
+    already used by the admin board list page, relying on
+    `board-item-photos.ts`'s invariant that exactly one photo is
+    `isPrimary` whenever an item has any.
+  - `object-fit` choice is deliberate per spot: list/grid tiles and
+    thumbnails use `cover` (small fixed tiles read better cropped-to-fill);
+    the SLIDE VIEW main photo and the hero use `contain`/`cover`
+    respectively — SLIDE VIEW specifically never crops, since its box is
+    now a fixed *height* (see below) with the rendered image's width
+    following each photo's real aspect ratio, the whole point of that
+    change.
+- **Not verified visually** — `R2_PUBLIC_HOSTNAME` is still blank (see
+  [external-services.md](./external-services.md#2-cloudflare-r2-object-storage--two-dashboard-steps-still-needed-now-that-phase-4s-upload-flow-exists)),
+  so `r2PublicUrl()` returns `null` everywhere right now and every spot
+  above still renders its placeholder fallback — confirmed via curl that
+  all affected routes still 200 and the placeholder markup renders with no
+  broken `<img>` tags, but the actual "real photo renders correctly sized"
+  path is unexercised until that env var is set. `next.config.ts`'s
+  `images.remotePatterns` (already conditionally wired to
+  `R2_PUBLIC_HOSTNAME` since Phase 4) needs that same value to allow
+  `next/image` to load from R2 at all — worth a real browser check once
+  it's set.
+
+**SLIDE VIEW (renamed from FULLSCREEN VIEW) fills the viewport height, no page scroll (2026-07-16)**
+- Tab label changed to "SLIDE VIEW" (`board/[seq]/[itemSlug]/page.tsx`) —
+  internal `key: "fullscreen"` and the `?view=fullscreen&photo=N` URL
+  scheme deliberately left unchanged, only the visible label moved.
+- The item detail `<section>` is now viewport-height-locked like
+  home/contact (`h-[calc(100vh-80px)] max-h-[...] overflow-hidden flex
+  flex-col`, same 80px-matches-real-Footer-height value used elsewhere).
+  `DetailTabs` splits into a fixed-height `Tabs` row (`shrink-0`, as does
+  `SectionHeader` now) and a `flex-1 min-h-0 overflow-y-auto` content
+  region — INDEX/GRID VIEW get a scroll *fallback* there if their content
+  is taller than the viewport (unchanged from before, just contained
+  instead of growing the page), while `FullscreenViewer` sizes itself to
+  `h-full` and is expected to never trigger that scroll.
+  `FullscreenViewer`'s image box changed from a fixed `aspect-video` (16:9)
+  to `flex-1 min-h-0` — it now takes whatever height DetailTabs hands it
+  instead of a fixed ratio, which is what makes the real-photo
+  `object-fit: contain` behavior above meaningful (previously any real
+  photo would've had to crop to fit the fixed 16:9 box).
+- Verified against real Neon (2026-07-16): curl-confirmed the new fixed-
+  height classes and "SLIDE VIEW" label render on a real `dev` tenant board
+  item, GRID/INDEX tabs still 200, and the `?photo=N` deep-link still
+  resolves to the correct photo label.
+
 **Nav title area: fixed-height logo/site-name box + optional image logo (2026-07-16)**
 - `Nav.tsx`'s title area (previously a bare `whitespace-nowrap` div with no
   explicit `line-height`) now sits in a box whose height is pinned to a
@@ -464,11 +610,11 @@ session (on any machine) to know where things actually stand.
 - ✅ Neon Postgres connected. Real migration `20260714083145_init`
   generated and applied. `DATABASE_URL` (pooled) / `DIRECT_URL` (unpooled,
   CLI-only) both verified reachable.
-- 🟡 Cloudflare R2 connected (bucket `portfolio-template`, credentials in
-  `.env`) but two dashboard steps are still outstanding now that Phase 4's
-  upload flow actually exists and needs them — CORS policy on the bucket,
-  and `R2_PUBLIC_HOSTNAME` — see
-  [external-services.md](./external-services.md#2-cloudflare-r2-object-storage--two-dashboard-steps-still-needed-now-that-phase-4s-upload-flow-exists).
+- ✅ Cloudflare R2 connected and fully working for local dev (2026-07-16):
+  CORS policy added and verified against a real preflight, `R2_PUBLIC_HOSTNAME`
+  set via a Public Development URL (`pub-*.r2.dev`, temporary — swap to a
+  real Custom Domain once Vercel/a real domain exist) — see
+  [external-services.md](./external-services.md#2-cloudflare-r2-object-storage--done-for-local-dev).
 - ⬜ Vercel — not yet provisioned.
 
 **Conventions established**
@@ -478,8 +624,6 @@ session (on any machine) to know where things actually stand.
 
 Phase 4 (admin CRUD + uploads) is done as of 2026-07-15 — see above. Next up
 per [roadmap.md](./roadmap.md):
-- The two R2 dashboard steps above (not blocking further coding work, but
-  blocking an actual end-to-end photo-upload verification).
 - Phase 5 — go live as tenant #1 (real `Tenant` row, Vercel + domain,
   populate real content through the now-finished admin panel, the
   tenant-isolation regression test).

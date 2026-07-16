@@ -16,7 +16,7 @@ interface TabsProps {
 export function Tabs({ tabs, active, onChange }: TabsProps) {
   return (
     <div
-      className="mb-10 flex gap-7 border-b border-site-border animate-site-intro-fade"
+      className="mb-10 flex shrink-0 gap-7 border-b border-site-border animate-site-intro-fade"
       style={{ animationDelay: "0.45s" }}
     >
       {tabs.map((tab) => {

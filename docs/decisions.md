@@ -3,6 +3,38 @@
 Chronological. Read this when you're tempted to "simplify" something —
 most of the non-obvious choices here were already argued out once.
 
+## Per-customer fork + dedicated Vercel deployment, not one shared multi-tenant instance (2026-07-16)
+
+This repo is being run as a **dev master template**: no custom domain is
+being bought for it (Vercel's default `*.vercel.app` domain is fine for
+this master copy), and going forward each customer gets their *own copy*
+of this codebase, customized, deployed as its *own separate* Vercel
+project. This is a real pivot from — not just an addition to — "[Multi-tenant SaaS from day one](#multi-tenant-saas-from-day-one-not-a-single-tenant-site)"
+below, which assumed one shared deployment serving every tenant by
+subdomain. That original assumption is why `Tenant`/RLS/`forTenant()`/
+subdomain-based routing exist at all; under the fork-per-customer model,
+each deployment only ever has one real tenant, so all of that becomes
+unused-but-harmless infrastructure per fork rather than load-bearing
+multi-tenancy. **Not ripped out** — it doesn't hurt anything sitting
+unused, and revisiting it isn't urgent — but worth knowing if a future
+session is tempted to "simplify away" the tenant-scoping code: it was
+built for a different deployment model than the one actually being used
+going forward, not for no reason.
+
+Immediate, concrete consequence (came up discussing R2 bucket structure):
+**each customer's forked project should get its own R2 bucket and its own
+R2 API token, not share the master project's bucket** — see
+[external-services.md](./external-services.md#2-cloudflare-r2-object-storage--done-for-local-dev).
+Reasoning: since Vercel project and Neon DB are already going to be
+separate per customer under this model, sharing only the R2 bucket would
+be the odd one out — and a leaked R2 key from any one customer's Vercel
+env vars would expose every other customer's files (the `tenants/{id}/...`
+key-nesting added earlier this session limits accidental *cross-tenant*
+confusion within one bucket, but doesn't stop someone holding a valid key
+from listing/reading the whole bucket). Separate buckets cost nothing
+extra (R2 has no per-bucket fee and a generous bucket-count limit), so
+there's no real trade-off against doing it.
+
 ## Admin-internal links must never hardcode an `/admin` prefix (2026-07-15)
 
 `proxy.ts` rewrites `admin.{ROOT_DOMAIN}/foo` → `/admin/foo` invisibly to

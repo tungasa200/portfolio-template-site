@@ -47,13 +47,20 @@ export function DetailTabs({ tabs, activeView, gridPhotos, activePhotoIndex, ind
   };
 
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col">
       <Tabs tabs={tabs} active={activeView} onChange={setView} />
-      {activeView === "index" && indexContent && <IndexTab contentHtml={indexContent} />}
-      {activeView === "grid" && <PhotoGridDetail photos={gridPhotos} />}
-      {activeView === "fullscreen" && (
-        <FullscreenViewer photos={gridPhotos} activeIndex={activePhotoIndex} onSelect={setPhotoIndex} />
-      )}
-    </>
+      {/* min-h-0 + overflow-y-auto: INDEX/GRID VIEW content can be taller
+          than the fixed-viewport section above and gets a scroll fallback
+          here instead of growing the page. SLIDE VIEW (FullscreenViewer)
+          sizes itself to h-full and never needs to trigger that scroll —
+          see its own component comment. */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {activeView === "index" && indexContent && <IndexTab contentHtml={indexContent} />}
+        {activeView === "grid" && <PhotoGridDetail photos={gridPhotos} />}
+        {activeView === "fullscreen" && (
+          <FullscreenViewer photos={gridPhotos} activeIndex={activePhotoIndex} onSelect={setPhotoIndex} />
+        )}
+      </div>
+    </div>
   );
 }

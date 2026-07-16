@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireTenant } from "@/lib/tenant/resolve-tenant";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
+import { r2PublicUrl } from "@/lib/storage/r2";
 import { SectionHeader } from "@/components/site/SectionHeader";
 import { PhotoGrid } from "@/components/site/PhotoGrid";
 import { formatBoardDate } from "@/lib/site/format-date";
@@ -31,6 +32,7 @@ export default async function BoardPage({
       items: {
         where: { isPublished: true },
         orderBy: { order: "asc" },
+        include: { photos: { where: { isPrimary: true }, take: 1 } },
       },
     },
   });
@@ -50,6 +52,7 @@ export default async function BoardPage({
               : undefined,
           title: item.name,
           meta: formatBoardDate(item.dateValue),
+          imageUrl: item.photos[0] ? r2PublicUrl(item.photos[0].r2Key) : null,
         }))}
       />
     </section>

@@ -5,6 +5,10 @@ export interface UploadedImage {
   height: number;
 }
 
+export type UploadScope =
+  | { kind: "board-item"; boardId: string; itemId: string }
+  | { kind: "site"; slot: "hero" | "logo" };
+
 function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -25,7 +29,7 @@ function readImageDimensions(file: File): Promise<{ width: number; height: numbe
 // presign (per docs/roadmap.md's R2 upload flow), then uploads directly to
 // R2 with the presigned PUT URL from POST /api/admin/upload-url — the
 // browser never round-trips the file bytes through our own server.
-export async function uploadImageToR2(file: File, scope: "board-items" | "site"): Promise<UploadedImage> {
+export async function uploadImageToR2(file: File, scope: UploadScope): Promise<UploadedImage> {
   const dims = await readImageDimensions(file);
 
   const presignRes = await fetch("/api/admin/upload-url", {
