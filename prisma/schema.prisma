@@ -85,6 +85,7 @@ model SiteSettings {
   siteName         String
   photographerName String
   heroImageKey     String?
+  logoImageKey     String? // optional image logo shown in Nav instead of siteName text
   contactEmail     String
   footerText       String?
   themeName        String  @default("editorial-default") // reserved for future per-tenant theming

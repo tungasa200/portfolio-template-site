@@ -6,6 +6,104 @@ session (on any machine) to know where things actually stand.
 
 ## Done
 
+**Nav title area: fixed-height logo/site-name box + optional image logo (2026-07-16)**
+- `Nav.tsx`'s title area (previously a bare `whitespace-nowrap` div with no
+  explicit `line-height`) now sits in a box whose height is pinned to a
+  `TITLE_LINE_HEIGHT` constant (`1.5rem`, matching `text-2xl`'s font-size at
+  `line-height: 1`) — the divider line underneath never shifts by even 1px,
+  regardless of whether it's rendering `siteName` text or a logo image of
+  any aspect ratio. Text gets `line-height: 1` (closes the original
+  misalignment) and is never truncated or wrapped: `useFitTextScale` (in
+  `Nav.tsx`) measures the rendered text's `scrollWidth` against the box's
+  `clientWidth` and, if it overflows, applies a uniform CSS `transform:
+  scale(...)` (paint-only — doesn't affect layout, so the box's own fixed
+  height never moves) to shrink the *whole name* down until it fits — the
+  visitor always sees the complete site name, just smaller for an unusually
+  long one, instead of an ellipsis-truncated fragment (an ellipsis version
+  shipped first same-day, then was replaced per feedback that silently
+  cutting off part of the name is a worse trade-off than a smaller-but-
+  complete one). Re-measures once `document.fonts.ready` resolves (the
+  Playfair Display webfont can swap after first paint and change the
+  measured width) and on container resize via `ResizeObserver`.
+  A logo image is rendered at `height: 100%`, `width: auto`,
+  `object-fit: contain` — it scales to the fixed height without cropping;
+  an unusually wide image just renders narrower (letterboxed) rather than
+  ever exceeding the box.
+- Both places that render this box — public `Nav.tsx` and the admin
+  Settings logo preview (`SettingsForm.tsx`) — share one implementation,
+  `src/components/site/SiteTitleBox.tsx` (`TITLE_LINE_HEIGHT` +
+  `useFitTextScale` live there now, not duplicated), specifically so the two
+  can't visually drift apart — what the operator sees in the preview is
+  pixel-identical fit-behavior to what actually renders on the public site,
+  just with admin-appropriate colors/font passed in via a `textStyle` prop
+  (the admin bundle doesn't have the public site's `theme.css` tokens
+  loaded, so it can't rely on the `font-site-display`/`--color-site-ink`
+  CSS variables `Nav.tsx` uses).
+- `SiteSettings.logoImageKey` (nullable, real migration
+  `20260716002430_add_site_logo` applied to Neon) lets an operator upload an
+  image logo that replaces the `siteName` text in `Nav` — same R2 "site"
+  upload scope as the hero image, reusing `uploadImageToR2`/
+  `getPresignedUploadUrl` as-is. `updateLogoImage`/`removeLogoImage`
+  (`src/lib/actions/site-settings.ts`) best-effort delete the previous R2
+  object on replace/removal (hero image's `updateHeroImage` doesn't do this
+  — an existing, separate inconsistency, not touched here).
+- Admin Settings (`SettingsForm.tsx`) gained a "메뉴 로고" card: an upload
+  button, a live preview box that mirrors the real `Nav` sizing exactly (so
+  what the operator sees in admin is what renders on the public site), and
+  a "되돌리기" button (only shown once a logo is set) that reverts to the
+  text `siteName`.
+- **Real layout bug, found from a screenshot after first landing this**: the
+  logo card initially reused `.admin-hero-photo-wrap`/`.admin-hero-edit-btn`
+  (hero image's CSS) for its own preview+buttons — those classes hardcode a
+  260px box with the edit button `position: absolute; bottom: 12px; right:
+  12px` (an intentional Instagram-style overlay for the *hero photo*,
+  wrong for the compact 24px-tall logo preview), so the upload button
+  rendered on top of the site-name text instead of beside it. Fixed with
+  dedicated `.admin-logo-editor`/`.admin-logo-preview`/`.admin-logo-btn`
+  classes (`admin.css`) — a normal flex row, not an absolute overlay. Also
+  caught along the way: the preview box's inline border color referenced a
+  CSS var that doesn't exist here (`var(--border)`; this file's actual
+  token is `--line`) — silently rendered no border color at all.
+- Also on the same pass: the "대표 이미지" and "메뉴 로고" cards used to each
+  be a full-width card holding a small (≤260px) control, leaving most of
+  the card visibly empty — flagged directly from a screenshot as wasted
+  space. Both now sit side by side in one `.admin-branding-row` (`display:
+  grid; grid-template-columns: 1fr 1fr`, collapsing to one column under the
+  existing 860px mobile breakpoint) instead of stacking full-width. Grid's
+  default `align-items: stretch` makes both cards match the taller one's
+  height; each card is a flex column with its editor control pinned via
+  `margin: auto 0`, so the shorter card's control centers in the leftover
+  space instead of the card just ending in dead space under it.
+- "기본 정보" (siteName/photographerName/contactEmail/footerText form) moved
+  to the top of the page, above the branding row — per your direct request,
+  no other behavior change.
+- Its "저장하기" button used to float in its own separately-margined `<div>`
+  *below* the card (a pattern copied from `AboutEditor.tsx`/
+  `BoardItemEditor.tsx`, where it reads fine since their editor content
+  isn't itself a bordered card) — flagged from a screenshot as looking
+  arbitrarily spaced, since here it competed visually with the actual
+  bordered `admin-section-card` box above it. Moved inside the card as a
+  `.admin-card-footer` (top border divider + right-aligned), so it reads as
+  the card's own action row instead of an unrelated floating element. Not
+  applied to About/BoardItem editors — not reported as a problem there and
+  their layout is different (no boxed card wrapping the editor).
+- Verified against real Neon + R2 (2026-07-16): logged in via
+  `/api/auth/callback/credentials` and curl-fetched `/admin/settings` to
+  confirm the new card renders; called `POST /api/admin/upload-url`
+  directly and PUT a real test image straight to R2 with the presigned URL
+  (curl isn't subject to the browser-only CORS block that's still pending
+  per [external-services.md](./external-services.md#2-cloudflare-r2-object-storage--two-dashboard-steps-still-needed-now-that-phase-4s-upload-flow-exists),
+  so this exercised the real R2 credentials/signature end-to-end); wrote/
+  read back/reverted `SiteSettings.logoImageKey` via a throwaway script
+  against the real `dev` tenant row to confirm the migration round-trips
+  correctly. Test R2 object deleted afterward. **Not verified in an actual
+  browser** (no headless-browser tool available in this session) — confirmed
+  the expected markup/inline styles render server-side (including
+  `transform:scale(1)` for the seeded `dev` tenant's short site name), but
+  the `useFitTextScale` shrink-on-overflow behavior itself was never
+  exercised against a genuinely long site name in a real viewport — worth an
+  actual browser check with a long name before trusting it fully.
+
 **Board/BoardItem schema redesign (replaces Project/Exhibition)**
 - Real migration against Neon: dropped `Project`/`ProjectPhoto`/
   `Exhibition`/`ExhibitionPhoto`, added `Board`/`BoardItem`/

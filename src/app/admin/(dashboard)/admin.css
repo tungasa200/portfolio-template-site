@@ -144,6 +144,12 @@
 .admin-section-card h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
 .admin-section-card .admin-section-desc { font-size: 14.5px; color: var(--muted); margin-bottom: 18px; }
 
+/* Save button lives inside the card it belongs to, not floating below it
+   in its own separately-margined div — that read as arbitrary spacing
+   (the card's own margin-bottom plus the button div's margin stacking up
+   with no visual relationship between the two). */
+.admin-card-footer { display: flex; justify-content: flex-end; margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line); }
+
 .admin-hello-strip { display: flex; align-items: center; justify-content: space-between; gap: 20px; background: var(--panel-2); border-radius: var(--radius); padding: 22px 26px; margin-bottom: 24px; }
 .admin-hello-strip h1 { font-size: 22px; }
 .admin-hello-strip p { font-size: 14.5px; color: var(--muted); margin-top: 4px; }
@@ -159,6 +165,31 @@
 .admin-hero-photo span.admin-tag { font-size: 11px; letter-spacing: 0.04em; color: var(--faint); background: var(--panel); border: 1px solid var(--ink); padding: 4px 10px; }
 .admin-hero-edit-btn { position: absolute; bottom: 12px; right: 12px; display: flex; align-items: center; gap: 6px; background: var(--ink); color: var(--paper); border: none; border-radius: 100px; padding: 9px 15px; font-size: 13.5px; font-weight: 700; cursor: pointer; box-shadow: var(--shadow); }
 .admin-hero-edit-btn:hover { opacity: 0.9; }
+
+/* Hero image + menu logo are two related branding settings — side by side
+   instead of each in its own full-width card, which used to leave most of
+   the card empty (a 260px box in a ~900px card). align-items: stretch
+   (the grid default) makes both cards match the taller one's height; each
+   card is itself a flex column so its own editor control (hero photo /
+   logo preview) can vertically center in the leftover space via
+   margin-top/bottom: auto below, instead of the shorter card just ending
+   in a block of dead space under a top-aligned control. */
+.admin-branding-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.admin-branding-row .admin-section-card { display: flex; flex-direction: column; }
+.admin-branding-row .admin-hero-photo-wrap,
+.admin-branding-row .admin-logo-editor { margin-top: auto; margin-bottom: auto; }
+
+/* Logo editor: unlike the hero photo, this preview is intentionally small
+   (pixel-matched to Nav's real fixed-height title box, see SiteTitleBox) —
+   so it sits in a normal inline flex row with its controls next to it,
+   not the hero's fixed-260px/absolute-overlay-button layout, which doesn't
+   fit a compact preview. */
+.admin-logo-editor { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.admin-logo-preview { display: inline-flex; align-items: center; padding: 10px 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #111; }
+.admin-logo-editor-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.admin-logo-btn { display: flex; align-items: center; gap: 6px; background: var(--ink); color: var(--paper); border: none; border-radius: 100px; padding: 9px 15px; font-size: 13.5px; font-weight: 700; cursor: pointer; box-shadow: var(--shadow); }
+.admin-logo-btn:hover { opacity: 0.9; }
+.admin-logo-btn[disabled] { opacity: 0.45; cursor: not-allowed; }
 
 .admin-field { margin-bottom: 20px; }
 .admin-field label { display: block; font-size: 15px; font-weight: 700; margin-bottom: 7px; }
@@ -347,7 +378,7 @@
   .admin-sidebar-brand { border-bottom: none; margin-bottom: 0; padding: 4px; }
   .admin-nav-list { flex-direction: row; margin-top: 0; flex-wrap: wrap; }
   .admin-sidebar-foot { margin-top: 0; padding-top: 0; border-top: none; }
-  .admin-field-row, .admin-site-grid { grid-template-columns: 1fr; }
+  .admin-field-row, .admin-site-grid, .admin-branding-row { grid-template-columns: 1fr; }
   .admin-photo-manager-grid { grid-template-columns: repeat(2, 1fr); }
   .admin-page { padding: 24px 16px 80px; }
   .admin-toast { left: 50%; }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SiteTitleBox } from "@/components/site/SiteTitleBox";
 
 export interface NavLinkItem {
   id: string;
@@ -19,6 +20,7 @@ export interface NavSocialLink {
 
 interface NavProps {
   siteName: string;
+  logoUrl?: string | null;
   navItems: NavLinkItem[];
   socialLinks: NavSocialLink[];
 }
@@ -27,7 +29,7 @@ interface NavProps {
 // Owns nav open/close, link hover/active underline, and the scroll-to-top
 // button (folded in here rather than a separate file since it's small,
 // stateful chrome coupled to the same scroll listener).
-export function Nav({ siteName, navItems, socialLinks }: NavProps) {
+export function Nav({ siteName, logoUrl, navItems, socialLinks }: NavProps) {
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(true);
   const [hoveredHref, setHoveredHref] = useState<string | null>(null);
@@ -74,13 +76,12 @@ export function Nav({ siteName, navItems, socialLinks }: NavProps) {
         <div className="flex h-full w-[220px] min-w-[220px] flex-col py-10 px-7">
           <div className="relative -mx-7 px-7 pb-5">
             <div
-              className="whitespace-nowrap font-site-display text-2xl tracking-wide"
               style={{
                 opacity: navOpen ? 1 : 0,
                 transition: navOpen ? "opacity 0.25s ease 0.3s" : "opacity 0.1s ease",
               }}
             >
-              {siteName}
+              <SiteTitleBox siteName={siteName} logoUrl={logoUrl} textClassName="font-site-display text-2xl tracking-wide" />
             </div>
             <div className="absolute inset-x-0 bottom-0 h-px bg-site-ink" />
           </div>

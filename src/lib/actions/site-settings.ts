@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
+import { deleteR2Object } from "@/lib/storage/r2";
 
 export interface ActionFormState {
   status: "idle" | "success" | "error";
@@ -48,4 +49,24 @@ export async function updateHeroImage(r2Key: string): Promise<ActionFormState> {
   await db.siteSettings.update({ where: { tenantId }, data: { heroImageKey: r2Key } });
   revalidatePath("/admin", "layout");
   return { status: "success", message: "대표 사진을 바꿨어요" };
+}
+
+export async function updateLogoImage(r2Key: string): Promise<ActionFormState> {
+  const { tenantId } = await getCurrentTenantContext();
+  const db = forTenant(tenantId);
+  const previous = await db.siteSettings.findUnique({ where: { tenantId }, select: { logoImageKey: true } });
+  await db.siteSettings.update({ where: { tenantId }, data: { logoImageKey: r2Key } });
+  if (previous?.logoImageKey) await deleteR2Object(previous.logoImageKey);
+  revalidatePath("/admin", "layout");
+  return { status: "success", message: "로고를 바꿨어요" };
+}
+
+export async function removeLogoImage(): Promise<ActionFormState> {
+  const { tenantId } = await getCurrentTenantContext();
+  const db = forTenant(tenantId);
+  const previous = await db.siteSettings.findUnique({ where: { tenantId }, select: { logoImageKey: true } });
+  await db.siteSettings.update({ where: { tenantId }, data: { logoImageKey: null } });
+  if (previous?.logoImageKey) await deleteR2Object(previous.logoImageKey);
+  revalidatePath("/admin", "layout");
+  return { status: "success", message: "로고를 제거하고 사이트 이름으로 되돌렸어요" };
 }

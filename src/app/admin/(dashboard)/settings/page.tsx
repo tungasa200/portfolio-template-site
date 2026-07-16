@@ -47,6 +47,7 @@ export default async function AdminSettingsPage() {
         contactEmail={siteSettings?.contactEmail ?? ""}
         footerText={siteSettings?.footerText ?? null}
         heroImageUrl={siteSettings?.heroImageKey ? r2PublicUrl(siteSettings.heroImageKey) : null}
+        logoImageUrl={siteSettings?.logoImageKey ? r2PublicUrl(siteSettings.logoImageKey) : null}
       />
 
       <div className="admin-section-card">
