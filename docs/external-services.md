@@ -112,7 +112,8 @@ passwords undecryptable — they'd need to reconnect).
    skipped for now.
 2. Set every variable from `.env` in the Vercel project settings
    (Production **and** Preview environments) — Vercel does not read your
-   local `.env` file.
+   local `.env` file. **Set `HAS_CUSTOM_DOMAIN="false"` here** — see below
+   and [src/lib/tenant/domain-mode.ts](../src/lib/tenant/domain-mode.ts).
 3. **⬜ No wildcard domain — and none is possible on the shared default
    domain.** Subdomain-based routing (`admin.{root}`, `{slug}.{root}`)
    needs a real custom domain with a wildcard DNS record (`*.yourdomain.com`)
@@ -128,6 +129,16 @@ passwords undecryptable — they'd need to reconnect).
    `ROOT_TENANT_SLUG` is set (serves that one tenant at the bare root
    domain too) — there's no way to reach a *second* tenant's site without
    a real wildcard domain.
+   This is exactly what `HAS_CUSTOM_DOMAIN="false"` declares: don't attempt
+   any Host-string comparison against `ROOT_DOMAIN` at all, just always
+   treat every request as the bare-root tenant (see
+   [decisions.md](./decisions.md#domain-mode-is-an-explicit-flag-not-inferred-from-hostroot_domain-2026-07-16)
+   for why this replaced the earlier inferred version). When a customer
+   fork later buys a real domain and wires the wildcard DNS record, set
+   `ROOT_DOMAIN` to it **and flip `HAS_CUSTOM_DOMAIN` to `"true"`** only
+   after confirming `admin.{that-domain}` actually resolves — flipping it
+   before DNS is live reintroduces the same breakage this flag exists to
+   prevent, just in the opposite direction.
 4. **R2 CORS**: the `AllowedOrigins` list (see section 2 above) must
    include `https://portfolio-template-site.vercel.app` (no `admin.`
    prefix, per the point above) alongside the existing

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { auth } from "@/lib/auth/auth";
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { getAdminBasePath } from "@/lib/auth/admin-base-path";
+import { ROOT_DOMAIN, getDomainMode } from "@/lib/tenant/domain-mode";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
 import { prisma } from "@/lib/db/client";
 import { ToastProvider } from "@/components/admin/Toast";
@@ -83,12 +84,18 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
     },
   ];
 
-  const rootDomain = process.env.ROOT_DOMAIN ?? "localhost:3000";
-  const protocol = rootDomain.includes("localhost") ? "http" : "https";
+  const protocol = ROOT_DOMAIN.includes("localhost") ? "http" : "https";
+  // {slug}.{ROOT_DOMAIN} only resolves under a real wildcard-DNS custom
+  // domain (getDomainMode() === "custom") -- on the shared *.vercel.app
+  // default domain there's no subdomain to link to, only the bare root
+  // (which is why ROOT_TENANT_SLUG serves there in the first place). See
+  // src/lib/tenant/domain-mode.ts.
   const siteUrl = tenant
     ? tenant.customDomain
       ? `${protocol}://${tenant.customDomain}`
-      : `${protocol}://${tenant.slug}.${rootDomain}`
+      : getDomainMode() === "custom"
+        ? `${protocol}://${tenant.slug}.${ROOT_DOMAIN}`
+        : `${protocol}://${ROOT_DOMAIN}`
     : null;
 
   return (

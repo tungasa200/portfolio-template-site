@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { ROOT_DOMAIN as ROOT_DOMAIN_RAW, ROOT_TENANT_SLUG, getDomainMode, stripPort } from "@/lib/tenant/domain-mode";
 
 // Hostname → internal path rewriting for the multi-tenant public site.
 // This file does NOT touch the database — it only decides which internal
@@ -17,28 +18,35 @@ import type { NextRequest } from "next/server";
 // The rewrite is invisible to the browser — visitors always see the original
 // host + path in their address bar.
 
-const ROOT_DOMAIN = (process.env.ROOT_DOMAIN ?? "localhost:3000").replace(/:\d+$/, "");
-const ROOT_TENANT_SLUG = process.env.ROOT_TENANT_SLUG;
+const ROOT_DOMAIN = stripPort(ROOT_DOMAIN_RAW);
 const RESERVED_SUBDOMAINS = new Set(["www", "admin", "s"]);
-
-function hostWithoutPort(host: string): string {
-  return host.replace(/:\d+$/, "");
-}
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const host = hostWithoutPort(request.headers.get("host") ?? "");
+  const host = stripPort(request.headers.get("host") ?? "");
 
+  if (getDomainMode() === "no-wildcard") {
+    // HAS_CUSTOM_DOMAIN is not set — there is no wildcard DNS, so
+    // `admin.{host}`/`{slug}.{host}` can never reach this deployment no
+    // matter what the Host header says (Vercel's shared *.vercel.app domain
+    // only ever resolves its own exact assigned hostname). Every request is
+    // therefore the bare-root tenant by construction — deliberately NOT
+    // compared against ROOT_DOMAIN here, so a stale/mismatched ROOT_DOMAIN
+    // (e.g. already set to a custom domain that isn't live yet) can't send
+    // this branch down the wrong path the way host-string comparison used
+    // to. See src/lib/tenant/domain-mode.ts.
+    if (!ROOT_TENANT_SLUG || pathname === "/admin" || pathname.startsWith("/admin/")) {
+      return NextResponse.next();
+    }
+    const url = request.nextUrl.clone();
+    url.pathname = `/s/${ROOT_TENANT_SLUG}${pathname}`;
+    return NextResponse.rewrite(url);
+  }
+
+  // HAS_CUSTOM_DOMAIN=true: a real wildcard-DNS domain is live, so multiple
+  // distinct hosts can genuinely reach this deployment — Host-based
+  // branching below is meaningful here (unlike the no-wildcard branch above).
   if (host === ROOT_DOMAIN || host === `www.${ROOT_DOMAIN}`) {
-    // /admin must stay reachable at the bare root domain — this is the
-    // *only* way to reach it on a deployment with no wildcard-subdomain
-    // custom domain (e.g. Vercel's shared *.vercel.app default domain,
-    // where `admin.{root}` can never resolve to this project at all,
-    // unlike a real custom domain with a wildcard DNS record). Without
-    // this exception, ROOT_TENANT_SLUG's blanket rewrite below would
-    // rewrite /admin/* into the tenant site tree too, making admin
-    // completely unreachable the moment ROOT_TENANT_SLUG is set on such
-    // a deployment.
     if (!ROOT_TENANT_SLUG || pathname === "/admin" || pathname.startsWith("/admin/")) {
       return NextResponse.next();
     }

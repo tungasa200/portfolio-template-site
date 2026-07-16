@@ -23,12 +23,28 @@ marketing/signup site in this project.
 
 `src/proxy.ts` (Next.js 16's replacement for `middleware.ts` — see
 [conventions.md](./conventions.md)) inspects the `Host` header and rewrites
-the request path, invisibly to the browser:
+the request path, invisibly to the browser. Which of the two tables below
+applies is gated by `HAS_CUSTOM_DOMAIN` (`src/lib/tenant/domain-mode.ts`) —
+an explicit env flag, not something inferred from the `Host` header itself
+(see [decisions.md](./decisions.md#domain-mode-is-an-explicit-flag-not-inferred-from-hostroot_domain-2026-07-16)
+for why).
+
+**`HAS_CUSTOM_DOMAIN` unset/`"false"`** (Vercel's shared `*.vercel.app`
+default domain — no wildcard DNS is possible there, so this is the only
+mode that actually works):
 
 | Host | Rewritten to | Handled by |
 |---|---|---|
-| `{ROOT_DOMAIN}` / `www.{ROOT_DOMAIN}`, path `/admin*` | *(no rewrite)* | `src/app/admin/` — kept reachable at the bare root domain since a shared `*.vercel.app` domain has no working `admin.{root}` subdomain |
-| `{ROOT_DOMAIN}` / `www.{ROOT_DOMAIN}`, any other path | `/s/{ROOT_TENANT_SLUG}/*` | `src/app/s/[tenant]/` — the operator's own tenant site (no separate marketing page) |
+| *(any host)*, path `/admin*` | *(no rewrite)* | `src/app/admin/` — the only way to reach admin without a wildcard subdomain |
+| *(any host)*, any other path | `/s/{ROOT_TENANT_SLUG}/*` | `src/app/s/[tenant]/` — the operator's own tenant site (no separate marketing page) |
+
+**`HAS_CUSTOM_DOMAIN="true"`** (a real custom domain with working wildcard
+DNS is live):
+
+| Host | Rewritten to | Handled by |
+|---|---|---|
+| `{ROOT_DOMAIN}` / `www.{ROOT_DOMAIN}`, path `/admin*` | *(no rewrite)* | `src/app/admin/` — also kept reachable at the bare root domain here, for convenience |
+| `{ROOT_DOMAIN}` / `www.{ROOT_DOMAIN}`, any other path | `/s/{ROOT_TENANT_SLUG}/*` | `src/app/s/[tenant]/` — the operator's own tenant site |
 | `admin.{ROOT_DOMAIN}` | `/admin/*` | `src/app/admin/` — shared admin panel |
 | `{slug}.{ROOT_DOMAIN}` | `/s/{slug}/*` | `src/app/s/[tenant]/` — tenant public site |
 | any other host (custom domain) | `/s/{hostname}/*` | same `src/app/s/[tenant]/` tree |

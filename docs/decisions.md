@@ -3,6 +3,39 @@
 Chronological. Read this when you're tempted to "simplify" something —
 most of the non-obvious choices here were already argued out once.
 
+## Domain mode is an explicit flag, not inferred from `Host`/`ROOT_DOMAIN` (2026-07-16)
+
+Found while fixing `e175c29`: every browser-facing admin href/redirect
+depends on knowing whether this deployment is in "bare root domain, no
+wildcard DNS" mode (Vercel's shared `*.vercel.app` default domain — see the
+bare-root decision below) or "real custom domain with working wildcard DNS"
+mode. That was being *inferred per-request*, independently, in two places
+(`proxy.ts` and `src/lib/auth/admin-base-path.ts`) by comparing the `Host`
+header against `ROOT_DOMAIN` as plain strings. Fragile in a way that fails
+silently: if `ROOT_DOMAIN` is set to a custom domain before its wildcard DNS
+is actually live (or just hasn't been updated to match whatever host traffic
+is really arriving on), the comparison quietly fails and every admin
+link/redirect falls through to the wrong branch — e.g. `logoutAction`
+redirecting to bare `/login` (which doesn't exist — only `/admin/login`
+does) instead of `/admin/login`, 404ing.
+
+Fixed by adding `HAS_CUSTOM_DOMAIN` (`.env`/`.env.example`), a boolean the
+operator flips deliberately once, and `src/lib/tenant/domain-mode.ts` as the
+one place that reads it. `proxy.ts`, `admin-base-path.ts`, and the "내 사이트
+보기" link in `admin/(dashboard)/layout.tsx` all branch on
+`getDomainMode()` now instead of re-deriving the same comparison themselves.
+The important behavioral change isn't just deduplication: in
+`"no-wildcard"` mode, the code no longer compares `Host` against
+`ROOT_DOMAIN` *at all* — every request is unconditionally treated as the
+bare-root tenant, since a deployment with no wildcard DNS is only ever
+reachable at its own single assigned host by construction, whatever that
+host's literal string is. That removes the exact failure mode above: a
+stale or not-yet-live `ROOT_DOMAIN` can no longer send this branch down the
+wrong path, because the branch doesn't look at `ROOT_DOMAIN` to get there.
+`"custom"` mode keeps the original string-comparison logic, since a real
+wildcard domain genuinely does need to distinguish multiple live hosts
+(`admin.{root}` vs `{slug}.{root}` vs the bare root).
+
 ## `/admin` must stay reachable at the bare root domain, not only `admin.{ROOT_DOMAIN}` (2026-07-16)
 
 Found deploying the master dev project to Vercel's shared default domain
