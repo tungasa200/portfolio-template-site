@@ -1,5 +1,6 @@
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
+import { cacheForTenant } from "@/lib/tenant/site-cache";
 import { r2PublicUrl } from "@/lib/storage/r2";
 import { resolveNavLabel } from "@/lib/site/nav-items";
 import { SettingsForm } from "@/components/admin/SettingsForm";
@@ -17,16 +18,18 @@ const TARGET_LABEL: Record<string, string> = {
 
 export default async function AdminSettingsPage() {
   const { tenantId } = await getCurrentTenantContext();
-  const db = forTenant(tenantId);
 
-  const [siteSettings, navItems, socialLinks] = await Promise.all([
-    db.siteSettings.findUnique({ where: { tenantId } }),
-    db.navItem.findMany({
-      orderBy: { order: "asc" },
-      include: { targetBoard: { select: { seq: true, name: true } } },
-    }),
-    db.socialLink.findMany({ orderBy: { order: "asc" } }),
-  ]);
+  const [siteSettings, navItems, socialLinks] = await cacheForTenant(["admin-settings"], tenantId, () => {
+    const db = forTenant(tenantId);
+    return Promise.all([
+      db.siteSettings.findUnique({ where: { tenantId } }),
+      db.navItem.findMany({
+        orderBy: { order: "asc" },
+        include: { targetBoard: { select: { seq: true, name: true } } },
+      }),
+      db.socialLink.findMany({ orderBy: { order: "asc" } }),
+    ]);
+  });
 
   const navListItems = navItems.map((n) => ({
     id: n.id,

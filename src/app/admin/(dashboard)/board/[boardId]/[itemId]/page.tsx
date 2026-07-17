@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { getAdminBasePath } from "@/lib/auth/admin-base-path";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
+import { cacheForTenant } from "@/lib/tenant/site-cache";
 import { r2PublicUrl } from "@/lib/storage/r2";
 import { BoardItemEditor } from "@/components/admin/BoardItemEditor";
 
@@ -12,10 +13,11 @@ export default async function BoardItemEditorPage({
 }) {
   const { boardId, itemId } = await params;
   const { tenantId } = await getCurrentTenantContext();
-  const db = forTenant(tenantId);
   const adminBasePath = await getAdminBasePath();
 
-  const board = await db.board.findFirst({ where: { id: boardId } });
+  const board = await cacheForTenant(["admin-board-item-parent", boardId], tenantId, () =>
+    forTenant(tenantId).board.findFirst({ where: { id: boardId } })
+  );
   if (!board) {
     notFound();
   }
@@ -26,10 +28,12 @@ export default async function BoardItemEditorPage({
     );
   }
 
-  const item = await db.boardItem.findFirst({
-    where: { id: itemId, boardId },
-    include: { photos: { orderBy: { order: "asc" } } },
-  });
+  const item = await cacheForTenant(["admin-board-item", boardId, itemId], tenantId, () =>
+    forTenant(tenantId).boardItem.findFirst({
+      where: { id: itemId, boardId },
+      include: { photos: { orderBy: { order: "asc" } } },
+    })
+  );
   if (!item) {
     notFound();
   }

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { getAdminBasePath } from "@/lib/auth/admin-base-path";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
+import { cacheForTenant } from "@/lib/tenant/site-cache";
 import { r2PublicUrl } from "@/lib/storage/r2";
 import { formatBoardDate } from "@/lib/site/format-date";
 import { BoardRenameHeading } from "@/components/admin/BoardRenameHeading";
@@ -15,18 +16,19 @@ const KIND_LABEL: Record<string, string> = {
 export default async function BoardListPage({ params }: { params: Promise<{ boardId: string }> }) {
   const { boardId } = await params;
   const { tenantId } = await getCurrentTenantContext();
-  const db = forTenant(tenantId);
   const adminBasePath = await getAdminBasePath();
 
-  const board = await db.board.findFirst({
-    where: { id: boardId },
-    include: {
-      items: {
-        orderBy: { order: "asc" },
-        include: { photos: { where: { isPrimary: true }, take: 1 } },
+  const board = await cacheForTenant(["admin-board", boardId], tenantId, () =>
+    forTenant(tenantId).board.findFirst({
+      where: { id: boardId },
+      include: {
+        items: {
+          orderBy: { order: "asc" },
+          include: { photos: { where: { isPrimary: true }, take: 1 } },
+        },
       },
-    },
-  });
+    })
+  );
   if (!board) {
     notFound();
   }

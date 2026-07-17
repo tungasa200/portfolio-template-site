@@ -5,6 +5,7 @@ import { getAdminBasePath } from "@/lib/auth/admin-base-path";
 import { ROOT_DOMAIN, getDomainMode } from "@/lib/tenant/domain-mode";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
 import { prisma } from "@/lib/db/client";
+import { cacheForTenant } from "@/lib/tenant/site-cache";
 import { ToastProvider } from "@/components/admin/Toast";
 import { AdminShell, type AdminNavEntry } from "@/components/admin/AdminShell";
 import { ADMIN_ICON_PATHS } from "@/components/admin/icons";
@@ -15,24 +16,26 @@ import "./admin.css";
 export default async function AdminDashboardLayout({ children }: { children: ReactNode }) {
   const { tenantId } = await getCurrentTenantContext();
   const session = await auth();
-  const db = forTenant(tenantId);
   const adminBasePath = await getAdminBasePath();
 
   // Tenant itself carries no tenantId column (platform-level model, see
   // prisma/schema.prisma) — the one other sanctioned unscoped lookup besides
   // src/lib/tenant/resolve-tenant.ts, needed here only for the "내 사이트
   // 보기" link's hostname.
-  const [tenant, siteSettings, boards, navItems, unreadCount] = await Promise.all([
-    prisma.tenant.findUnique({ where: { id: tenantId }, select: { slug: true, customDomain: true } }),
-    db.siteSettings.findUnique({ where: { tenantId } }),
-    db.board.findMany({ orderBy: { order: "asc" } }),
-    db.navItem.findMany({
-      where: { targetKind: { not: "CONTACT" } }, // no admin management screen for Contact
-      orderBy: { order: "asc" },
-      include: { targetBoard: { select: { id: true, seq: true, name: true, kind: true } } },
-    }),
-    db.contactSubmission.count({ where: { status: "NEW" } }),
-  ]);
+  const [tenant, siteSettings, boards, navItems, unreadCount] = await cacheForTenant(["admin-layout"], tenantId, () => {
+    const db = forTenant(tenantId);
+    return Promise.all([
+      prisma.tenant.findUnique({ where: { id: tenantId }, select: { slug: true, customDomain: true } }),
+      db.siteSettings.findUnique({ where: { tenantId } }),
+      db.board.findMany({ orderBy: { order: "asc" } }),
+      db.navItem.findMany({
+        where: { targetKind: { not: "CONTACT" } }, // no admin management screen for Contact
+        orderBy: { order: "asc" },
+        include: { targetBoard: { select: { id: true, seq: true, name: true, kind: true } } },
+      }),
+      db.contactSubmission.count({ where: { status: "NEW" } }),
+    ]);
+  });
 
   const boardIcon = (kind: string) => (kind === "GALLERY_SINGLE" ? ADMIN_ICON_PATHS.boardSingle : ADMIN_ICON_PATHS.boardMulti);
 

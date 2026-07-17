@@ -58,6 +58,16 @@
 .admin-root h1, .admin-root h2, .admin-root h3 { text-wrap: balance; margin: 0; }
 .admin-root p { margin: 0; }
 
+.admin-skeleton {
+  border-radius: var(--radius-sm);
+  background: var(--line-soft);
+  animation: admin-skeleton-pulse 1.5s ease-in-out infinite;
+}
+@keyframes admin-skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 .admin-shell { display: flex; height: 100vh; overflow: hidden; }
 
 .admin-sidebar {

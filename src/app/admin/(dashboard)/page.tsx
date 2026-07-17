@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { getAdminBasePath } from "@/lib/auth/admin-base-path";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
+import { cacheForTenant } from "@/lib/tenant/site-cache";
 import { r2PublicUrl } from "@/lib/storage/r2";
 import { resolveNavLabel } from "@/lib/site/nav-items";
 import { NavVisibilityList } from "@/components/admin/NavVisibilityList";
@@ -16,21 +17,23 @@ const TARGET_LABEL: Record<string, string> = {
 
 export default async function AdminHomePage() {
   const { tenantId } = await getCurrentTenantContext();
-  const db = forTenant(tenantId);
   const adminBasePath = await getAdminBasePath();
 
-  const [siteSettings, boards, navItems, unreadCount] = await Promise.all([
-    db.siteSettings.findUnique({ where: { tenantId } }),
-    db.board.findMany({
-      orderBy: { order: "asc" },
-      include: { _count: { select: { items: { where: { isPublished: true } } } } },
-    }),
-    db.navItem.findMany({
-      orderBy: { order: "asc" },
-      include: { targetBoard: { select: { seq: true, name: true } } },
-    }),
-    db.contactSubmission.count({ where: { status: "NEW" } }),
-  ]);
+  const [siteSettings, boards, navItems, unreadCount] = await cacheForTenant(["admin-home"], tenantId, () => {
+    const db = forTenant(tenantId);
+    return Promise.all([
+      db.siteSettings.findUnique({ where: { tenantId } }),
+      db.board.findMany({
+        orderBy: { order: "asc" },
+        include: { _count: { select: { items: { where: { isPublished: true } } } } },
+      }),
+      db.navItem.findMany({
+        orderBy: { order: "asc" },
+        include: { targetBoard: { select: { seq: true, name: true } } },
+      }),
+      db.contactSubmission.count({ where: { status: "NEW" } }),
+    ]);
+  });
 
   const aboutNavItem = navItems.find((n) => n.targetKind === "ABOUT");
   const heroUrl = siteSettings?.heroImageKey ? r2PublicUrl(siteSettings.heroImageKey) : null;

@@ -1,6 +1,7 @@
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { getAdminBasePath } from "@/lib/auth/admin-base-path";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
+import { cacheForTenant } from "@/lib/tenant/site-cache";
 import { MessagesInbox } from "@/components/admin/MessagesInbox";
 
 function formatKoreanDate(date: Date): string {
@@ -9,15 +10,17 @@ function formatKoreanDate(date: Date): string {
 
 export default async function AdminMessagesPage() {
   const { tenantId } = await getCurrentTenantContext();
-  const db = forTenant(tenantId);
 
-  const [submissions, siteSettings] = await Promise.all([
-    db.contactSubmission.findMany({
-      where: { status: { in: ["NEW", "READ"] } },
-      orderBy: { createdAt: "desc" },
-    }),
-    db.siteSettings.findUnique({ where: { tenantId } }),
-  ]);
+  const [submissions, siteSettings] = await cacheForTenant(["admin-messages"], tenantId, () => {
+    const db = forTenant(tenantId);
+    return Promise.all([
+      db.contactSubmission.findMany({
+        where: { status: { in: ["NEW", "READ"] } },
+        orderBy: { createdAt: "desc" },
+      }),
+      db.siteSettings.findUnique({ where: { tenantId } }),
+    ]);
+  });
 
   const canReply = Boolean(siteSettings?.replyEmailAddress && siteSettings?.replyEmailAppPasswordEnc);
   const settingsHref = `${await getAdminBasePath()}/settings`;

@@ -1,6 +1,8 @@
 "use server";
 
+import { updateTag } from "next/cache";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
+import { tenantCacheTag } from "@/lib/tenant/site-cache";
 import { decryptSecret } from "@/lib/crypto/secret-box";
 import { sendViaGmail } from "@/lib/email/gmail-smtp";
 import { escapeHtml } from "@/lib/email/escape-html";
@@ -57,6 +59,11 @@ export async function submitContactForm(
   // generated types can't see the $extends middleware that fills it in.
   const db = forTenant(tenantId);
   await db.contactSubmission.create({ data: { tenantId, name, email, message } });
+  // Admin's messages list / unread badge cache (see cacheForTenant usage
+  // under src/app/admin/(dashboard)/**) shares this tag — without busting
+  // it here, a visitor's message wouldn't show up in admin until the 1h
+  // safety-net TTL expired.
+  updateTag(tenantCacheTag(tenantId));
 
   // The DB write above is the source of truth — a visitor's message is
   // never lost even if the email below fails. Email is best-effort and

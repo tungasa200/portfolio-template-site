@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
+import { tenantCacheTag } from "@/lib/tenant/site-cache";
 import { decryptSecret } from "@/lib/crypto/secret-box";
 import { sendViaGmail } from "@/lib/email/gmail-smtp";
 import { escapeHtml } from "@/lib/email/escape-html";
@@ -16,6 +17,7 @@ export async function markMessageRead(id: string): Promise<void> {
   if (!message || message.status !== "NEW") return;
   await db.contactSubmission.update({ where: { id }, data: { status: "READ" } });
   revalidatePath("/admin", "layout");
+  updateTag(tenantCacheTag(tenantId));
 }
 
 export interface ReplyResult {
@@ -72,6 +74,7 @@ export async function sendMessageReply(id: string, replyMessage: string): Promis
     data: { replyMessage: trimmed, repliedAt: new Date() },
   });
   revalidatePath("/admin", "layout");
+  updateTag(tenantCacheTag(tenantId));
 
   return { status: "success", message: "답장을 보냈어요." };
 }
