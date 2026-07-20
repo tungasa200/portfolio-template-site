@@ -53,6 +53,8 @@
 
 .admin-root * { box-sizing: border-box; }
 .admin-root a { color: inherit; }
+/* higher specificity than ".admin-root a" above, so Link-rendered buttons keep their light text on a dark pill instead of inheriting the ambient ink color */
+.admin-root a.admin-hero-edit-btn, .admin-root a.admin-btn-primary, .admin-root a.admin-logo-btn { color: var(--paper); }
 .admin-root button { font-family: inherit; }
 .admin-root :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .admin-root h1, .admin-root h2, .admin-root h3 { text-wrap: balance; margin: 0; }
