@@ -19,6 +19,15 @@ function slugify(name: string): string {
   return slug || "untitled";
 }
 
+// New items should appear first in both the admin list and the public site
+// (both ordered by `order` ascending) instead of tacked on the end, so give
+// them an order below the current minimum rather than `count` (the old
+// behavior, which put new items last).
+async function nextOrderForPrepend(db: ReturnType<typeof forTenant>, boardId: string): Promise<number> {
+  const first = await db.boardItem.findFirst({ where: { boardId }, orderBy: { order: "asc" } });
+  return first ? first.order - 1 : 0;
+}
+
 async function uniqueSlug(
   db: ReturnType<typeof forTenant>,
   boardId: string,
@@ -62,7 +71,7 @@ export async function createBoardItem(
   const indexEnabled = isMulti && formData.get("indexEnabled") === "true";
   const indexContent = isMulti ? String(formData.get("indexContent") ?? "") : null;
 
-  const count = await db.boardItem.count({ where: { boardId } });
+  const order = await nextOrderForPrepend(db, boardId);
   const slug = isMulti ? await uniqueSlug(db, boardId, slugify(name)) : null;
 
   const item = await db.boardItem.create({
@@ -72,7 +81,7 @@ export async function createBoardItem(
       name,
       slug,
       dateValue,
-      order: count,
+      order,
       isPublished,
       indexEnabled,
       indexContent,
@@ -106,11 +115,11 @@ export async function createDraftBoardItem(
   const isMulti = board.kind === "GALLERY_MULTI";
 
   const trimmedName = name.trim() || "새 항목";
-  const count = await db.boardItem.count({ where: { boardId } });
+  const order = await nextOrderForPrepend(db, boardId);
   const slug = isMulti ? await uniqueSlug(db, boardId, slugify(trimmedName)) : null;
 
   const item = await db.boardItem.create({
-    data: { tenantId, boardId, name: trimmedName, slug, order: count },
+    data: { tenantId, boardId, name: trimmedName, slug, order },
   });
 
   revalidatePath("/admin", "layout");
