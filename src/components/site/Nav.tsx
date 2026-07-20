@@ -81,7 +81,9 @@ export function Nav({ siteName, logoUrl, navItems, socialLinks }: NavProps) {
                 transition: navOpen ? "opacity 0.25s ease 0.3s" : "opacity 0.1s ease",
               }}
             >
-              <SiteTitleBox siteName={siteName} logoUrl={logoUrl} textClassName="font-site-display text-2xl tracking-wide" />
+              <Link href="/" aria-label="Home" style={{ display: "block", textDecoration: "none" }}>
+                <SiteTitleBox siteName={siteName} logoUrl={logoUrl} textClassName="font-site-display text-2xl tracking-wide" />
+              </Link>
             </div>
             <div className="absolute inset-x-0 bottom-0 h-px bg-site-ink" />
           </div>
