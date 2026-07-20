@@ -28,14 +28,27 @@ export default async function AboutPage({
     notFound();
   }
 
+  // Tiptap's empty editor still emits "<p></p>", not "" -- strip tags before
+  // checking for actual content so that case also falls back to the message.
+  const isEmpty = about.content.replace(/<[^>]*>/g, "").trim().length === 0;
+
   return (
     <section className="box-border min-h-[calc(100vh-65px)] px-16 py-10">
       <SectionHeader title={navItem?.label ?? "ABOUT"} />
-      <div
-        className="max-w-[640px] animate-site-intro-fade text-[17px] leading-[1.75] text-site-ink-body"
-        style={{ animationDelay: "0.5s" }}
-        dangerouslySetInnerHTML={{ __html: about.content }}
-      />
+      {isEmpty ? (
+        <div
+          className="max-w-[640px] animate-site-intro-fade border border-site-ink px-[22px] py-16 text-center font-site-mono text-[11px] tracking-wide text-site-ink-muted"
+          style={{ animationDelay: "0.5s" }}
+        >
+          소개가 없습니다
+        </div>
+      ) : (
+        <div
+          className="max-w-[640px] animate-site-intro-fade text-[17px] leading-[1.75] text-site-ink-body"
+          style={{ animationDelay: "0.5s" }}
+          dangerouslySetInnerHTML={{ __html: about.content }}
+        />
+      )}
     </section>
   );
 }

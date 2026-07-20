@@ -34,6 +34,17 @@ function CardShell({ href, children }: { href?: string; children: ReactNode }) {
 // per-item tag/category badge — boards no longer have category/venue
 // (see docs/progress.md's unified item-model decision).
 export function PhotoGrid({ items }: PhotoGridProps) {
+  if (items.length === 0) {
+    return (
+      <div
+        className="animate-site-intro-fade border border-site-ink px-[22px] py-16 text-center font-site-mono text-[11px] tracking-wide text-site-ink-muted"
+        style={{ animationDelay: "0.5s" }}
+      >
+        게시물이 없습니다
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-3 gap-4 animate-site-intro-fade" style={{ animationDelay: "0.5s" }}>
       {items.map((item) => (
