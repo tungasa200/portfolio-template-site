@@ -26,6 +26,8 @@ have prior conversation context:**
   Vercel setup steps, and how to get a new machine working.
 - [`docs/improvements.md`](./docs/improvements.md) — deferred optimization
   ideas for things that work but aren't optimal yet (not a bug list).
+- [`docs/fork-checklist.md`](./docs/fork-checklist.md) — step-by-step for
+  cutting a new customer fork from this master template.
 
 ## Quick start (already-provisioned services)
 
