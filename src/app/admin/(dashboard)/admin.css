@@ -215,6 +215,18 @@
 .admin-root textarea { resize: vertical; min-height: 110px; line-height: 1.7; }
 .admin-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 
+.admin-theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+.admin-theme-card {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  border: 1.5px solid var(--line); border-radius: var(--radius-sm); padding: 14px 10px;
+  cursor: pointer; font-size: 14px; font-weight: 600; text-align: center;
+}
+.admin-theme-card:hover { border-color: var(--ink); }
+.admin-theme-card.is-selected { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.admin-theme-card-radio { position: absolute; opacity: 0; pointer-events: none; }
+.admin-theme-swatch-pair { display: flex; gap: 4px; }
+.admin-theme-swatch { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line); }
+
 .admin-month-picker { position: relative; width: 240px; max-width: 100%; }
 .admin-month-picker-trigger {
   display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;

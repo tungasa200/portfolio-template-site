@@ -96,9 +96,8 @@ Explicitly out of scope until there's a reason to build it:
 - Self-serve tenant signup flow (currently tenants are created via seed/
   internal path only — this is what keeps Phase 4's auth attack surface
   small).
-- Per-tenant theme customization UI (the token architecture in Phase 2
-  supports this later without a rewrite — `SiteSettings.themeName` field
-  already exists in the schema, reserved/unused).
+- ~~Per-tenant theme customization UI~~ — done (2026-07-21), see
+  [progress.md](./progress.md).
 - Multiple users per tenant (`UserRole.TENANT_ADMIN` exists in the schema,
   reserved/unused — MVP is one owner per tenant).
 - Apex-domain custom domains (CNAME-only for now — bare apex/ALIAS handling

@@ -181,5 +181,7 @@ page regardless, since the DB write is the source of truth.
 ## What's deferred / explicitly out of scope for now
 
 Stripe/billing, self-serve tenant signup, platform superadmin dashboard,
-per-tenant theme customization UI, multiple users per tenant, apex-domain
-custom domains (CNAME-only for now). See [roadmap.md](./roadmap.md) Phase 6.
+multiple users per tenant, apex-domain custom domains (CNAME-only for now).
+See [roadmap.md](./roadmap.md) Phase 6. (Per-tenant theme customization UI,
+formerly on this list, shipped 2026-07-21 — see
+[progress.md](./progress.md).)

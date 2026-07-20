@@ -7,6 +7,7 @@ import { SettingsForm } from "@/components/admin/SettingsForm";
 import { NavVisibilityList } from "@/components/admin/NavVisibilityList";
 import { SocialLinksManager } from "@/components/admin/SocialLinksManager";
 import { ReplyEmailSettings } from "@/components/admin/ReplyEmailSettings";
+import { ThemeSettings } from "@/components/admin/ThemeSettings";
 
 const TARGET_LABEL: Record<string, string> = {
   HOME: "홈 화면",
@@ -75,6 +76,12 @@ export default async function AdminSettingsPage() {
       </div>
 
       <ReplyEmailSettings connectedEmail={siteSettings?.replyEmailAddress ?? null} />
+
+      <ThemeSettings
+        themeName={siteSettings?.themeName ?? "editorial-default"}
+        themeCustomInk={siteSettings?.themeCustomInk ?? null}
+        themeCustomPaper={siteSettings?.themeCustomPaper ?? null}
+      />
     </div>
   );
 }

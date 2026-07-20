@@ -9,13 +9,20 @@
 @theme {
   --color-site-paper: oklch(0.99 0.002 90);
   --color-site-ink: oklch(0.18 0 0);
-  --color-site-ink-body: oklch(0.25 0 0);
-  --color-site-ink-soft: oklch(0.35 0 0);
-  --color-site-ink-muted: oklch(0.45 0 0);
-  --color-site-ink-faint: oklch(0.55 0 0);
-  --color-site-border: oklch(0.9 0 0);
-  --color-site-placeholder-a: oklch(0.94 0.002 90);
-  --color-site-placeholder-b: oklch(0.975 0.002 90);
+  /* Derived from the two base tokens above via color-mix() (not fixed
+     oklch stops) so a runtime override of just --color-site-ink/-paper
+     (see src/app/s/[tenant]/layout.tsx) recolors everything below without
+     also having to override each derived token individually — this is what
+     lets the admin theme picker offer only 2 colors per theme. Percentages
+     were chosen to visually match the previous fixed oklch(0.25/0.35/0.45/
+     0.55/0.9/0.94/0.975 0 0) stops against the default ink/paper pair. */
+  --color-site-ink-body: color-mix(in oklch, var(--color-site-ink) 91%, var(--color-site-paper));
+  --color-site-ink-soft: color-mix(in oklch, var(--color-site-ink) 79%, var(--color-site-paper));
+  --color-site-ink-muted: color-mix(in oklch, var(--color-site-ink) 67%, var(--color-site-paper));
+  --color-site-ink-faint: color-mix(in oklch, var(--color-site-ink) 54%, var(--color-site-paper));
+  --color-site-border: color-mix(in oklch, var(--color-site-ink) 11%, var(--color-site-paper));
+  --color-site-placeholder-a: color-mix(in oklch, var(--color-site-ink) 6%, var(--color-site-paper));
+  --color-site-placeholder-b: color-mix(in oklch, var(--color-site-ink) 2%, var(--color-site-paper));
 
   /* Mapped through next/font/google CSS variables set in layout.tsx. */
   --font-site-display: var(--font-playfair), "Playfair Display", serif;
@@ -46,8 +53,8 @@
 }
 
 ::selection {
-  background: oklch(0.18 0 0);
-  color: oklch(0.99 0.002 90);
+  background: var(--color-site-ink);
+  color: var(--color-site-paper);
 }
 
 .site-placeholder-pattern {

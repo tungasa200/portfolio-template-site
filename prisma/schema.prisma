@@ -95,7 +95,10 @@ model SiteSettings {
   logoThumbKey     String?
   contactEmail     String
   footerText       String?
-  themeName        String  @default("editorial-default") // reserved for future per-tenant theming
+  themeName        String  @default("editorial-default") // one of THEME_PRESETS' keys (src/lib/site/theme-presets.ts) or "custom"
+  // Only set (and only read) when themeName == "custom" — see resolveThemeColors().
+  themeCustomInk   String?
+  themeCustomPaper String?
 
   // Opt-in Gmail SMTP reply-from-your-own-address feature (see
   // src/lib/email/gmail-smtp.ts). Both null unless the tenant has connected

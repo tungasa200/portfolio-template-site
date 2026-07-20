@@ -1,10 +1,11 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Playfair_Display, Inter, JetBrains_Mono } from "next/font/google";
 import { requireTenant } from "@/lib/tenant/resolve-tenant";
 import { resolveNavHref, resolveNavLabel } from "@/lib/site/nav-items";
 import { resolveDisplayUrl } from "@/lib/storage/r2";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
+import { resolveThemeColors } from "@/lib/site/theme-presets";
 import "./theme.css";
 
 const playfair = Playfair_Display({
@@ -71,10 +72,12 @@ export default async function TenantSiteLayout({
   const siteName = tenant.siteSettings?.siteName ?? tenant.slug;
   const photographerName = tenant.siteSettings?.photographerName ?? tenant.slug;
   const logoUrl = resolveDisplayUrl(tenant.siteSettings?.logoImageKey, tenant.siteSettings?.logoThumbKey);
+  const { ink, paper } = resolveThemeColors(tenant.siteSettings);
 
   return (
     <div
       className={`${playfair.variable} ${inter.variable} ${jetbrainsMono.variable} flex min-h-screen bg-site-paper font-site-sans text-site-ink`}
+      style={{ "--color-site-ink": ink, "--color-site-paper": paper } as CSSProperties}
     >
       <Nav siteName={siteName} logoUrl={logoUrl} navItems={navItems} socialLinks={socialLinks} />
       <main className="flex min-w-0 flex-1 flex-col">

@@ -6,6 +6,32 @@ session (on any machine) to know where things actually stand.
 
 ## Done
 
+**Per-tenant public-site theme picker (2026-07-21)**
+- Implemented the theming UI that Phase 6 of [roadmap.md](./roadmap.md) had
+  deferred — `SiteSettings.themeName` was reserved but unused until now.
+- `theme.css`'s derived tokens (`--color-site-ink-body/soft/muted/faint`,
+  `-border`, `-placeholder-a/b`, `::selection`) were refactored from fixed
+  `oklch(...)` stops to `color-mix()` expressions built from just
+  `--color-site-ink`/`--color-site-paper`, so any theme only ever needs to
+  supply those 2 colors — see the comment in
+  `src/app/s/[tenant]/theme.css`.
+- New `src/lib/site/theme-presets.ts` is the single source of truth for the
+  4 presets (기본/역전/웜베이지/세이지) plus `"custom"`; consumed by
+  `src/app/s/[tenant]/layout.tsx` (applies the resolved ink/paper as an
+  inline CSS-var override on the root element), the new `updateSiteTheme`
+  server action (`src/lib/actions/site-settings.ts`), and the new
+  `ThemeSettings.tsx` admin picker (`src/components/admin/`).
+- New nullable `SiteSettings.themeCustomInk`/`themeCustomPaper` columns
+  (hex), only read when `themeName === "custom"`. Pushed to Neon via
+  `prisma db push` (this repo doesn't use `migrate dev` — no shadow-DB
+  support locally, see [conventions.md](./conventions.md)).
+- Admin dashboard's own look (`admin.css`) is explicitly out of scope —
+  confirmed with the user; only the public `/s/[tenant]` site is themed.
+- Not yet verified in a real browser (this session's machine can't run the
+  dev server — stale `.env`) — typecheck/build only. Needs a follow-up
+  browser check per the plan's verification section before treating this as
+  fully confirmed.
+
 **Note on the 2026-07-20 entries below**: backfilled from `git log`/commit
 diffs after the fact (the session's docs updates lagged the actual commits
 that day), not written live during the work. Verification claims are

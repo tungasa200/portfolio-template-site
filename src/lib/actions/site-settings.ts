@@ -5,6 +5,9 @@ import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
 import { revalidateTenantSite } from "@/lib/tenant/site-cache";
 import { deleteR2Object } from "@/lib/storage/r2";
+import { THEME_NAMES, type ThemeName } from "@/lib/site/theme-presets";
+
+const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
 
 export interface ActionFormState {
   status: "idle" | "success" | "error";
@@ -43,6 +46,35 @@ export async function updateSiteSettings(
   revalidatePath("/admin", "layout");
   await revalidateTenantSite(tenantId);
   return { status: "success", message: "저장되었습니다" };
+}
+
+export async function updateSiteTheme(_prevState: ActionFormState, formData: FormData): Promise<ActionFormState> {
+  const { tenantId } = await getCurrentTenantContext();
+
+  const themeName = String(formData.get("themeName") ?? "");
+  if (!THEME_NAMES.includes(themeName as ThemeName)) {
+    return { status: "error", message: "알 수 없는 테마예요." };
+  }
+
+  let themeCustomInk: string | null = null;
+  let themeCustomPaper: string | null = null;
+  if (themeName === "custom") {
+    themeCustomInk = String(formData.get("themeCustomInk") ?? "");
+    themeCustomPaper = String(formData.get("themeCustomPaper") ?? "");
+    if (!HEX_COLOR_RE.test(themeCustomInk) || !HEX_COLOR_RE.test(themeCustomPaper)) {
+      return { status: "error", message: "커스텀 색상은 올바른 색상 값이어야 해요." };
+    }
+  }
+
+  const db = forTenant(tenantId);
+  await db.siteSettings.update({
+    where: { tenantId },
+    data: { themeName, themeCustomInk, themeCustomPaper },
+  });
+
+  revalidatePath("/admin", "layout");
+  await revalidateTenantSite(tenantId);
+  return { status: "success", message: "테마를 저장했어요" };
 }
 
 export async function updateHeroImage(r2Key: string, thumbR2Key: string): Promise<ActionFormState> {
