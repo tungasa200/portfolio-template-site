@@ -16,6 +16,8 @@ interface DetailTabsProps {
    * when the item has indexEnabled=false; the page building `tabs` already
    * omits the "index" tab in that case, this just backs its content. */
   indexContent?: string | null;
+  /** Item's primary photo url, if any — backs the INDEX tab's cover column. */
+  indexCoverPhotoUrl?: string | null;
 }
 
 // Shared URL-synced controller for every GALLERY_MULTI board's item detail
@@ -39,7 +41,7 @@ export function DetailTabs(props: DetailTabsProps) {
   );
 }
 
-function DetailTabsUrlSynced({ tabs, defaultView, gridPhotos, indexContent }: DetailTabsProps) {
+function DetailTabsUrlSynced({ tabs, defaultView, gridPhotos, indexContent, indexCoverPhotoUrl }: DetailTabsProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -84,6 +86,7 @@ function DetailTabsUrlSynced({ tabs, defaultView, gridPhotos, indexContent }: De
       gridPhotos={gridPhotos}
       activePhotoIndex={activePhotoIndex}
       indexContent={indexContent}
+      indexCoverPhotoUrl={indexCoverPhotoUrl}
       onSetView={setView}
       onSetPhotoIndex={setPhotoIndex}
     />
@@ -96,6 +99,7 @@ interface DetailTabsViewProps {
   gridPhotos: FullscreenPhoto[];
   activePhotoIndex: number;
   indexContent?: string | null;
+  indexCoverPhotoUrl?: string | null;
   onSetView?: (key: string) => void;
   onSetPhotoIndex?: (index: number) => void;
 }
@@ -106,6 +110,7 @@ function DetailTabsView({
   gridPhotos,
   activePhotoIndex,
   indexContent,
+  indexCoverPhotoUrl,
   onSetView,
   onSetPhotoIndex,
 }: DetailTabsViewProps) {
@@ -118,7 +123,9 @@ function DetailTabsView({
           sizes itself to h-full and never needs to trigger that scroll —
           see its own component comment. */}
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {activeView === "index" && indexContent && <IndexTab contentHtml={indexContent} />}
+        {activeView === "index" && indexContent && (
+          <IndexTab contentHtml={indexContent} coverPhotoUrl={indexCoverPhotoUrl} />
+        )}
         {activeView === "grid" && <PhotoGridDetail photos={gridPhotos} />}
         {activeView === "fullscreen" && (
           <FullscreenViewer

@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { useActionState, useEffect, useState, useTransition } from "react";
 import { createBoardItem, updateBoardItem, deleteBoardItem } from "@/lib/actions/board-items";
 import type { ActionFormState } from "@/lib/actions/site-settings";
 import { MonthPicker } from "@/components/admin/MonthPicker";
@@ -46,9 +45,12 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
   const [state, formAction, isPending] = useActionState(action, initialState);
   const toast = useToast();
   const [, startTransition] = useTransition();
-  const router = useRouter();
-  const nameInputRef = useRef<HTMLInputElement>(null);
 
+  // Controlled (not defaultValue+ref): a <form action={...}> resets every
+  // uncontrolled field to its defaultValue once the action settles (React's
+  // built-in post-action form reset), which would otherwise snap this back
+  // to currentItem.name mid-edit — see AGENTS.md bug notes.
+  const [name, setName] = useState(currentItem?.name ?? "");
   const [dateValue, setDateValue] = useState(currentItem?.dateValue ?? "");
   const [indexEnabled, setIndexEnabled] = useState(currentItem?.indexEnabled ?? false);
   const [indexContent, setIndexContent] = useState(currentItem?.indexContent ?? "");
@@ -59,7 +61,7 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
       prev ??
       {
         id,
-        name: nameInputRef.current?.value.trim() || "새 항목",
+        name: name.trim() || "새 항목",
         dateValue: "",
         isPublished: false,
         indexEnabled: false,
@@ -67,7 +69,14 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
         photos: [],
       }
     );
-    router.replace(`${adminBasePath}/board/${boardId}/${id}`, { scroll: false });
+    // Swap the URL without a real Next.js navigation: router.replace would
+    // cross into the [itemId] segment's own loading.tsx Suspense boundary,
+    // which unmounts/remounts this whole editor and wipes whatever the user
+    // has typed in the (uncontrolled) title input since the draft row was
+    // created — see AGENTS.md bug notes. history.replaceState only updates
+    // the address bar/back-button target, which is all this transition needs
+    // since local state already carries the real id.
+    window.history.replaceState(null, "", `${adminBasePath}/board/${boardId}/${id}`);
   }
 
   // create redirects straight to the new item's edit page on success (no
@@ -109,10 +118,10 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
 
         <div className="admin-page-head">
           <input
-            ref={nameInputRef}
             className="admin-item-title-input"
             name="name"
-            defaultValue={currentItem?.name ?? ""}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             placeholder="새 항목"
             required
             autoFocus={isNew}
@@ -151,7 +160,7 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
             boardItemId={currentItem?.id ?? null}
             kind={kind}
             initialPhotos={currentItem?.photos ?? []}
-            getDraftName={() => nameInputRef.current?.value.trim() || ""}
+            getDraftName={() => name.trim()}
             onItemCreated={handlePhotoItemCreated}
           />
         </div>

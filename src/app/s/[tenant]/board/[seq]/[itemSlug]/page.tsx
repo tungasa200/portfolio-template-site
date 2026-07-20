@@ -69,6 +69,7 @@ export default async function BoardItemDetailPage({
     label: `PHOTO ${String(i + 1).padStart(2, "0")}`,
     imageUrl: r2PublicUrl(p.r2Key),
   }));
+  const coverPhoto = item.photos.find((p) => p.isPrimary) ?? item.photos[0];
 
   return (
     <section className="box-border flex h-[calc(100vh-80px)] max-h-[calc(100vh-80px)] flex-col overflow-hidden px-16 py-10">
@@ -78,6 +79,7 @@ export default async function BoardItemDetailPage({
         defaultView={defaultView}
         gridPhotos={gridPhotos}
         indexContent={item.indexEnabled ? item.indexContent : null}
+        indexCoverPhotoUrl={coverPhoto ? r2PublicUrl(coverPhoto.r2Key) : null}
       />
     </section>
   );
