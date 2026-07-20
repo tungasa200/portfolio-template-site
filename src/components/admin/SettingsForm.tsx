@@ -117,7 +117,6 @@ export function SettingsForm({
       <div className="admin-branding-row">
         <div className="admin-section-card">
           <h2>대표 이미지</h2>
-          <p className="admin-section-desc">홈 화면 대표 사진이에요.</p>
           <div className="admin-hero-photo-wrap">
             <div className="admin-hero-photo">
               {heroUrl ? (
@@ -151,10 +150,6 @@ export function SettingsForm({
 
         <div className="admin-section-card">
           <h2>메뉴 로고</h2>
-          <p className="admin-section-desc">
-            업로드하지 않으면 사이드바에 사이트 이름 글자가 대신 표시돼요. 로고는 제목 줄 높이에 딱
-            맞게 자동으로 맞춰져요.
-          </p>
           <div className="admin-logo-editor">
             <div className="admin-logo-preview">
               <SiteTitleBox
