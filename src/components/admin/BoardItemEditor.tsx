@@ -9,6 +9,7 @@ import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { PhotoManager, type ManagedPhoto } from "@/components/admin/PhotoManager";
 import { IndexImageUpload, type IndexImage } from "@/components/admin/IndexImageUpload";
 import { useToast } from "@/components/admin/Toast";
+import { INDEX_IMAGE_RATIOS, INDEX_IMAGE_RATIO_LABELS, type IndexImageRatio } from "@/lib/site/index-image-ratio";
 
 interface ExistingItem {
   id: string;
@@ -19,6 +20,7 @@ interface ExistingItem {
   indexContent: string | null;
   indexImageEnabled: boolean;
   indexImage: IndexImage | null;
+  indexImageRatio: IndexImageRatio;
   photos: ManagedPhoto[];
 }
 
@@ -59,6 +61,7 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
   const [indexContent, setIndexContent] = useState(currentItem?.indexContent ?? "");
   const [indexImageEnabled, setIndexImageEnabled] = useState(currentItem?.indexImageEnabled ?? false);
   const [indexImage, setIndexImage] = useState(currentItem?.indexImage ?? null);
+  const [indexImageRatio, setIndexImageRatio] = useState<IndexImageRatio>(currentItem?.indexImageRatio ?? "RATIO_5_5");
   const [isPublished, setIsPublished] = useState(currentItem?.isPublished ?? false);
 
   function handlePhotoItemCreated(id: string) {
@@ -73,6 +76,7 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
         indexContent: "",
         indexImageEnabled: false,
         indexImage: null,
+        indexImageRatio: "RATIO_5_5",
         photos: [],
       }
     );
@@ -122,6 +126,7 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
         <input type="hidden" name="indexEnabled" value={String(indexEnabled)} />
         <input type="hidden" name="indexContent" value={indexContent} />
         <input type="hidden" name="indexImageEnabled" value={String(indexImageEnabled)} />
+        <input type="hidden" name="indexImageRatio" value={indexImageRatio} />
         <input type="hidden" name="isPublished" value={String(isPublished)} />
 
         <div className="admin-page-head">
@@ -176,6 +181,23 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
                       getDraftName={() => name.trim()}
                       onItemCreated={handlePhotoItemCreated}
                     />
+                    <div style={{ marginTop: 14 }}>
+                      <div className="admin-toggle-row-text" style={{ marginBottom: 8 }}>
+                        <strong>이미지:텍스트 비율</strong>
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        {INDEX_IMAGE_RATIOS.map((ratio) => (
+                          <button
+                            key={ratio}
+                            type="button"
+                            className={`admin-btn ${ratio === indexImageRatio ? "admin-btn-primary" : ""}`}
+                            onClick={() => setIndexImageRatio(ratio)}
+                          >
+                            {INDEX_IMAGE_RATIO_LABELS[ratio]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

@@ -1,11 +1,13 @@
 "use client";
 
-import { Suspense, useCallback } from "react";
+import { Suspense, useCallback, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Tabs, type TabItem } from "./Tabs";
 import { PhotoGridDetail } from "./PhotoGridDetail";
 import { FullscreenViewer, type FullscreenPhoto } from "./FullscreenViewer";
 import { IndexTab } from "./IndexTab";
+import { ImageLightbox } from "./ImageLightbox";
+import type { IndexImageRatio } from "@/lib/site/index-image-ratio";
 
 interface DetailTabsProps {
   tabs: TabItem[];
@@ -18,6 +20,9 @@ interface DetailTabsProps {
   indexContent?: string | null;
   /** Item's primary photo url, if any — backs the INDEX tab's cover column. */
   indexCoverPhotoUrl?: string | null;
+  indexCoverPhotoWidth?: number | null;
+  indexCoverPhotoHeight?: number | null;
+  indexImageRatio?: IndexImageRatio;
 }
 
 // Shared URL-synced controller for every GALLERY_MULTI board's item detail
@@ -41,7 +46,16 @@ export function DetailTabs(props: DetailTabsProps) {
   );
 }
 
-function DetailTabsUrlSynced({ tabs, defaultView, gridPhotos, indexContent, indexCoverPhotoUrl }: DetailTabsProps) {
+function DetailTabsUrlSynced({
+  tabs,
+  defaultView,
+  gridPhotos,
+  indexContent,
+  indexCoverPhotoUrl,
+  indexCoverPhotoWidth,
+  indexCoverPhotoHeight,
+  indexImageRatio,
+}: DetailTabsProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -87,6 +101,9 @@ function DetailTabsUrlSynced({ tabs, defaultView, gridPhotos, indexContent, inde
       activePhotoIndex={activePhotoIndex}
       indexContent={indexContent}
       indexCoverPhotoUrl={indexCoverPhotoUrl}
+      indexCoverPhotoWidth={indexCoverPhotoWidth}
+      indexCoverPhotoHeight={indexCoverPhotoHeight}
+      indexImageRatio={indexImageRatio}
       onSetView={setView}
       onSetPhotoIndex={setPhotoIndex}
     />
@@ -100,6 +117,9 @@ interface DetailTabsViewProps {
   activePhotoIndex: number;
   indexContent?: string | null;
   indexCoverPhotoUrl?: string | null;
+  indexCoverPhotoWidth?: number | null;
+  indexCoverPhotoHeight?: number | null;
+  indexImageRatio?: IndexImageRatio;
   onSetView?: (key: string) => void;
   onSetPhotoIndex?: (index: number) => void;
 }
@@ -111,9 +131,16 @@ function DetailTabsView({
   activePhotoIndex,
   indexContent,
   indexCoverPhotoUrl,
+  indexCoverPhotoWidth,
+  indexCoverPhotoHeight,
+  indexImageRatio,
   onSetView,
   onSetPhotoIndex,
 }: DetailTabsViewProps) {
+  // Original-image lightbox is shared by GRID VIEW and SLIDE VIEW — both
+  // browse the same `gridPhotos` array, just with different tile layouts.
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <Tabs tabs={tabs} active={activeView} onChange={onSetView ?? (() => {})} />
@@ -124,17 +151,38 @@ function DetailTabsView({
           see its own component comment. */}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {activeView === "index" && indexContent && (
-          <IndexTab contentHtml={indexContent} coverPhotoUrl={indexCoverPhotoUrl} />
+          <IndexTab
+            contentHtml={indexContent}
+            coverPhotoUrl={indexCoverPhotoUrl}
+            coverPhotoWidth={indexCoverPhotoWidth}
+            coverPhotoHeight={indexCoverPhotoHeight}
+            imageRatio={indexImageRatio}
+          />
         )}
-        {activeView === "grid" && <PhotoGridDetail photos={gridPhotos} />}
+        {activeView === "grid" && <PhotoGridDetail photos={gridPhotos} onPhotoClick={setLightboxIndex} />}
         {activeView === "fullscreen" && (
           <FullscreenViewer
             photos={gridPhotos}
             activeIndex={activePhotoIndex}
             onSelect={onSetPhotoIndex ?? (() => {})}
+            onExpand={setLightboxIndex}
           />
         )}
       </div>
+      <ImageLightbox
+        open={lightboxIndex !== null}
+        index={lightboxIndex ?? 0}
+        onClose={() => setLightboxIndex(null)}
+        onIndexChange={setLightboxIndex}
+        slides={gridPhotos.map((photo) => ({
+          src: photo.imageUrl ?? "",
+          width: photo.width,
+          height: photo.height,
+          alt: photo.label,
+          title: photo.label,
+          description: photo.width && photo.height ? `${photo.width} × ${photo.height}` : undefined,
+        }))}
+      />
     </div>
   );
 }

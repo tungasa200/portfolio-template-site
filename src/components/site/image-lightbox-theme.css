@@ -1,0 +1,35 @@
+/* Overrides yet-another-react-lightbox's default rounded/drop-shadow skin
+   to match the site's sharp-corner, no-shadow editorial aesthetic (see
+   theme.css's --color-site-* tokens). Scoped under .site-lightbox so it
+   never leaks into the admin dashboard's own modal styles. */
+.site-lightbox {
+  --yarl__color_backdrop: oklch(0.18 0 0 / 92%);
+  --yarl__container_background_color: var(--yarl__color_backdrop);
+  --yarl__color_button: oklch(0.99 0.002 90 / 85%);
+  --yarl__color_button_active: oklch(0.99 0.002 90);
+  --yarl__color_button_disabled: oklch(0.99 0.002 90 / 35%);
+  --yarl__button_filter: none;
+  --yarl__slide_captions_container_background: transparent;
+  --yarl__slide_captions_container_padding: 20px;
+  --yarl__slide_title_color: oklch(0.99 0.002 90);
+  --yarl__slide_title_font_size: 12px;
+  --yarl__slide_title_font_weight: 400;
+  --yarl__slide_description_color: oklch(0.99 0.002 90 / 80%);
+}
+
+.site-lightbox .yarl__slide_title,
+.site-lightbox .yarl__slide_description {
+  font-family: var(--font-site-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.site-lightbox .yarl__slide_title {
+  border: 1px solid oklch(0.99 0.002 90 / 40%);
+  display: inline-block;
+  padding: 4px 8px;
+}
+
+.site-lightbox .yarl__button {
+  border-radius: 0;
+}

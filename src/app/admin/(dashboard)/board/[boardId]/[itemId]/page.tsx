@@ -57,8 +57,11 @@ export default async function BoardItemEditorPage({
               r2Key: item.indexImageKey,
               url: r2PublicUrl(item.indexImageKey),
               thumbUrl: resolveDisplayUrl(item.indexImageKey, item.indexImageThumbKey),
+              width: item.indexImageWidth,
+              height: item.indexImageHeight,
             }
           : null,
+        indexImageRatio: item.indexImageRatio,
         photos: item.photos.map((p) => ({
           id: p.id,
           r2Key: p.r2Key,

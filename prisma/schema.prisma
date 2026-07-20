@@ -159,6 +159,14 @@ enum BoardKind {
   GALLERY_SINGLE // item has exactly 1 photo, no detail page, grid-only static tile
 }
 
+enum IndexImageRatio {
+  RATIO_3_7
+  RATIO_4_6
+  RATIO_5_5
+  RATIO_6_4
+  RATIO_7_3
+}
+
 model Board {
   id       String @id @default(uuid())
   tenantId String
@@ -208,6 +216,17 @@ model BoardItem {
   // Derived thumbnail cropped to IndexTab's 4:3 cover box — nullable, see
   // SiteSettings.heroThumbKey's comment for why.
   indexImageThumbKey String?
+  // Original's pixel dimensions — next/image requires real width/height (not
+  // `fill`) to render a remote image responsively at its true aspect ratio
+  // (see node_modules/next/dist/docs's "Responsive images with a remote
+  // URL"). Nullable: rows created before this column existed fall back to a
+  // fixed aspect-ratio box instead of breaking.
+  indexImageWidth  Int?
+  indexImageHeight Int?
+  // Image:text column-width split for the INDEX tab, admin-configurable per
+  // item. First number is the image weight, second is text (e.g. RATIO_6_4
+  // = image 6fr / text 4fr).
+  indexImageRatio IndexImageRatio @default(RATIO_5_5)
 
   photos BoardItemPhoto[]
 

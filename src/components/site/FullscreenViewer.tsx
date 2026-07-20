@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 
 export interface FullscreenPhoto {
@@ -8,12 +10,17 @@ export interface FullscreenPhoto {
   /** Web-optimized derived copy — used for the filmstrip tiles, which are
    * rendered small enough that the original would be wasted bandwidth. */
   thumbUrl?: string | null;
+  width?: number | null;
+  height?: number | null;
 }
 
 interface FullscreenViewerProps {
   photos: FullscreenPhoto[];
   activeIndex: number;
   onSelect: (index: number) => void;
+  /** Opens the original-image lightbox on the active image — omitted makes
+   * the main image inert (thumbnail strip navigation still works either way). */
+  onExpand?: (index: number) => void;
 }
 
 // Main image box + horizontal thumbnail strip, used by the SLIDE VIEW tab
@@ -30,7 +37,10 @@ function NavArrow({ direction, onClick }: { direction: "prev" | "next"; onClick:
     <button
       type="button"
       aria-label={direction === "prev" ? "Previous photo" : "Next photo"}
-      onClick={onClick}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
       className="absolute top-1/2 z-10 flex h-[34px] w-[34px] -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-site-ink bg-site-paper"
       style={direction === "prev" ? { left: "16px" } : { right: "16px" }}
     >
@@ -47,13 +57,14 @@ function NavArrow({ direction, onClick }: { direction: "prev" | "next"; onClick:
   );
 }
 
-export function FullscreenViewer({ photos, activeIndex, onSelect }: FullscreenViewerProps) {
+export function FullscreenViewer({ photos, activeIndex, onSelect, onExpand }: FullscreenViewerProps) {
   const active = photos[activeIndex] ?? photos[0];
 
   return (
     <div className="flex h-full min-h-0 flex-col animate-site-intro-fade" style={{ animationDelay: "0.55s" }}>
       <div
-        className={`relative flex min-h-0 w-full flex-1 items-end overflow-hidden bg-site-paper ${active?.imageUrl ? "" : "site-placeholder-pattern"}`}
+        onClick={active?.imageUrl && onExpand ? () => onExpand(activeIndex) : undefined}
+        className={`relative flex min-h-0 w-full flex-1 items-end overflow-hidden bg-site-paper ${active?.imageUrl ? "" : "site-placeholder-pattern"} ${active?.imageUrl && onExpand ? "cursor-zoom-in" : ""}`}
       >
         {active?.imageUrl && (
           <Image src={active.imageUrl} alt={active.label} fill sizes="100vw" className="object-contain" />
@@ -63,13 +74,6 @@ export function FullscreenViewer({ photos, activeIndex, onSelect }: FullscreenVi
             <NavArrow direction="prev" onClick={() => onSelect((activeIndex - 1 + photos.length) % photos.length)} />
             <NavArrow direction="next" onClick={() => onSelect((activeIndex + 1) % photos.length)} />
           </>
-        )}
-        {active && (
-          <div className="relative px-6 py-5">
-            <span className="border border-site-ink bg-site-paper px-2.5 py-1.5 font-site-mono text-xs tracking-wide text-site-ink-soft">
-              {active.label}
-            </span>
-          </div>
         )}
       </div>
       <div className="mt-5 flex shrink-0 justify-center gap-3 overflow-x-auto pb-1">

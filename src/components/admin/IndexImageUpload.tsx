@@ -19,6 +19,11 @@ export interface IndexImage {
   /** Web-optimized derived copy shown in the tile; falls back to `url` for
    * an image uploaded before thumbnails existed. */
   thumbUrl: string | null;
+  /** Original's pixel dimensions — null for images uploaded before this
+   * column existed. Used by the public IndexTab to render at true aspect
+   * ratio (see prisma/schema.prisma's BoardItem.indexImageWidth comment). */
+  width: number | null;
+  height: number | null;
 }
 
 interface IndexImageUploadProps {
@@ -73,9 +78,21 @@ export function IndexImageUpload({
 
       const scope = { kind: "board-item" as const, boardId, itemId: currentItemId };
       const uploaded = await uploadImagePairToR2(file, scope, target);
-      const result = await setBoardItemIndexImage(currentItemId, uploaded.original.r2Key, uploaded.thumb.r2Key);
+      const result = await setBoardItemIndexImage(
+        currentItemId,
+        uploaded.original.r2Key,
+        uploaded.thumb.r2Key,
+        uploaded.original.width,
+        uploaded.original.height
+      );
       if (result.status === "success") {
-        onIndexImageChange({ r2Key: uploaded.original.r2Key, url: uploaded.original.publicUrl, thumbUrl: uploaded.thumb.publicUrl });
+        onIndexImageChange({
+          r2Key: uploaded.original.r2Key,
+          url: uploaded.original.publicUrl,
+          thumbUrl: uploaded.thumb.publicUrl,
+          width: uploaded.original.width,
+          height: uploaded.original.height,
+        });
       } else {
         toast(result.message, true);
       }

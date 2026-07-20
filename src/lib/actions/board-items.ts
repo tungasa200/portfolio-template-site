@@ -8,6 +8,12 @@ import { forTenant } from "@/lib/db/tenant-scoped-client";
 import { revalidateTenantSite } from "@/lib/tenant/site-cache";
 import { deleteR2Object } from "@/lib/storage/r2";
 import type { ActionFormState } from "@/lib/actions/site-settings";
+import { isIndexImageRatio, type IndexImageRatio } from "@/lib/site/index-image-ratio";
+
+function readIndexImageRatio(formData: FormData, fallback: IndexImageRatio): IndexImageRatio {
+  const raw = String(formData.get("indexImageRatio") ?? "");
+  return isIndexImageRatio(raw) ? raw : fallback;
+}
 
 function slugify(name: string): string {
   const slug = name
@@ -71,6 +77,7 @@ export async function createBoardItem(
   const indexEnabled = isMulti && formData.get("indexEnabled") === "true";
   const indexContent = isMulti ? String(formData.get("indexContent") ?? "") : null;
   const indexImageEnabled = isMulti && formData.get("indexImageEnabled") === "true";
+  const indexImageRatio = readIndexImageRatio(formData, "RATIO_5_5");
 
   const order = await nextOrderForPrepend(db, boardId);
   const slug = isMulti ? await uniqueSlug(db, boardId, slugify(name)) : null;
@@ -87,6 +94,7 @@ export async function createBoardItem(
       indexEnabled,
       indexContent,
       indexImageEnabled,
+      indexImageRatio,
     },
   });
 
@@ -151,13 +159,16 @@ export async function updateBoardItem(
   const indexEnabled = isMulti && formData.get("indexEnabled") === "true";
   const indexContent = isMulti ? String(formData.get("indexContent") ?? "") : item.indexContent;
   const indexImageEnabled = isMulti ? formData.get("indexImageEnabled") === "true" : item.indexImageEnabled;
+  const indexImageRatio = isMulti
+    ? readIndexImageRatio(formData, item.indexImageRatio as IndexImageRatio)
+    : item.indexImageRatio;
 
   await db.boardItem.update({
     where: { id: itemId },
     // No `slug` key here — see this file's top-of-function comment. Also no
     // `indexImageKey` — that's set by setBoardItemIndexImage/
     // removeBoardItemIndexImage, not this generic field save.
-    data: { name, dateValue, isPublished, indexEnabled, indexContent, indexImageEnabled },
+    data: { name, dateValue, isPublished, indexEnabled, indexContent, indexImageEnabled, indexImageRatio },
   });
 
   revalidatePath("/admin", "layout");
@@ -193,7 +204,9 @@ export async function deleteBoardItem(itemId: string, boardId: string): Promise<
 export async function setBoardItemIndexImage(
   itemId: string,
   r2Key: string,
-  thumbR2Key: string
+  thumbR2Key: string,
+  width: number,
+  height: number
 ): Promise<{ status: "success" } | { status: "error"; message: string }> {
   const { tenantId } = await getCurrentTenantContext();
   const db = forTenant(tenantId);
@@ -206,7 +219,10 @@ export async function setBoardItemIndexImage(
     return { status: "error", message: "항목을 찾을 수 없어요." };
   }
 
-  await db.boardItem.update({ where: { id: itemId }, data: { indexImageKey: r2Key, indexImageThumbKey: thumbR2Key } });
+  await db.boardItem.update({
+    where: { id: itemId },
+    data: { indexImageKey: r2Key, indexImageThumbKey: thumbR2Key, indexImageWidth: width, indexImageHeight: height },
+  });
   await Promise.all([
     item.indexImageKey ? deleteR2Object(item.indexImageKey) : Promise.resolve(),
     item.indexImageThumbKey ? deleteR2Object(item.indexImageThumbKey) : Promise.resolve(),
