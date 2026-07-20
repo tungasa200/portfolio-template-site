@@ -51,6 +51,8 @@ export default async function BoardItemEditorPage({
         isPublished: item.isPublished,
         indexEnabled: item.indexEnabled,
         indexContent: item.indexContent,
+        indexImageEnabled: item.indexImageEnabled,
+        indexImageUrl: item.indexImageKey ? r2PublicUrl(item.indexImageKey) : null,
         photos: item.photos.map((p) => ({ id: p.id, url: r2PublicUrl(p.r2Key), isPrimary: p.isPrimary })),
       }}
     />

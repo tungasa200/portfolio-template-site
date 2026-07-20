@@ -7,6 +7,7 @@ import type { ActionFormState } from "@/lib/actions/site-settings";
 import { MonthPicker } from "@/components/admin/MonthPicker";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { PhotoManager, type ManagedPhoto } from "@/components/admin/PhotoManager";
+import { IndexImageUpload } from "@/components/admin/IndexImageUpload";
 import { useToast } from "@/components/admin/Toast";
 
 interface ExistingItem {
@@ -16,6 +17,8 @@ interface ExistingItem {
   isPublished: boolean;
   indexEnabled: boolean;
   indexContent: string | null;
+  indexImageEnabled: boolean;
+  indexImageUrl: string | null;
   photos: ManagedPhoto[];
 }
 
@@ -54,6 +57,8 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
   const [dateValue, setDateValue] = useState(currentItem?.dateValue ?? "");
   const [indexEnabled, setIndexEnabled] = useState(currentItem?.indexEnabled ?? false);
   const [indexContent, setIndexContent] = useState(currentItem?.indexContent ?? "");
+  const [indexImageEnabled, setIndexImageEnabled] = useState(currentItem?.indexImageEnabled ?? false);
+  const [indexImageUrl, setIndexImageUrl] = useState(currentItem?.indexImageUrl ?? null);
   const [isPublished, setIsPublished] = useState(currentItem?.isPublished ?? false);
 
   function handlePhotoItemCreated(id: string) {
@@ -66,6 +71,8 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
         isPublished: false,
         indexEnabled: false,
         indexContent: "",
+        indexImageEnabled: false,
+        indexImageUrl: null,
         photos: [],
       }
     );
@@ -114,6 +121,7 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
         <input type="hidden" name="dateValue" value={dateValue} />
         <input type="hidden" name="indexEnabled" value={String(indexEnabled)} />
         <input type="hidden" name="indexContent" value={indexContent} />
+        <input type="hidden" name="indexImageEnabled" value={String(indexImageEnabled)} />
         <input type="hidden" name="isPublished" value={String(isPublished)} />
 
         <div className="admin-page-head">
@@ -148,6 +156,28 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
             {indexEnabled && (
               <div style={{ marginTop: 18 }}>
                 <RichTextEditor value={indexContent} onChange={setIndexContent} />
+                <div className="admin-toggle-row" style={{ marginTop: 18 }}>
+                  <div className="admin-toggle-row-text">
+                    <strong>설명에 이미지 추가하기</strong>
+                  </div>
+                  <button
+                    type="button"
+                    className={`admin-switch ${indexImageEnabled ? "on" : ""}`}
+                    onClick={() => setIndexImageEnabled((v) => !v)}
+                  />
+                </div>
+                {indexImageEnabled && (
+                  <div style={{ marginTop: 18 }}>
+                    <IndexImageUpload
+                      boardId={boardId}
+                      boardItemId={currentItem?.id ?? null}
+                      imageUrl={indexImageUrl}
+                      onImageUrlChange={setIndexImageUrl}
+                      getDraftName={() => name.trim()}
+                      onItemCreated={handlePhotoItemCreated}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>

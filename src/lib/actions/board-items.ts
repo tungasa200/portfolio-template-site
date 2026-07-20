@@ -70,6 +70,7 @@ export async function createBoardItem(
   const isPublished = formData.get("isPublished") === "true";
   const indexEnabled = isMulti && formData.get("indexEnabled") === "true";
   const indexContent = isMulti ? String(formData.get("indexContent") ?? "") : null;
+  const indexImageEnabled = isMulti && formData.get("indexImageEnabled") === "true";
 
   const order = await nextOrderForPrepend(db, boardId);
   const slug = isMulti ? await uniqueSlug(db, boardId, slugify(name)) : null;
@@ -85,6 +86,7 @@ export async function createBoardItem(
       isPublished,
       indexEnabled,
       indexContent,
+      indexImageEnabled,
     },
   });
 
@@ -148,11 +150,14 @@ export async function updateBoardItem(
   const isPublished = formData.get("isPublished") === "true";
   const indexEnabled = isMulti && formData.get("indexEnabled") === "true";
   const indexContent = isMulti ? String(formData.get("indexContent") ?? "") : item.indexContent;
+  const indexImageEnabled = isMulti ? formData.get("indexImageEnabled") === "true" : item.indexImageEnabled;
 
   await db.boardItem.update({
     where: { id: itemId },
-    // No `slug` key here — see this file's top-of-function comment.
-    data: { name, dateValue, isPublished, indexEnabled, indexContent },
+    // No `slug` key here — see this file's top-of-function comment. Also no
+    // `indexImageKey` — that's set by setBoardItemIndexImage/
+    // removeBoardItemIndexImage, not this generic field save.
+    data: { name, dateValue, isPublished, indexEnabled, indexContent, indexImageEnabled },
   });
 
   revalidatePath("/admin", "layout");
@@ -163,13 +168,57 @@ export async function updateBoardItem(
 export async function deleteBoardItem(itemId: string, boardId: string): Promise<void> {
   const { tenantId } = await getCurrentTenantContext();
   const db = forTenant(tenantId);
-  const photos = await db.boardItemPhoto.findMany({ where: { boardItemId: itemId } });
+  const [photos, item] = await Promise.all([
+    db.boardItemPhoto.findMany({ where: { boardItemId: itemId } }),
+    db.boardItem.findUnique({ where: { id: itemId }, select: { indexImageKey: true } }),
+  ]);
   await db.boardItem.delete({ where: { id: itemId } }); // cascades BoardItemPhoto rows
-  await Promise.all(photos.map((p) => deleteR2Object(p.r2Key)));
+  await Promise.all([
+    ...photos.map((p) => deleteR2Object(p.r2Key)),
+    item?.indexImageKey ? deleteR2Object(item.indexImageKey) : Promise.resolve(),
+  ]);
 
   revalidatePath("/admin", "layout");
   await revalidateTenantSite(tenantId);
   redirect(`${await getAdminBasePath()}/board/${boardId}`); // browser-facing, see createBoardItem's comment above
+}
+
+// INDEX tab cover image — a single image independent of the item's regular
+// `photos` (see prisma/schema.prisma's BoardItem.indexImageKey comment).
+// Mirrors addBoardItemPhoto's contract (client already PUT the file to R2
+// via the presigned URL; this only persists/replaces the key), but there's
+// no BoardItemPhoto row and no ordering/primary concept — just one slot.
+export async function setBoardItemIndexImage(
+  itemId: string,
+  r2Key: string
+): Promise<{ status: "success" } | { status: "error"; message: string }> {
+  const { tenantId } = await getCurrentTenantContext();
+  const db = forTenant(tenantId);
+  const item = await db.boardItem.findUnique({ where: { id: itemId }, select: { indexImageKey: true } });
+  if (!item) {
+    await deleteR2Object(r2Key);
+    return { status: "error", message: "항목을 찾을 수 없어요." };
+  }
+
+  await db.boardItem.update({ where: { id: itemId }, data: { indexImageKey: r2Key } });
+  if (item.indexImageKey) await deleteR2Object(item.indexImageKey);
+
+  revalidatePath("/admin", "layout");
+  await revalidateTenantSite(tenantId);
+  return { status: "success" };
+}
+
+export async function removeBoardItemIndexImage(itemId: string): Promise<void> {
+  const { tenantId } = await getCurrentTenantContext();
+  const db = forTenant(tenantId);
+  const item = await db.boardItem.findUnique({ where: { id: itemId }, select: { indexImageKey: true } });
+  if (!item?.indexImageKey) return;
+
+  await db.boardItem.update({ where: { id: itemId }, data: { indexImageKey: null } });
+  await deleteR2Object(item.indexImageKey);
+
+  revalidatePath("/admin", "layout");
+  await revalidateTenantSite(tenantId);
 }
 
 export async function toggleBoardItemPublished(itemId: string): Promise<void> {

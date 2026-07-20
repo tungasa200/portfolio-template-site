@@ -194,6 +194,10 @@ model BoardItem {
   // Only meaningful for GALLERY_MULTI.
   indexEnabled Boolean @default(false)
   indexContent String? @db.Text // trusted admin-authored rich HTML
+  // INDEX tab's cover image — a single image independent of `photos` below
+  // (the body/GRID VIEW photos); admin opts in separately per item.
+  indexImageEnabled Boolean @default(false)
+  indexImageKey     String?
 
   photos BoardItemPhoto[]
 
