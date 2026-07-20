@@ -5,6 +5,10 @@ import type { ContactFormState } from "@/lib/actions/contact";
 
 interface ContactFormProps {
   action: (prevState: ContactFormState, formData: FormData) => Promise<ContactFormState>;
+  // Attachments only ever reach anyone via the Gmail notification — with no
+  // Gmail connected there's nowhere for the file to go, so the field is
+  // hidden rather than accepted and silently dropped.
+  gmailConnected: boolean;
 }
 
 const initialState: ContactFormState = { status: "idle" };
@@ -13,7 +17,7 @@ const fieldLabelClass = "font-site-mono text-[11px] tracking-wide text-site-ink-
 const fieldInputClass =
   "border-0 border-b border-site-ink bg-transparent px-0 py-2 font-site-sans text-base outline-none focus:border-b-2";
 
-export function ContactForm({ action }: ContactFormProps) {
+export function ContactForm({ action, gmailConnected }: ContactFormProps) {
   const [state, formAction, isPending] = useActionState(action, initialState);
 
   return (
@@ -30,20 +34,22 @@ export function ContactForm({ action }: ContactFormProps) {
         <span className={fieldLabelClass}>MESSAGE</span>
         <textarea name="message" rows={4} required className={`${fieldInputClass} resize-none`} />
       </label>
-      <label className="flex flex-col gap-2">
-        <span className={fieldLabelClass}>ATTACHMENT</span>
-        <div className="relative flex cursor-pointer flex-col items-center justify-center gap-2 border border-dashed border-site-ink px-6 py-6 hover:bg-site-placeholder-b">
-          <span className="text-sm text-site-ink-soft">파일을 드래그하거나 클릭하여 첨부</span>
-          <span className="font-site-mono text-[11px] text-site-ink-faint">
-            JPG, PNG, PDF up to 10MB
-          </span>
-          <input
-            type="file"
-            name="attachment"
-            className="absolute h-px w-px overflow-hidden opacity-0"
-          />
-        </div>
-      </label>
+      {gmailConnected && (
+        <label className="flex flex-col gap-2">
+          <span className={fieldLabelClass}>ATTACHMENT</span>
+          <div className="relative flex cursor-pointer flex-col items-center justify-center gap-2 border border-dashed border-site-ink px-6 py-6 hover:bg-site-placeholder-b">
+            <span className="text-sm text-site-ink-soft">파일을 드래그하거나 클릭하여 첨부</span>
+            <span className="font-site-mono text-[11px] text-site-ink-faint">
+              JPG, PNG, PDF up to 10MB
+            </span>
+            <input
+              type="file"
+              name="attachment"
+              className="absolute h-px w-px overflow-hidden opacity-0"
+            />
+          </div>
+        </label>
+      )}
 
       <button
         type="submit"

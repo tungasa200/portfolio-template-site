@@ -38,26 +38,38 @@ export async function submitContactForm(
     return { status: "error", message: "Enter a valid email address." };
   }
 
-  const attachment = formData.get("attachment");
-  let attachmentBuffer: Buffer | null = null;
-  let attachmentFilename = "";
-  let attachmentType = "";
-  if (attachment instanceof File && attachment.size > 0) {
-    if (attachment.size > MAX_ATTACHMENT_BYTES) {
-      return { status: "error", message: "Attachment is too large — 10MB max." };
-    }
-    if (!ALLOWED_ATTACHMENT_TYPES.has(attachment.type)) {
-      return { status: "error", message: "Attachment must be a JPG, PNG, or PDF." };
-    }
-    attachmentBuffer = Buffer.from(await attachment.arrayBuffer());
-    attachmentFilename = attachment.name;
-    attachmentType = attachment.type;
-  }
-
   // tenantId is redundant with what forTenant() injects at runtime, but
   // ContactSubmissionUncheckedCreateInput requires it statically — Prisma's
   // generated types can't see the $extends middleware that fills it in.
   const db = forTenant(tenantId);
+  const siteSettings = await db.siteSettings.findUnique({ where: { tenantId } });
+  const gmailConnected = Boolean(siteSettings?.replyEmailAddress && siteSettings.replyEmailAppPasswordEnc);
+
+  // There's nowhere to durably store an attachment yet (no R2 upload wired
+  // up) — the only thing that ever happens to it is riding along on the
+  // Gmail notification below. Without Gmail connected it would just be
+  // parsed into memory and dropped, so skip it entirely rather than
+  // pretending to accept it. The form itself hides the file input in this
+  // case (see ContactForm's gmailConnected prop); this is the server-side
+  // backstop for anyone posting directly.
+  let attachmentBuffer: Buffer | null = null;
+  let attachmentFilename = "";
+  let attachmentType = "";
+  if (gmailConnected) {
+    const attachment = formData.get("attachment");
+    if (attachment instanceof File && attachment.size > 0) {
+      if (attachment.size > MAX_ATTACHMENT_BYTES) {
+        return { status: "error", message: "Attachment is too large — 10MB max." };
+      }
+      if (!ALLOWED_ATTACHMENT_TYPES.has(attachment.type)) {
+        return { status: "error", message: "Attachment must be a JPG, PNG, or PDF." };
+      }
+      attachmentBuffer = Buffer.from(await attachment.arrayBuffer());
+      attachmentFilename = attachment.name;
+      attachmentType = attachment.type;
+    }
+  }
+
   await db.contactSubmission.create({ data: { tenantId, name, email, message } });
   // Admin's messages list / unread badge cache (see cacheForTenant usage
   // under src/app/admin/(dashboard)/**) shares this tag — without busting
@@ -71,7 +83,6 @@ export async function submitContactForm(
   // src/lib/actions/reply-email.ts) still gets every message, just via the
   // admin Messages page rather than an inbox notification.
   try {
-    const siteSettings = await db.siteSettings.findUnique({ where: { tenantId } });
     if (!siteSettings?.replyEmailAddress || !siteSettings.replyEmailAppPasswordEnc) {
       console.warn(`[contact] tenant ${tenantId} hasn't connected Gmail — notification not sent`);
     } else if (siteSettings.contactEmail) {

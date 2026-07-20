@@ -16,6 +16,12 @@ export default async function TenantContactPage({
 
   const photographerName = tenant.siteSettings?.photographerName ?? tenant.slug;
   const contactEmail = tenant.siteSettings?.contactEmail;
+  // Attachments only ever go anywhere via the Gmail notification (see
+  // src/lib/actions/contact.ts) — no Gmail connection means no destination
+  // for the file, so don't offer the field at all.
+  const gmailConnected = Boolean(
+    tenant.siteSettings?.replyEmailAddress && tenant.siteSettings?.replyEmailAppPasswordEnc
+  );
 
   // Same single-source-of-truth fix as the board/about pages — title
   // follows the tenant's own CONTACT NavItem.label, not a hardcoded string.
@@ -30,7 +36,7 @@ export default async function TenantContactPage({
       <div className="relative grid flex-1 grid-cols-[6fr_4fr] gap-0 animate-site-intro-fade" style={{ animationDelay: "0.5s" }}>
         <div className="absolute top-0 left-[60%] h-full w-px bg-site-ink" />
 
-        <ContactForm action={action} />
+        <ContactForm action={action} gmailConnected={gmailConnected} />
 
         <div className="flex flex-col gap-6 pt-1 pl-10">
           <div>
