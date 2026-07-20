@@ -21,7 +21,7 @@ export default async function TenantHomePage({
   return (
     <section className="box-border flex h-[calc(100vh-80px)] max-h-[calc(100vh-80px)] items-center overflow-hidden px-16 py-10 md:px-[clamp(64px,6vw,140px)]">
       <div
-        className={`relative mx-auto flex w-full items-center justify-center border border-site-ink animate-site-intro-fade ${heroUrl ? "" : "site-placeholder-pattern"}`}
+        className={`relative mx-auto flex w-full items-center justify-center animate-site-intro-fade ${heroUrl ? "" : "border border-site-ink site-placeholder-pattern"}`}
         style={{
           maxWidth: "min(100%, calc(100vh - 160px))",
           aspectRatio: "1 / 1",
