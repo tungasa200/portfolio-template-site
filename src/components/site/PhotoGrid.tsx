@@ -54,7 +54,7 @@ export function PhotoGrid({ items, kind }: PhotoGridProps) {
   if (items.length === 0) {
     return (
       <div
-        className="animate-site-intro-fade border border-site-ink px-[22px] py-16 text-center font-site-mono text-[11px] tracking-wide text-site-ink-muted"
+        className="animate-site-intro-fade py-16 text-center font-site-mono text-sm tracking-wide text-site-ink-muted"
         style={{ animationDelay: "0.5s" }}
       >
         게시물이 없습니다

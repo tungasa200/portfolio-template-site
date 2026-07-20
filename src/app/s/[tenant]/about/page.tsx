@@ -37,7 +37,7 @@ export default async function AboutPage({
       <SectionHeader title={navItem?.label ?? "ABOUT"} />
       {isEmpty ? (
         <div
-          className="max-w-[640px] animate-site-intro-fade border border-site-ink px-[22px] py-16 text-center font-site-mono text-[11px] tracking-wide text-site-ink-muted"
+          className="max-w-[640px] animate-site-intro-fade py-16 text-center font-site-mono text-sm tracking-wide text-site-ink-muted"
           style={{ animationDelay: "0.5s" }}
         >
           소개가 없습니다
