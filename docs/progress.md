@@ -671,6 +671,34 @@ session (on any machine) to know where things actually stand.
 **Conventions established**
 - Commit message tags: see [conventions.md](./conventions.md).
 
+## Incidents
+
+**Prisma `startsWith` matched every row (2026-07-20)**
+- While cleaning up throwaway test `BoardItem` rows (created while verifying
+  the two admin-editor bug fixes above), ran
+  `db.boardItem.deleteMany({ where: { name: { startsWith: "___" } } })` to
+  remove rows named like `___VERIFY_TITLE_BUG___`. Postgres `LIKE` treats
+  `_` as a single-char wildcard, so the compiled pattern (`___%`) matched
+  *any* name of 3+ characters — it deleted all 23 real `BoardItem` rows on
+  the `WORK 1` board for the `dev` tenant, not just the test rows.
+- Confirmed with the user this was dummy/placeholder content (no real
+  customer data yet, per this file's own status — Phase 5 go-live hasn't
+  happened), so no restore was needed; recreated 3 placeholder rows
+  (`Still Water Co.`, `Field Apparel`, `Nord Audio`) to leave the board
+  non-empty. Had this been real tenant content, the fix would have been a
+  Neon point-in-time restore instead.
+- Convention added to prevent a repeat:
+  [conventions.md](./conventions.md#prisma-7-not-56)'s Prisma 7 notes now
+  call out that `startsWith`/`endsWith`/`contains` don't escape `_`/`%`.
+- Also noticed in passing while verifying the fixes: local-dev R2 uploads
+  currently fail client-side with a CORS error (`Access to fetch at
+  '...r2.cloudflarestorage.com/...' ... blocked by CORS policy`) — this
+  contradicts the "✅ CORS policy added and verified" note above
+  (2026-07-16). Worked around it in the Playwright verification by
+  intercepting the PUT request rather than fixing the bucket's CORS config.
+  Not yet investigated further — flagging here since it means real local
+  photo uploads are currently broken, not just this test run.
+
 ## Not started
 
 Phase 4 (admin CRUD + uploads) is done as of 2026-07-15 — see above. Next up

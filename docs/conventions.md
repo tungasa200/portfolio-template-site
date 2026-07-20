@@ -72,6 +72,16 @@ assuming an older API still applies — don't guess from memory.
   but doesn't support a shadow database — use `prisma db push` locally,
   not `prisma migrate dev` (that only works cleanly against real Postgres,
   i.e. Neon).
+- `startsWith`/`endsWith`/`contains` string filters compile to a Postgres
+  `LIKE` pattern, where `_` and `%` are wildcards (`_` = any one char, `%` =
+  any run of chars) — NOT escaped automatically. A filter like
+  `{ name: { startsWith: "___" } }` becomes `LIKE '___%'`, which matches
+  *any string of 3+ characters*, not literal triple-underscore names. This
+  once mass-deleted every real row in a table via a "delete test rows named
+  `___foo___`" cleanup script — see
+  [progress.md](./progress.md#incident-prisma-startswith-matched-every-row-2026-07-20).
+  If the substring can contain `_`/`%` (including ad-hoc test-data
+  prefixes), escape them first or match on an exact/`in` filter instead.
 
 When in doubt on either library: grep `node_modules/next/dist/docs/` first,
 or search the web for the specific version — don't assume.
