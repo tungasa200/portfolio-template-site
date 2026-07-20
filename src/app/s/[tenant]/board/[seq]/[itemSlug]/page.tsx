@@ -72,16 +72,18 @@ export default async function BoardItemDetailPage({
     // Web-optimized derived copy — used by GRID VIEW tiles and the SLIDE
     // VIEW filmstrip, which never need full quality.
     thumbUrl: resolveDisplayUrl(p.r2Key, p.thumbR2Key),
+    width: p.width,
+    height: p.height,
   }));
   // INDEX cover image is its own opt-in field (BoardItem.indexImageEnabled/
-  // indexImageKey), independent of the body/GRID VIEW photos above.
+  // indexImageKey), independent of the body/GRID VIEW photos above. Uses
+  // the original (not the pre-cropped-to-4:3 thumbnail) so IndexTab can
+  // render it at its true aspect ratio.
   const indexCoverPhotoUrl =
-    item.indexImageEnabled && item.indexImageKey
-      ? resolveDisplayUrl(item.indexImageKey, item.indexImageThumbKey)
-      : null;
+    item.indexImageEnabled && item.indexImageKey ? r2PublicUrl(item.indexImageKey) : null;
 
   return (
-    <section className="box-border flex h-[calc(100vh-80px)] max-h-[calc(100vh-80px)] flex-col overflow-hidden px-16 py-10">
+    <section className="box-border flex h-full max-h-full flex-col overflow-hidden px-16 py-10">
       <SectionHeader title={item.name} marginBottom="mb-8" />
       <DetailTabs
         tabs={tabs}
@@ -89,6 +91,9 @@ export default async function BoardItemDetailPage({
         gridPhotos={gridPhotos}
         indexContent={item.indexEnabled ? item.indexContent : null}
         indexCoverPhotoUrl={indexCoverPhotoUrl}
+        indexCoverPhotoWidth={item.indexImageWidth}
+        indexCoverPhotoHeight={item.indexImageHeight}
+        indexImageRatio={item.indexImageRatio}
       />
     </section>
   );

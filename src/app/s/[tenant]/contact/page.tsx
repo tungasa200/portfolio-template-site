@@ -24,7 +24,7 @@ export default async function TenantContactPage({
   );
 
   return (
-    <section className="box-border flex h-[calc(100vh-80px)] max-h-[calc(100vh-80px)] flex-col overflow-hidden px-16 py-10">
+    <section className="box-border flex h-full max-h-full flex-col overflow-hidden px-16 py-10">
       <SectionHeader title={navItem?.label ?? "CONTACT"} marginBottom="mb-12" />
 
       <div className="relative grid flex-1 grid-cols-[6fr_4fr] gap-0 animate-site-intro-fade" style={{ animationDelay: "0.5s" }}>
