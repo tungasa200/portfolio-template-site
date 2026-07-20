@@ -1,7 +1,7 @@
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
 import { cacheForTenant } from "@/lib/tenant/site-cache";
-import { r2PublicUrl } from "@/lib/storage/r2";
+import { r2PublicUrl, resolveDisplayUrl } from "@/lib/storage/r2";
 import { resolveNavLabel } from "@/lib/site/nav-items";
 import { SettingsForm } from "@/components/admin/SettingsForm";
 import { NavVisibilityList } from "@/components/admin/NavVisibilityList";
@@ -50,8 +50,16 @@ export default async function AdminSettingsPage() {
         photographerName={siteSettings?.photographerName ?? ""}
         contactEmail={siteSettings?.contactEmail ?? ""}
         footerText={siteSettings?.footerText ?? null}
-        heroImageUrl={siteSettings?.heroImageKey ? r2PublicUrl(siteSettings.heroImageKey) : null}
-        logoImageUrl={siteSettings?.logoImageKey ? r2PublicUrl(siteSettings.logoImageKey) : null}
+        heroImage={
+          siteSettings?.heroImageKey
+            ? {
+                r2Key: siteSettings.heroImageKey,
+                url: r2PublicUrl(siteSettings.heroImageKey),
+                thumbUrl: resolveDisplayUrl(siteSettings.heroImageKey, siteSettings.heroThumbKey),
+              }
+            : null
+        }
+        logoImageUrl={resolveDisplayUrl(siteSettings?.logoImageKey, siteSettings?.logoThumbKey)}
       />
 
       <div className="admin-section-card">

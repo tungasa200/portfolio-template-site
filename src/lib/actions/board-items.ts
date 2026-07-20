@@ -170,12 +170,13 @@ export async function deleteBoardItem(itemId: string, boardId: string): Promise<
   const db = forTenant(tenantId);
   const [photos, item] = await Promise.all([
     db.boardItemPhoto.findMany({ where: { boardItemId: itemId } }),
-    db.boardItem.findUnique({ where: { id: itemId }, select: { indexImageKey: true } }),
+    db.boardItem.findUnique({ where: { id: itemId }, select: { indexImageKey: true, indexImageThumbKey: true } }),
   ]);
   await db.boardItem.delete({ where: { id: itemId } }); // cascades BoardItemPhoto rows
   await Promise.all([
-    ...photos.map((p) => deleteR2Object(p.r2Key)),
+    ...photos.flatMap((p) => [deleteR2Object(p.r2Key), ...(p.thumbR2Key ? [deleteR2Object(p.thumbR2Key)] : [])]),
     item?.indexImageKey ? deleteR2Object(item.indexImageKey) : Promise.resolve(),
+    item?.indexImageThumbKey ? deleteR2Object(item.indexImageThumbKey) : Promise.resolve(),
   ]);
 
   revalidatePath("/admin", "layout");
@@ -185,37 +186,64 @@ export async function deleteBoardItem(itemId: string, boardId: string): Promise<
 
 // INDEX tab cover image — a single image independent of the item's regular
 // `photos` (see prisma/schema.prisma's BoardItem.indexImageKey comment).
-// Mirrors addBoardItemPhoto's contract (client already PUT the file to R2
-// via the presigned URL; this only persists/replaces the key), but there's
-// no BoardItemPhoto row and no ordering/primary concept — just one slot.
+// Mirrors addBoardItemPhotos's contract (client already PUT both the
+// original and its thumbnail to R2 via presigned URLs; this only
+// persists/replaces the keys), but there's no BoardItemPhoto row and no
+// ordering/primary concept — just one slot.
 export async function setBoardItemIndexImage(
   itemId: string,
-  r2Key: string
+  r2Key: string,
+  thumbR2Key: string
 ): Promise<{ status: "success" } | { status: "error"; message: string }> {
   const { tenantId } = await getCurrentTenantContext();
   const db = forTenant(tenantId);
-  const item = await db.boardItem.findUnique({ where: { id: itemId }, select: { indexImageKey: true } });
+  const item = await db.boardItem.findUnique({
+    where: { id: itemId },
+    select: { indexImageKey: true, indexImageThumbKey: true },
+  });
   if (!item) {
-    await deleteR2Object(r2Key);
+    await Promise.all([deleteR2Object(r2Key), deleteR2Object(thumbR2Key)]);
     return { status: "error", message: "항목을 찾을 수 없어요." };
   }
 
-  await db.boardItem.update({ where: { id: itemId }, data: { indexImageKey: r2Key } });
-  if (item.indexImageKey) await deleteR2Object(item.indexImageKey);
+  await db.boardItem.update({ where: { id: itemId }, data: { indexImageKey: r2Key, indexImageThumbKey: thumbR2Key } });
+  await Promise.all([
+    item.indexImageKey ? deleteR2Object(item.indexImageKey) : Promise.resolve(),
+    item.indexImageThumbKey ? deleteR2Object(item.indexImageThumbKey) : Promise.resolve(),
+  ]);
 
   revalidatePath("/admin", "layout");
   await revalidateTenantSite(tenantId);
   return { status: "success" };
 }
 
+// Re-crop only — the original is untouched, just the derived thumbnail
+// (see ThumbnailCropModal).
+export async function updateBoardItemIndexImageThumbnail(itemId: string, thumbR2Key: string): Promise<void> {
+  const { tenantId } = await getCurrentTenantContext();
+  const db = forTenant(tenantId);
+  const item = await db.boardItem.findUnique({ where: { id: itemId }, select: { indexImageThumbKey: true } });
+  await db.boardItem.update({ where: { id: itemId }, data: { indexImageThumbKey: thumbR2Key } });
+  if (item?.indexImageThumbKey) await deleteR2Object(item.indexImageThumbKey);
+
+  revalidatePath("/admin", "layout");
+  await revalidateTenantSite(tenantId);
+}
+
 export async function removeBoardItemIndexImage(itemId: string): Promise<void> {
   const { tenantId } = await getCurrentTenantContext();
   const db = forTenant(tenantId);
-  const item = await db.boardItem.findUnique({ where: { id: itemId }, select: { indexImageKey: true } });
+  const item = await db.boardItem.findUnique({
+    where: { id: itemId },
+    select: { indexImageKey: true, indexImageThumbKey: true },
+  });
   if (!item?.indexImageKey) return;
 
-  await db.boardItem.update({ where: { id: itemId }, data: { indexImageKey: null } });
-  await deleteR2Object(item.indexImageKey);
+  await db.boardItem.update({ where: { id: itemId }, data: { indexImageKey: null, indexImageThumbKey: null } });
+  await Promise.all([
+    deleteR2Object(item.indexImageKey),
+    item.indexImageThumbKey ? deleteR2Object(item.indexImageThumbKey) : Promise.resolve(),
+  ]);
 
   revalidatePath("/admin", "layout");
   await revalidateTenantSite(tenantId);

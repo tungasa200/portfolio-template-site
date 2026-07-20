@@ -7,7 +7,7 @@ import type { ActionFormState } from "@/lib/actions/site-settings";
 import { MonthPicker } from "@/components/admin/MonthPicker";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { PhotoManager, type ManagedPhoto } from "@/components/admin/PhotoManager";
-import { IndexImageUpload } from "@/components/admin/IndexImageUpload";
+import { IndexImageUpload, type IndexImage } from "@/components/admin/IndexImageUpload";
 import { useToast } from "@/components/admin/Toast";
 
 interface ExistingItem {
@@ -18,7 +18,7 @@ interface ExistingItem {
   indexEnabled: boolean;
   indexContent: string | null;
   indexImageEnabled: boolean;
-  indexImageUrl: string | null;
+  indexImage: IndexImage | null;
   photos: ManagedPhoto[];
 }
 
@@ -58,7 +58,7 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
   const [indexEnabled, setIndexEnabled] = useState(currentItem?.indexEnabled ?? false);
   const [indexContent, setIndexContent] = useState(currentItem?.indexContent ?? "");
   const [indexImageEnabled, setIndexImageEnabled] = useState(currentItem?.indexImageEnabled ?? false);
-  const [indexImageUrl, setIndexImageUrl] = useState(currentItem?.indexImageUrl ?? null);
+  const [indexImage, setIndexImage] = useState(currentItem?.indexImage ?? null);
   const [isPublished, setIsPublished] = useState(currentItem?.isPublished ?? false);
 
   function handlePhotoItemCreated(id: string) {
@@ -72,7 +72,7 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
         indexEnabled: false,
         indexContent: "",
         indexImageEnabled: false,
-        indexImageUrl: null,
+        indexImage: null,
         photos: [],
       }
     );
@@ -171,8 +171,8 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
                     <IndexImageUpload
                       boardId={boardId}
                       boardItemId={currentItem?.id ?? null}
-                      imageUrl={indexImageUrl}
-                      onImageUrlChange={setIndexImageUrl}
+                      indexImage={indexImage}
+                      onIndexImageChange={setIndexImage}
                       getDraftName={() => name.trim()}
                       onItemCreated={handlePhotoItemCreated}
                     />

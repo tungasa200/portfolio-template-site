@@ -61,9 +61,11 @@ export async function POST(request: Request) {
   if (!scope) {
     return NextResponse.json({ error: "Invalid upload scope." }, { status: 400 });
   }
+  const rawVariant = (body as { variant?: unknown } | null)?.variant;
+  const variant = rawVariant === "thumb" ? "thumb" : "original";
 
-  const key = buildR2Key(tenantId, scope, contentType);
-  const uploadUrl = await getPresignedUploadUrl(key, contentType);
+  const key = buildR2Key(tenantId, scope, contentType, variant);
+  const uploadUrl = await getPresignedUploadUrl(key, variant === "thumb" ? "image/webp" : contentType);
 
   return NextResponse.json({ uploadUrl, r2Key: key, publicUrl: r2PublicUrl(key) });
 }

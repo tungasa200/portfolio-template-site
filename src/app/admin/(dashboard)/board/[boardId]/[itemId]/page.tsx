@@ -3,7 +3,7 @@ import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { getAdminBasePath } from "@/lib/auth/admin-base-path";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
 import { cacheForTenant } from "@/lib/tenant/site-cache";
-import { r2PublicUrl } from "@/lib/storage/r2";
+import { r2PublicUrl, resolveDisplayUrl } from "@/lib/storage/r2";
 import { BoardItemEditor } from "@/components/admin/BoardItemEditor";
 
 export default async function BoardItemEditorPage({
@@ -52,8 +52,20 @@ export default async function BoardItemEditorPage({
         indexEnabled: item.indexEnabled,
         indexContent: item.indexContent,
         indexImageEnabled: item.indexImageEnabled,
-        indexImageUrl: item.indexImageKey ? r2PublicUrl(item.indexImageKey) : null,
-        photos: item.photos.map((p) => ({ id: p.id, url: r2PublicUrl(p.r2Key), isPrimary: p.isPrimary })),
+        indexImage: item.indexImageKey
+          ? {
+              r2Key: item.indexImageKey,
+              url: r2PublicUrl(item.indexImageKey),
+              thumbUrl: resolveDisplayUrl(item.indexImageKey, item.indexImageThumbKey),
+            }
+          : null,
+        photos: item.photos.map((p) => ({
+          id: p.id,
+          r2Key: p.r2Key,
+          url: r2PublicUrl(p.r2Key),
+          thumbUrl: resolveDisplayUrl(p.r2Key, p.thumbR2Key),
+          isPrimary: p.isPrimary,
+        })),
       }}
     />
   );

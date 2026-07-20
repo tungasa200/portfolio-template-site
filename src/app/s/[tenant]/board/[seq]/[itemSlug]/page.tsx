@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { requireTenant } from "@/lib/tenant/resolve-tenant";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
 import { cacheForTenant } from "@/lib/tenant/site-cache";
-import { r2PublicUrl } from "@/lib/storage/r2";
+import { r2PublicUrl, resolveDisplayUrl } from "@/lib/storage/r2";
 import { SectionHeader } from "@/components/site/SectionHeader";
 import { DetailTabs } from "@/components/site/DetailTabs";
 import type { TabItem } from "@/components/site/Tabs";
@@ -67,12 +67,18 @@ export default async function BoardItemDetailPage({
   const gridPhotos = item.photos.map((p, i) => ({
     id: p.id,
     label: `PHOTO ${String(i + 1).padStart(2, "0")}`,
+    // Original — used only for the SLIDE VIEW's large active image.
     imageUrl: r2PublicUrl(p.r2Key),
+    // Web-optimized derived copy — used by GRID VIEW tiles and the SLIDE
+    // VIEW filmstrip, which never need full quality.
+    thumbUrl: resolveDisplayUrl(p.r2Key, p.thumbR2Key),
   }));
   // INDEX cover image is its own opt-in field (BoardItem.indexImageEnabled/
   // indexImageKey), independent of the body/GRID VIEW photos above.
   const indexCoverPhotoUrl =
-    item.indexImageEnabled && item.indexImageKey ? r2PublicUrl(item.indexImageKey) : null;
+    item.indexImageEnabled && item.indexImageKey
+      ? resolveDisplayUrl(item.indexImageKey, item.indexImageThumbKey)
+      : null;
 
   return (
     <section className="box-border flex h-[calc(100vh-80px)] max-h-[calc(100vh-80px)] flex-col overflow-hidden px-16 py-10">

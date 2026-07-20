@@ -3,7 +3,7 @@ import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { getAdminBasePath } from "@/lib/auth/admin-base-path";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
 import { cacheForTenant } from "@/lib/tenant/site-cache";
-import { r2PublicUrl } from "@/lib/storage/r2";
+import { resolveDisplayUrl } from "@/lib/storage/r2";
 import { formatBoardDate } from "@/lib/site/format-date";
 import { BoardRenameHeading } from "@/components/admin/BoardRenameHeading";
 import { BoardItemGrid } from "@/components/admin/BoardItemGrid";
@@ -38,7 +38,7 @@ export default async function BoardListPage({ params }: { params: Promise<{ boar
     name: item.name,
     dateLabel: formatBoardDate(item.dateValue),
     isPublished: item.isPublished,
-    thumbnailUrl: item.photos[0] ? r2PublicUrl(item.photos[0].r2Key) : null,
+    thumbnailUrl: item.photos[0] ? resolveDisplayUrl(item.photos[0].r2Key, item.photos[0].thumbR2Key) : null,
   }));
 
   return (

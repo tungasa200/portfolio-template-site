@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { requireTenant } from "@/lib/tenant/resolve-tenant";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
 import { cacheForTenant } from "@/lib/tenant/site-cache";
-import { r2PublicUrl } from "@/lib/storage/r2";
+import { resolveDisplayUrl } from "@/lib/storage/r2";
 import { SectionHeader } from "@/components/site/SectionHeader";
 import { PhotoGrid } from "@/components/site/PhotoGrid";
 import { formatBoardDate } from "@/lib/site/format-date";
@@ -62,7 +62,7 @@ export default async function BoardPage({
               : undefined,
           title: item.name,
           meta: formatBoardDate(item.dateValue),
-          imageUrl: item.photos[0] ? r2PublicUrl(item.photos[0].r2Key) : null,
+          imageUrl: item.photos[0] ? resolveDisplayUrl(item.photos[0].r2Key, item.photos[0].thumbR2Key) : null,
         }))}
       />
     </section>

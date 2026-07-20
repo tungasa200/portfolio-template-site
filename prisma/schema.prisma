@@ -85,7 +85,14 @@ model SiteSettings {
   siteName         String
   photographerName String
   heroImageKey     String?
+  // Web-optimized derived thumbnail (cropped to the public hero box's 1:1
+  // aspect) — nullable so images uploaded before this column existed keep
+  // rendering via the originalKey fallback (see src/lib/storage/r2.ts's
+  // resolveDisplayUrl).
+  heroThumbKey     String?
   logoImageKey     String? // optional image logo shown in Nav instead of siteName text
+  // Resized (not cropped — the logo box is object-fit:contain) derived copy.
+  logoThumbKey     String?
   contactEmail     String
   footerText       String?
   themeName        String  @default("editorial-default") // reserved for future per-tenant theming
@@ -187,17 +194,20 @@ model BoardItem {
   // detail URL (the exact failure mode board-path editing was removed for).
   slug String?
 
-  name         String
-  dateValue    String? // "YYYY-MM"
-  order        Int
-  isPublished  Boolean @default(false)
+  name               String
+  dateValue          String? // "YYYY-MM"
+  order              Int
+  isPublished        Boolean @default(false)
   // Only meaningful for GALLERY_MULTI.
-  indexEnabled Boolean @default(false)
-  indexContent String? @db.Text // trusted admin-authored rich HTML
+  indexEnabled       Boolean @default(false)
+  indexContent       String? @db.Text // trusted admin-authored rich HTML
   // INDEX tab's cover image — a single image independent of `photos` below
   // (the body/GRID VIEW photos); admin opts in separately per item.
-  indexImageEnabled Boolean @default(false)
-  indexImageKey     String?
+  indexImageEnabled  Boolean @default(false)
+  indexImageKey      String?
+  // Derived thumbnail cropped to IndexTab's 4:3 cover box — nullable, see
+  // SiteSettings.heroThumbKey's comment for why.
+  indexImageThumbKey String?
 
   photos BoardItemPhoto[]
 
@@ -213,13 +223,18 @@ model BoardItemPhoto {
   boardItemId String
   boardItem   BoardItem @relation(fields: [boardItemId], references: [id], onDelete: Cascade)
 
-  r2Key     String
+  r2Key      String
+  // Derived web-optimized copy (cropped to the board's list-card aspect —
+  // 1:1 for GALLERY_SINGLE, 4:3 for GALLERY_MULTI). Nullable: photos
+  // uploaded before this column existed have none and fall back to r2Key
+  // (see src/lib/storage/r2.ts's resolveDisplayUrl).
+  thumbR2Key String?
   // Thumbnail/cover-photo selection — independent of display `order` (an
   // admin can star any photo as primary without reordering the grid).
-  isPrimary Boolean @default(false)
-  order     Int
-  width     Int
-  height    Int
+  isPrimary  Boolean @default(false)
+  order      Int
+  width      Int
+  height     Int
 
   @@index([tenantId])
   @@index([boardItemId, order])

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { requireTenant } from "@/lib/tenant/resolve-tenant";
-import { r2PublicUrl } from "@/lib/storage/r2";
+import { resolveDisplayUrl } from "@/lib/storage/r2";
 
 // Hero section, ported from design/Photographer Portfolio.dc.html. Renders
 // the real hero photo (SiteSettings.heroImageKey) once one's been uploaded
@@ -15,7 +15,7 @@ export default async function TenantHomePage({
   const { tenant: tenantKey } = await params;
   const tenant = await requireTenant(tenantKey);
 
-  const heroUrl = tenant.siteSettings?.heroImageKey ? r2PublicUrl(tenant.siteSettings.heroImageKey) : null;
+  const heroUrl = resolveDisplayUrl(tenant.siteSettings?.heroImageKey, tenant.siteSettings?.heroThumbKey);
   const photographerName = tenant.siteSettings?.photographerName ?? tenant.slug;
 
   return (

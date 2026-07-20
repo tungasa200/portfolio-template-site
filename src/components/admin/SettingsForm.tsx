@@ -1,18 +1,27 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { updateSiteSettings, updateHeroImage, updateLogoImage, removeLogoImage } from "@/lib/actions/site-settings";
+import {
+  updateSiteSettings,
+  updateHeroImage,
+  updateHeroImageThumbnail,
+  updateLogoImage,
+  removeLogoImage,
+} from "@/lib/actions/site-settings";
 import type { ActionFormState } from "@/lib/actions/site-settings";
-import { uploadImageToR2 } from "@/lib/admin/upload-client";
+import { uploadImagePairToR2, uploadThumbnailBlob, fetchExistingImageBlob } from "@/lib/admin/upload-client";
+import { THUMBNAIL_TARGETS } from "@/lib/admin/thumbnail";
+import { ThumbnailCropModal } from "@/components/admin/ThumbnailCropModal";
 import { useToast } from "@/components/admin/Toast";
 import { SiteTitleBox } from "@/components/site/SiteTitleBox";
+import type { HeroImage } from "@/components/admin/HeroImageQuickUpload";
 
 interface SettingsFormProps {
   siteName: string;
   photographerName: string;
   contactEmail: string;
   footerText: string | null;
-  heroImageUrl: string | null;
+  heroImage: HeroImage | null;
   logoImageUrl: string | null;
 }
 
@@ -23,17 +32,19 @@ export function SettingsForm({
   photographerName,
   contactEmail,
   footerText,
-  heroImageUrl,
+  heroImage: initialHeroImage,
   logoImageUrl,
 }: SettingsFormProps) {
   const [state, formAction, isPending] = useActionState(updateSiteSettings, initialState);
-  const [heroUrl, setHeroUrl] = useState(heroImageUrl);
+  const [heroImage, setHeroImage] = useState(initialHeroImage);
   const [uploadingHero, setUploadingHero] = useState(false);
+  const [heroCropSource, setHeroCropSource] = useState<Blob | null>(null);
   const [logoUrl, setLogoUrl] = useState(logoImageUrl);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const logoFileRef = useRef<HTMLInputElement>(null);
+  const heroTarget = THUMBNAIL_TARGETS.hero;
 
   useEffect(() => {
     if (state.status !== "idle" && state.message) toast(state.message, state.status === "error");
@@ -43,9 +54,9 @@ export function SettingsForm({
   async function handleHeroFile(file: File) {
     setUploadingHero(true);
     try {
-      const uploaded = await uploadImageToR2(file, { kind: "site", slot: "hero" });
-      const result = await updateHeroImage(uploaded.r2Key);
-      setHeroUrl(uploaded.publicUrl);
+      const uploaded = await uploadImagePairToR2(file, { kind: "site", slot: "hero" }, heroTarget);
+      const result = await updateHeroImage(uploaded.original.r2Key, uploaded.thumb.r2Key);
+      setHeroImage({ r2Key: uploaded.original.r2Key, url: uploaded.original.publicUrl, thumbUrl: uploaded.thumb.publicUrl });
       if (result.message) toast(result.message, result.status === "error");
     } catch (err) {
       toast(err instanceof Error ? err.message : "업로드 중 오류가 발생했어요", true);
@@ -54,12 +65,36 @@ export function SettingsForm({
     }
   }
 
+  async function openHeroThumbnailEditor() {
+    if (!heroImage) return;
+    try {
+      const blob = await fetchExistingImageBlob(heroImage.r2Key);
+      setHeroCropSource(blob);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "원본을 불러오지 못했어요", true);
+    }
+  }
+
+  async function handleHeroCropConfirm(thumbBlob: Blob) {
+    if (!heroImage) return;
+    try {
+      const thumb = await uploadThumbnailBlob(thumbBlob, { kind: "site", slot: "hero" });
+      const result = await updateHeroImageThumbnail(thumb.r2Key);
+      setHeroImage({ ...heroImage, thumbUrl: thumb.publicUrl });
+      if (result.message) toast(result.message, result.status === "error");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "썸네일 저장에 실패했어요", true);
+    } finally {
+      setHeroCropSource(null);
+    }
+  }
+
   async function handleLogoFile(file: File) {
     setUploadingLogo(true);
     try {
-      const uploaded = await uploadImageToR2(file, { kind: "site", slot: "logo" });
-      const result = await updateLogoImage(uploaded.r2Key);
-      setLogoUrl(uploaded.publicUrl);
+      const uploaded = await uploadImagePairToR2(file, { kind: "site", slot: "logo" }, THUMBNAIL_TARGETS.logo);
+      const result = await updateLogoImage(uploaded.original.r2Key, uploaded.thumb.r2Key);
+      setLogoUrl(uploaded.thumb.publicUrl ?? uploaded.original.publicUrl);
       if (result.message) toast(result.message, result.status === "error");
     } catch (err) {
       toast(err instanceof Error ? err.message : "업로드 중 오류가 발생했어요", true);
@@ -119,26 +154,33 @@ export function SettingsForm({
           <h2>대표 이미지</h2>
           <div className="admin-hero-photo-wrap">
             <div className="admin-hero-photo">
-              {heroUrl ? (
+              {heroImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={heroUrl} alt="대표 사진" />
+                <img src={heroImage.thumbUrl ?? heroImage.url ?? undefined} alt="대표 사진" />
               ) : (
                 <span className="admin-tag">대표 사진 (1600×1600)</span>
               )}
             </div>
-            <button
-              type="button"
-              className="admin-hero-edit-btn"
-              onClick={() => fileRef.current?.click()}
-              disabled={uploadingHero}
-            >
-              ✏️ {uploadingHero ? "업로드 중…" : "대표 사진 바꾸기"}
-            </button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                className="admin-hero-edit-btn"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploadingHero}
+              >
+                ✏️ {uploadingHero ? "업로드 중…" : "대표 사진 바꾸기"}
+              </button>
+              {heroImage && (
+                <button type="button" className="admin-hero-edit-btn" onClick={openHeroThumbnailEditor} disabled={uploadingHero}>
+                  🖼️ 썸네일 편집
+                </button>
+              )}
+            </div>
           </div>
           <input
             ref={fileRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
             hidden
             onChange={(e) => {
               const file = e.target.files?.[0];
@@ -146,6 +188,14 @@ export function SettingsForm({
               e.target.value = "";
             }}
           />
+          {heroCropSource && (
+            <ThumbnailCropModal
+              source={heroCropSource}
+              target={heroTarget}
+              onConfirm={(thumbBlob) => handleHeroCropConfirm(thumbBlob)}
+              onCancel={() => setHeroCropSource(null)}
+            />
+          )}
         </div>
 
         <div className="admin-section-card">
@@ -183,7 +233,7 @@ export function SettingsForm({
           <input
             ref={logoFileRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
             hidden
             onChange={(e) => {
               const file = e.target.files?.[0];

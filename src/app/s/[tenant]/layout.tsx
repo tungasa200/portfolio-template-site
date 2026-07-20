@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Playfair_Display, Inter, JetBrains_Mono } from "next/font/google";
 import { requireTenant } from "@/lib/tenant/resolve-tenant";
 import { resolveNavHref, resolveNavLabel } from "@/lib/site/nav-items";
-import { r2PublicUrl } from "@/lib/storage/r2";
+import { resolveDisplayUrl } from "@/lib/storage/r2";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import "./theme.css";
@@ -70,7 +70,7 @@ export default async function TenantSiteLayout({
 
   const siteName = tenant.siteSettings?.siteName ?? tenant.slug;
   const photographerName = tenant.siteSettings?.photographerName ?? tenant.slug;
-  const logoUrl = tenant.siteSettings?.logoImageKey ? r2PublicUrl(tenant.siteSettings.logoImageKey) : null;
+  const logoUrl = resolveDisplayUrl(tenant.siteSettings?.logoImageKey, tenant.siteSettings?.logoThumbKey);
 
   return (
     <div

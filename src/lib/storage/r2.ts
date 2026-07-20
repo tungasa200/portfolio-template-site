@@ -1,6 +1,6 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -59,14 +59,26 @@ export function isValidR2PathSegment(value: string): boolean {
   return UUID_RE.test(value);
 }
 
+export type R2UploadVariant = "original" | "thumb";
+
 // Key convention from docs/architecture.md#storage-cloudflare-r2 — always
 // server-built from a session-derived tenantId, never a client-supplied path.
-export function buildR2Key(tenantId: string, scope: R2UploadScope, contentType: string): string {
-  const ext = extensionForContentType(contentType);
+// variant "thumb" is always encoded as WebP by the client (see
+// src/lib/admin/thumbnail.ts) regardless of the original's content type, and
+// gets a "-thumb" filename suffix purely so the pair is recognizable side by
+// side in the R2 dashboard — the DB row (not the filename) is the source of
+// truth linking a thumb back to its original.
+export function buildR2Key(
+  tenantId: string,
+  scope: R2UploadScope,
+  contentType: string,
+  variant: R2UploadVariant = "original"
+): string {
+  const ext = variant === "thumb" ? "webp" : extensionForContentType(contentType);
   if (!ext) {
     throw new Error(`[r2] unsupported content type: ${contentType}`);
   }
-  const filename = `${randomUUID()}.${ext}`;
+  const filename = variant === "thumb" ? `${randomUUID()}-thumb.${ext}` : `${randomUUID()}.${ext}`;
   return scope.kind === "board-item"
     ? `tenants/${tenantId}/board-items/${scope.boardId}/${scope.itemId}/${filename}`
     : `tenants/${tenantId}/site/${scope.slot}/${filename}`;
@@ -80,6 +92,33 @@ export async function getPresignedUploadUrl(key: string, contentType: string): P
   }
   const command = new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: contentType });
   return getSignedUrl(s3, command, { expiresIn: 300 });
+}
+
+// Used only by the admin-only image-proxy route (src/app/api/admin/
+// image-proxy/route.ts) so the crop editor can re-fetch a previously
+// uploaded original into a same-origin response — canvas.drawImage() on a
+// cross-origin R2 URL would taint the canvas and block toBlob(), and R2
+// doesn't have GET CORS configured (only the presigned-PUT path needs
+// that). Streaming through our own server (which already holds R2
+// credentials) sidesteps needing bucket-level CORS entirely.
+export async function getR2Object(
+  key: string
+): Promise<{ body: ReadableStream; contentType: string | null; contentLength: number | undefined } | null> {
+  const s3 = getR2Client();
+  const bucket = process.env.R2_BUCKET_NAME;
+  if (!s3 || !bucket) return null;
+  try {
+    const result = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+    if (!result.Body) return null;
+    return {
+      body: result.Body.transformToWebStream(),
+      contentType: result.ContentType ?? null,
+      contentLength: result.ContentLength,
+    };
+  } catch (err) {
+    console.error("[r2] failed to fetch object", key, err);
+    return null;
+  }
 }
 
 export async function deleteR2Object(key: string): Promise<void> {
@@ -108,4 +147,16 @@ export function r2PublicUrl(key: string): string | null {
   const hostname = process.env.R2_PUBLIC_HOSTNAME;
   if (!hostname || !key.startsWith("tenants/")) return null;
   return `https://${hostname}/${key}`;
+}
+
+// Prefer the derived thumbnail everywhere it's available; falls back to the
+// original for rows uploaded before thumbnails existed (thumbKey columns
+// are nullable, added retroactively — see prisma/schema.prisma) so old
+// photos keep rendering instead of going blank.
+export function resolveDisplayUrl(originalKey: string | null | undefined, thumbKey: string | null | undefined): string | null {
+  if (thumbKey) {
+    const thumbUrl = r2PublicUrl(thumbKey);
+    if (thumbUrl) return thumbUrl;
+  }
+  return originalKey ? r2PublicUrl(originalKey) : null;
 }

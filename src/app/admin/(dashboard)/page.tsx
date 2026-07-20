@@ -3,7 +3,7 @@ import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { getAdminBasePath } from "@/lib/auth/admin-base-path";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
 import { cacheForTenant } from "@/lib/tenant/site-cache";
-import { r2PublicUrl } from "@/lib/storage/r2";
+import { r2PublicUrl, resolveDisplayUrl } from "@/lib/storage/r2";
 import { resolveNavLabel } from "@/lib/site/nav-items";
 import { NavVisibilityList } from "@/components/admin/NavVisibilityList";
 import { HeroImageQuickUpload } from "@/components/admin/HeroImageQuickUpload";
@@ -36,7 +36,13 @@ export default async function AdminHomePage() {
     ]);
   });
 
-  const heroUrl = siteSettings?.heroImageKey ? r2PublicUrl(siteSettings.heroImageKey) : null;
+  const heroImage = siteSettings?.heroImageKey
+    ? {
+        r2Key: siteSettings.heroImageKey,
+        url: r2PublicUrl(siteSettings.heroImageKey),
+        thumbUrl: resolveDisplayUrl(siteSettings.heroImageKey, siteSettings.heroThumbKey),
+      }
+    : null;
 
   const visibilityItems = navItems
     .filter((n) => n.targetKind !== "HOME")
@@ -88,7 +94,7 @@ export default async function AdminHomePage() {
           <div className="admin-browser-url">{siteSettings?.siteName ?? ""}</div>
         </div>
         <div className="admin-hero-preview-body">
-          <HeroImageQuickUpload heroImageUrl={heroUrl} />
+          <HeroImageQuickUpload heroImage={heroImage} />
         </div>
       </div>
 

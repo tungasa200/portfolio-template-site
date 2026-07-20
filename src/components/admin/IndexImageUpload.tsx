@@ -1,9 +1,25 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { createDraftBoardItem, setBoardItemIndexImage, removeBoardItemIndexImage } from "@/lib/actions/board-items";
-import { uploadImageToR2 } from "@/lib/admin/upload-client";
+import {
+  createDraftBoardItem,
+  setBoardItemIndexImage,
+  removeBoardItemIndexImage,
+  updateBoardItemIndexImageThumbnail,
+} from "@/lib/actions/board-items";
+import { uploadImagePairToR2, uploadThumbnailBlob, fetchExistingImageBlob } from "@/lib/admin/upload-client";
+import { THUMBNAIL_TARGETS } from "@/lib/admin/thumbnail";
+import { ThumbnailCropModal } from "@/components/admin/ThumbnailCropModal";
 import { useToast } from "@/components/admin/Toast";
+
+export interface IndexImage {
+  r2Key: string;
+  /** Original's public URL — used only as the crop editor's source. */
+  url: string | null;
+  /** Web-optimized derived copy shown in the tile; falls back to `url` for
+   * an image uploaded before thumbnails existed. */
+  thumbUrl: string | null;
+}
 
 interface IndexImageUploadProps {
   boardId: string;
@@ -12,11 +28,11 @@ interface IndexImageUploadProps {
   boardItemId: string | null;
   // Controlled (like indexContent/dateValue elsewhere in BoardItemEditor),
   // not local state: this section unmounts whenever the admin toggles
-  // "설명에 이미지 추가하기" off, so an internally-owned imageUrl would
+  // "설명에 이미지 추가하기" off, so an internally-owned image would
   // reset to the stale initial prop on the next toggle-on instead of
   // reflecting an upload that happened earlier this session.
-  imageUrl: string | null;
-  onImageUrlChange: (url: string | null) => void;
+  indexImage: IndexImage | null;
+  onIndexImageChange: (image: IndexImage | null) => void;
   getDraftName?: () => string;
   onItemCreated?: (id: string) => void;
 }
@@ -28,15 +44,17 @@ interface IndexImageUploadProps {
 export function IndexImageUpload({
   boardId,
   boardItemId,
-  imageUrl,
-  onImageUrlChange,
+  indexImage,
+  onIndexImageChange,
   getDraftName,
   onItemCreated,
 }: IndexImageUploadProps) {
   const [itemId, setItemId] = useState(boardItemId);
   const [uploading, setUploading] = useState(false);
+  const [cropSource, setCropSource] = useState<Blob | null>(null);
   const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const target = THUMBNAIL_TARGETS.indexImage;
 
   async function handleFile(file: File | undefined) {
     if (!file) return;
@@ -53,10 +71,11 @@ export function IndexImageUpload({
         setItemId(currentItemId);
       }
 
-      const uploaded = await uploadImageToR2(file, { kind: "board-item", boardId, itemId: currentItemId });
-      const result = await setBoardItemIndexImage(currentItemId, uploaded.r2Key);
+      const scope = { kind: "board-item" as const, boardId, itemId: currentItemId };
+      const uploaded = await uploadImagePairToR2(file, scope, target);
+      const result = await setBoardItemIndexImage(currentItemId, uploaded.original.r2Key, uploaded.thumb.r2Key);
       if (result.status === "success") {
-        onImageUrlChange(uploaded.publicUrl);
+        onIndexImageChange({ r2Key: uploaded.original.r2Key, url: uploaded.original.publicUrl, thumbUrl: uploaded.thumb.publicUrl });
       } else {
         toast(result.message, true);
       }
@@ -69,9 +88,33 @@ export function IndexImageUpload({
     }
   }
 
+  async function openThumbnailEditor() {
+    if (!indexImage) return;
+    try {
+      const blob = await fetchExistingImageBlob(indexImage.r2Key);
+      setCropSource(blob);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "원본을 불러오지 못했어요", true);
+    }
+  }
+
+  async function handleCropConfirm(thumbBlob: Blob) {
+    if (!itemId || !indexImage) return;
+    try {
+      const thumb = await uploadThumbnailBlob(thumbBlob, { kind: "board-item", boardId, itemId });
+      await updateBoardItemIndexImageThumbnail(itemId, thumb.r2Key);
+      onIndexImageChange({ ...indexImage, thumbUrl: thumb.publicUrl });
+      toast("썸네일을 다시 잘랐어요");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "썸네일 저장에 실패했어요", true);
+    } finally {
+      setCropSource(null);
+    }
+  }
+
   async function remove() {
     if (!itemId) return;
-    onImageUrlChange(null);
+    onIndexImageChange(null);
     try {
       await removeBoardItemIndexImage(itemId);
     } catch (err) {
@@ -81,11 +124,14 @@ export function IndexImageUpload({
 
   return (
     <div className="admin-photo-manager-grid">
-      {imageUrl ? (
+      {indexImage ? (
         <div className="admin-photo-tile is-square">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="admin-photo-tile-img" src={imageUrl} alt="" />
+          <img className="admin-photo-tile-img" src={indexImage.thumbUrl ?? indexImage.url ?? undefined} alt="" />
           <div className="admin-photo-tile-actions">
+            <button type="button" className="admin-photo-tile-mini-btn" onClick={openThumbnailEditor} title="썸네일 편집">
+              ✏️
+            </button>
             <button type="button" className="admin-photo-tile-mini-btn remove" onClick={remove} title="삭제">
               ✕
             </button>
@@ -105,13 +151,21 @@ export function IndexImageUpload({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
         hidden
         onChange={(e) => {
           handleFile(e.target.files?.[0]);
           e.target.value = "";
         }}
       />
+      {cropSource && (
+        <ThumbnailCropModal
+          source={cropSource}
+          target={target}
+          onConfirm={(thumbBlob) => handleCropConfirm(thumbBlob)}
+          onCancel={() => setCropSource(null)}
+        />
+      )}
     </div>
   );
 }

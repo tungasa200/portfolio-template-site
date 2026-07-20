@@ -2,18 +2,27 @@
 
 import { useRef, useState, useTransition } from "react";
 import {
-  addBoardItemPhoto,
+  addBoardItemPhotos,
   removeBoardItemPhoto,
   reorderBoardItemPhotos,
   setPrimaryBoardItemPhoto,
+  updateBoardItemPhotoThumbnail,
 } from "@/lib/actions/board-item-photos";
 import { createDraftBoardItem } from "@/lib/actions/board-items";
-import { uploadImageToR2 } from "@/lib/admin/upload-client";
+import { uploadImagePairToR2, uploadThumbnailBlob, fetchExistingImageBlob } from "@/lib/admin/upload-client";
+import { thumbnailTargetForBoardItemPhoto } from "@/lib/admin/thumbnail";
+import { ThumbnailCropModal } from "@/components/admin/ThumbnailCropModal";
 import { useToast } from "@/components/admin/Toast";
 
 export interface ManagedPhoto {
   id: string;
+  r2Key: string;
+  /** Original's public URL — used as the crop editor's source, never
+   * rendered directly (the tile always shows thumbUrl). */
   url: string | null;
+  /** Web-optimized derived copy shown in the grid; falls back to `url` for
+   * photos uploaded before thumbnails existed. */
+  thumbUrl: string | null;
   isPrimary: boolean;
 }
 
@@ -38,11 +47,14 @@ export function PhotoManager({ boardId, boardItemId, kind, initialPhotos, getDra
   const [itemId, setItemId] = useState(boardItemId);
   const [photos, setPhotos] = useState(initialPhotos);
   const [uploading, setUploading] = useState(false);
+  const [editingPhotoId, setEditingPhotoId] = useState<string | null>(null);
+  const [cropSource, setCropSource] = useState<Blob | null>(null);
   const [, startTransition] = useTransition();
   const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const maxPhotos = kind === "GALLERY_SINGLE" ? 1 : null;
   const single = maxPhotos === 1;
+  const target = thumbnailTargetForBoardItemPhoto(kind);
 
   async function handleFiles(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;
@@ -67,19 +79,32 @@ export function PhotoManager({ boardId, boardItemId, kind, initialPhotos, getDra
         setItemId(currentItemId);
       }
 
-      for (const file of toUpload) {
-        const uploaded = await uploadImageToR2(file, { kind: "board-item", boardId, itemId: currentItemId });
-        const result = await addBoardItemPhoto(currentItemId, uploaded.r2Key, uploaded.width, uploaded.height);
-        if (result.status === "success" && result.photoId) {
-          setPhotos((prev) => [
-            ...prev,
-            { id: result.photoId!, url: uploaded.publicUrl, isPrimary: prev.length === 0 },
-          ]);
-        } else {
-          toast(result.message ?? "사진 추가에 실패했어요", true);
-        }
+      // Every file's (original + thumbnail) pair uploads in parallel, and
+      // all resulting rows are persisted in one batch call afterward — see
+      // addBoardItemPhotos's comment for why a per-file loop used to be
+      // both slow (fully sequential) and race-prone (order/isPrimary).
+      const scope = { kind: "board-item" as const, boardId, itemId: currentItemId };
+      const uploads = await Promise.all(toUpload.map((file) => uploadImagePairToR2(file, scope, target)));
+      const result = await addBoardItemPhotos(
+        currentItemId,
+        uploads.map((u) => ({ r2Key: u.original.r2Key, thumbR2Key: u.thumb.r2Key, width: u.original.width, height: u.original.height }))
+      );
+
+      if (result.status === "success") {
+        setPhotos((prev) => [
+          ...prev,
+          ...result.photoIds.map((photoId, i) => ({
+            id: photoId,
+            r2Key: uploads[i].original.r2Key,
+            url: uploads[i].original.publicUrl,
+            thumbUrl: uploads[i].thumb.publicUrl,
+            isPrimary: prev.length === 0 && i === 0,
+          })),
+        ]);
+        toast(toUpload.length > 1 ? `사진 ${toUpload.length}장을 추가했어요` : "사진을 추가했어요");
+      } else {
+        toast(result.message, true);
       }
-      if (toUpload.length > 0) toast(toUpload.length > 1 ? `사진 ${toUpload.length}장을 추가했어요` : "사진을 추가했어요");
       // Fires only after the whole batch has persisted, so the parent's
       // URL/isNew swap (see BoardItemEditor) can't unmount this component
       // mid-upload.
@@ -88,6 +113,31 @@ export function PhotoManager({ boardId, boardItemId, kind, initialPhotos, getDra
       toast(err instanceof Error ? err.message : "업로드 중 오류가 발생했어요", true);
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function openThumbnailEditor(photo: ManagedPhoto) {
+    try {
+      const blob = await fetchExistingImageBlob(photo.r2Key);
+      setCropSource(blob);
+      setEditingPhotoId(photo.id);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "원본을 불러오지 못했어요", true);
+    }
+  }
+
+  async function handleCropConfirm(thumbBlob: Blob) {
+    if (!editingPhotoId || !itemId) return;
+    try {
+      const thumb = await uploadThumbnailBlob(thumbBlob, { kind: "board-item", boardId, itemId });
+      await updateBoardItemPhotoThumbnail(editingPhotoId, thumb.r2Key);
+      setPhotos((prev) => prev.map((p) => (p.id === editingPhotoId ? { ...p, thumbUrl: thumb.publicUrl } : p)));
+      toast("썸네일을 다시 잘랐어요");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "썸네일 저장에 실패했어요", true);
+    } finally {
+      setEditingPhotoId(null);
+      setCropSource(null);
     }
   }
 
@@ -121,9 +171,9 @@ export function PhotoManager({ boardId, boardItemId, kind, initialPhotos, getDra
     <div className="admin-photo-manager-grid">
       {photos.map((photo, idx) => (
         <div key={photo.id} className={`admin-photo-tile ${photo.isPrimary ? "is-active" : ""} ${single ? "is-square" : ""}`}>
-          {photo.url && (
+          {(photo.thumbUrl ?? photo.url) && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img className="admin-photo-tile-img" src={photo.url} alt="" />
+            <img className="admin-photo-tile-img" src={photo.thumbUrl ?? photo.url ?? undefined} alt="" />
           )}
           {!single && (
             <button
@@ -158,6 +208,14 @@ export function PhotoManager({ boardId, boardItemId, kind, initialPhotos, getDra
             </div>
           )}
           <div className="admin-photo-tile-actions">
+            <button
+              type="button"
+              className="admin-photo-tile-mini-btn"
+              onClick={() => openThumbnailEditor(photo)}
+              title="썸네일 편집"
+            >
+              ✏️
+            </button>
             <button type="button" className="admin-photo-tile-mini-btn remove" onClick={() => remove(photo.id)} title="삭제">
               ✕
             </button>
@@ -178,7 +236,7 @@ export function PhotoManager({ boardId, boardItemId, kind, initialPhotos, getDra
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
         multiple={!single}
         hidden
         onChange={(e) => {
@@ -186,6 +244,17 @@ export function PhotoManager({ boardId, boardItemId, kind, initialPhotos, getDra
           e.target.value = "";
         }}
       />
+      {cropSource && (
+        <ThumbnailCropModal
+          source={cropSource}
+          target={target}
+          onConfirm={(thumbBlob) => handleCropConfirm(thumbBlob)}
+          onCancel={() => {
+            setEditingPhotoId(null);
+            setCropSource(null);
+          }}
+        />
+      )}
     </div>
   );
 }

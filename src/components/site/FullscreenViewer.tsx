@@ -3,7 +3,11 @@ import Image from "next/image";
 export interface FullscreenPhoto {
   id: string;
   label: string;
+  /** Original, full quality — used only for the large active image below. */
   imageUrl?: string | null;
+  /** Web-optimized derived copy — used for the filmstrip tiles, which are
+   * rendered small enough that the original would be wasted bandwidth. */
+  thumbUrl?: string | null;
 }
 
 interface FullscreenViewerProps {
@@ -71,19 +75,18 @@ export function FullscreenViewer({ photos, activeIndex, onSelect }: FullscreenVi
       <div className="mt-5 flex shrink-0 justify-center gap-3 overflow-x-auto pb-1">
         {photos.map((photo, index) => {
           const isActive = index === activeIndex;
+          const stripUrl = photo.thumbUrl ?? photo.imageUrl;
           return (
             <div
               key={photo.id}
               onClick={() => onSelect(index)}
-              className={`relative aspect-[4/3] w-[100px] min-w-[100px] shrink-0 cursor-pointer overflow-hidden ${photo.imageUrl ? "" : "site-placeholder-pattern"}`}
+              className={`relative aspect-[4/3] w-[100px] min-w-[100px] shrink-0 cursor-pointer overflow-hidden ${stripUrl ? "" : "site-placeholder-pattern"}`}
               style={{
                 opacity: isActive ? 1 : 0.4,
                 border: isActive ? "1px solid var(--color-site-ink)" : "1px solid transparent",
               }}
             >
-              {photo.imageUrl && (
-                <Image src={photo.imageUrl} alt={photo.label} fill sizes="100px" className="object-cover" />
-              )}
+              {stripUrl && <Image src={stripUrl} alt={photo.label} fill sizes="100px" className="object-cover" />}
             </div>
           );
         })}
