@@ -16,24 +16,41 @@ export interface PhotoGridItem {
 
 interface PhotoGridProps {
   items: PhotoGridItem[];
+  /** GALLERY_SINGLE boards render as a label-less 1:1 image wall — see
+   * design/admin-mockup.html's siteCard() comment: a one-photo-per-item
+   * gallery reads as a pure image wall, name/date move to a hover tooltip. */
+  kind: "GALLERY_MULTI" | "GALLERY_SINGLE";
 }
 
-function CardShell({ href, children }: { href?: string; children: ReactNode }) {
+function CardShell({
+  href,
+  title,
+  children,
+}: {
+  href?: string;
+  title?: string;
+  children: ReactNode;
+}) {
   const className = "block border border-site-ink bg-site-paper text-inherit no-underline";
   return href ? (
-    <Link href={href} className={className}>
+    <Link href={href} className={className} title={title}>
       {children}
     </Link>
   ) : (
-    <div className={className}>{children}</div>
+    <div className={className} title={title}>
+      {children}
+    </div>
   );
 }
 
-// Bordered 3-col card grid — shared by every board's list view (both
-// GALLERY_MULTI and GALLERY_SINGLE kinds use the same template). No more
-// per-item tag/category badge — boards no longer have category/venue
-// (see docs/progress.md's unified item-model decision).
-export function PhotoGrid({ items }: PhotoGridProps) {
+// Bordered 3-col card grid, shared by every board's list view. GALLERY_MULTI
+// boards show a 4:3 photo + title/meta row; GALLERY_SINGLE boards drop the
+// title/date row entirely and become 1:1 square tiles (name/date surface via
+// a native title-attribute tooltip instead — see docs/progress.md's unified
+// item-model decision).
+export function PhotoGrid({ items, kind }: PhotoGridProps) {
+  const showBody = kind !== "GALLERY_SINGLE";
+
   if (items.length === 0) {
     return (
       <div
@@ -48,8 +65,14 @@ export function PhotoGrid({ items }: PhotoGridProps) {
   return (
     <div className="grid grid-cols-3 gap-4 animate-site-intro-fade" style={{ animationDelay: "0.5s" }}>
       {items.map((item) => (
-        <CardShell key={item.id} href={item.href}>
-          <div className={`relative aspect-[4/3] overflow-hidden ${item.imageUrl ? "" : "site-placeholder-pattern"}`}>
+        <CardShell
+          key={item.id}
+          href={item.href}
+          title={showBody ? undefined : `${item.title} · ${item.meta}`}
+        >
+          <div
+            className={`relative overflow-hidden ${showBody ? "aspect-[4/3]" : "aspect-square"} ${item.imageUrl ? "" : "site-placeholder-pattern"}`}
+          >
             {item.imageUrl && (
               <Image
                 src={item.imageUrl}
@@ -60,12 +83,14 @@ export function PhotoGrid({ items }: PhotoGridProps) {
               />
             )}
           </div>
-          <div className="flex items-baseline justify-between border-t border-site-ink px-[22px] py-5">
-            <span className="font-site-display text-xl">{item.title}</span>
-            <span className="font-site-mono text-[11px] tracking-wide text-site-ink-muted">
-              {item.meta}
-            </span>
-          </div>
+          {showBody && (
+            <div className="flex items-baseline justify-between border-t border-site-ink px-[22px] py-5">
+              <span className="font-site-display text-xl">{item.title}</span>
+              <span className="font-site-mono text-[11px] tracking-wide text-site-ink-muted">
+                {item.meta}
+              </span>
+            </div>
+          )}
         </CardShell>
       ))}
     </div>

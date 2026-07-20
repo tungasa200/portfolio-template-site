@@ -134,6 +134,14 @@ this mockup now — see [conventions.md](./conventions.md) if that file
 covers mockup-to-real-code handoff notes, otherwise treat the mockup file
 itself as current.
 
+**Done (2026-07-20)**: the real public-site `PhotoGrid.tsx` had not been
+caught up to the mockup's kind-differentiation from the 2026-07-15 entry
+above — it rendered every board (GALLERY_MULTI and GALLERY_SINGLE alike)
+with the same 4:3 photo + title/meta row. Fixed: `PhotoGrid` now takes a
+`kind` prop; GALLERY_SINGLE renders 1:1 square tiles with no title/meta row
+(name/date move to a native `title` tooltip, matching admin-mockup.html's
+`siteCard()`), GALLERY_MULTI unchanged.
+
 **Still open**:
 - **The admin-facing UI to actually create/configure boards per tenant.**
   Nothing real exists yet (Phase 4 admin CRUD hasn't started). `Board.seq`

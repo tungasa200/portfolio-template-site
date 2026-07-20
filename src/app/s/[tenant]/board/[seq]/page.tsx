@@ -53,6 +53,7 @@ export default async function BoardPage({
     <section className="box-border min-h-[calc(100vh-65px)] px-16 py-10">
       <SectionHeader title={board.name} />
       <PhotoGrid
+        kind={board.kind}
         items={board.items.map((item) => ({
           id: item.id,
           href:
