@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { createBoardItem, updateBoardItem, deleteBoardItem } from "@/lib/actions/board-items";
 import type { ActionFormState } from "@/lib/actions/site-settings";
 import { MonthPicker } from "@/components/admin/MonthPicker";
@@ -31,23 +32,43 @@ const initialState: ActionFormState = { status: "idle" };
 
 // Shared editor for every board's items (GALLERY_MULTI-only sections hidden
 // via `kind`), matching design/admin-mockup.html's single-editor-for-every-
-// board structure. A NEW item's photo manager is disabled until the first
-// save creates the row — BoardItemPhoto needs a real boardItemId to attach
-// to, unlike the mockup's in-memory-only photo staging (see
-// src/lib/actions/board-items.ts's createBoardItem, which redirects straight
-// into this same editor for the newly created item).
+// board structure. A NEW item's photo manager works immediately — the first
+// photo picked lazily creates the row via PhotoManager's createDraftBoardItem
+// call (BoardItemPhoto needs a real boardItemId to attach to, unlike the
+// mockup's in-memory-only photo staging), and onPhotoItemCreated below syncs
+// this editor onto that row so "저장하기" updates it instead of creating a
+// second one.
 export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath }: BoardItemEditorProps) {
-  const isNew = item === null;
+  const [currentItem, setCurrentItem] = useState(item);
+  const isNew = currentItem === null;
   const isMulti = kind === "GALLERY_MULTI";
   const action = isNew ? createBoardItem : updateBoardItem;
   const [state, formAction, isPending] = useActionState(action, initialState);
   const toast = useToast();
   const [, startTransition] = useTransition();
+  const router = useRouter();
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
-  const [dateValue, setDateValue] = useState(item?.dateValue ?? "");
-  const [indexEnabled, setIndexEnabled] = useState(item?.indexEnabled ?? false);
-  const [indexContent, setIndexContent] = useState(item?.indexContent ?? "");
-  const [isPublished, setIsPublished] = useState(item?.isPublished ?? false);
+  const [dateValue, setDateValue] = useState(currentItem?.dateValue ?? "");
+  const [indexEnabled, setIndexEnabled] = useState(currentItem?.indexEnabled ?? false);
+  const [indexContent, setIndexContent] = useState(currentItem?.indexContent ?? "");
+  const [isPublished, setIsPublished] = useState(currentItem?.isPublished ?? false);
+
+  function handlePhotoItemCreated(id: string) {
+    setCurrentItem((prev) =>
+      prev ??
+      {
+        id,
+        name: nameInputRef.current?.value.trim() || "새 항목",
+        dateValue: "",
+        isPublished: false,
+        indexEnabled: false,
+        indexContent: "",
+        photos: [],
+      }
+    );
+    router.replace(`${adminBasePath}/board/${boardId}/${id}`, { scroll: false });
+  }
 
   // create redirects straight to the new item's edit page on success (no
   // "idle"/"success" state ever reaches here for that path) — this effect
@@ -60,10 +81,10 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
   }, [state]);
 
   function handleDelete() {
-    if (!item) return;
-    if (!window.confirm(`"${item.name}"을(를) 삭제할까요? 되돌릴 수 없어요.`)) return;
+    if (!currentItem) return;
+    if (!window.confirm(`"${currentItem.name}"을(를) 삭제할까요? 되돌릴 수 없어요.`)) return;
     startTransition(async () => {
-      await deleteBoardItem(item.id, boardId);
+      await deleteBoardItem(currentItem.id, boardId);
     });
   }
 
@@ -79,7 +100,7 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
         {isNew ? (
           <input type="hidden" name="boardId" value={boardId} />
         ) : (
-          <input type="hidden" name="itemId" value={item.id} />
+          <input type="hidden" name="itemId" value={currentItem.id} />
         )}
         <input type="hidden" name="dateValue" value={dateValue} />
         <input type="hidden" name="indexEnabled" value={String(indexEnabled)} />
@@ -88,9 +109,10 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
 
         <div className="admin-page-head">
           <input
+            ref={nameInputRef}
             className="admin-item-title-input"
             name="name"
-            defaultValue={item?.name ?? ""}
+            defaultValue={currentItem?.name ?? ""}
             placeholder="새 항목"
             required
             autoFocus={isNew}
@@ -124,11 +146,14 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
 
         <div className="admin-section-card">
           <h2>사진</h2>
-          {item ? (
-            <PhotoManager boardId={boardId} boardItemId={item.id} kind={kind} initialPhotos={item.photos} />
-          ) : (
-            <p className="admin-field-help">사진은 이름을 입력하고 먼저 저장한 뒤에 추가할 수 있어요.</p>
-          )}
+          <PhotoManager
+            boardId={boardId}
+            boardItemId={currentItem?.id ?? null}
+            kind={kind}
+            initialPhotos={currentItem?.photos ?? []}
+            getDraftName={() => nameInputRef.current?.value.trim() || ""}
+            onItemCreated={handlePhotoItemCreated}
+          />
         </div>
 
         <div className="admin-section-card">
@@ -145,7 +170,7 @@ export function BoardItemEditor({ boardId, boardName, kind, item, adminBasePath 
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 28 }}>
-          {item ? (
+          {currentItem ? (
             <button type="button" className="admin-btn admin-btn-danger-outline" onClick={handleDelete}>
               이 항목 삭제하기
             </button>

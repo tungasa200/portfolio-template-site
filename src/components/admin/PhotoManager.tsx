@@ -7,6 +7,7 @@ import {
   reorderBoardItemPhotos,
   setPrimaryBoardItemPhoto,
 } from "@/lib/actions/board-item-photos";
+import { createDraftBoardItem } from "@/lib/actions/board-items";
 import { uploadImageToR2 } from "@/lib/admin/upload-client";
 import { useToast } from "@/components/admin/Toast";
 
@@ -18,9 +19,13 @@ export interface ManagedPhoto {
 
 interface PhotoManagerProps {
   boardId: string;
-  boardItemId: string;
+  // null for a not-yet-saved item — the first photo picked lazily creates
+  // the row (see getDraftName/onItemCreated) instead of requiring a save first.
+  boardItemId: string | null;
   kind: "GALLERY_MULTI" | "GALLERY_SINGLE";
   initialPhotos: ManagedPhoto[];
+  getDraftName?: () => string;
+  onItemCreated?: (id: string) => void;
 }
 
 // maxPhotos caps a GALLERY_SINGLE board's items at exactly 1 (mirrors
@@ -29,7 +34,8 @@ interface PhotoManagerProps {
 // thumbnail among. The server action re-enforces this cap independently
 // (src/lib/actions/board-item-photos.ts) since a client-side cap is UX, not
 // a security boundary.
-export function PhotoManager({ boardId, boardItemId, kind, initialPhotos }: PhotoManagerProps) {
+export function PhotoManager({ boardId, boardItemId, kind, initialPhotos, getDraftName, onItemCreated }: PhotoManagerProps) {
+  const [itemId, setItemId] = useState(boardItemId);
   const [photos, setPhotos] = useState(initialPhotos);
   const [uploading, setUploading] = useState(false);
   const [, startTransition] = useTransition();
@@ -50,9 +56,20 @@ export function PhotoManager({ boardId, boardItemId, kind, initialPhotos }: Phot
 
     setUploading(true);
     try {
+      let currentItemId = itemId;
+      if (!currentItemId) {
+        const result = await createDraftBoardItem(boardId, getDraftName?.() ?? "");
+        if ("error" in result) {
+          toast(result.error, true);
+          return;
+        }
+        currentItemId = result.id;
+        setItemId(currentItemId);
+      }
+
       for (const file of toUpload) {
-        const uploaded = await uploadImageToR2(file, { kind: "board-item", boardId, itemId: boardItemId });
-        const result = await addBoardItemPhoto(boardItemId, uploaded.r2Key, uploaded.width, uploaded.height);
+        const uploaded = await uploadImageToR2(file, { kind: "board-item", boardId, itemId: currentItemId });
+        const result = await addBoardItemPhoto(currentItemId, uploaded.r2Key, uploaded.width, uploaded.height);
         if (result.status === "success" && result.photoId) {
           setPhotos((prev) => [
             ...prev,
@@ -63,6 +80,10 @@ export function PhotoManager({ boardId, boardItemId, kind, initialPhotos }: Phot
         }
       }
       if (toUpload.length > 0) toast(toUpload.length > 1 ? `사진 ${toUpload.length}장을 추가했어요` : "사진을 추가했어요");
+      // Fires only after the whole batch has persisted, so the parent's
+      // URL/isNew swap (see BoardItemEditor) can't unmount this component
+      // mid-upload.
+      if (currentItemId !== boardItemId) onItemCreated?.(currentItemId);
     } catch (err) {
       toast(err instanceof Error ? err.message : "업로드 중 오류가 발생했어요", true);
     } finally {
@@ -77,14 +98,14 @@ export function PhotoManager({ boardId, boardItemId, kind, initialPhotos }: Phot
     [next[index], next[j]] = [next[j], next[index]];
     setPhotos(next);
     startTransition(async () => {
-      await reorderBoardItemPhotos(boardItemId, next.map((p) => p.id));
+      await reorderBoardItemPhotos(itemId!, next.map((p) => p.id));
     });
   }
 
   function setPrimary(id: string) {
     setPhotos((prev) => prev.map((p) => ({ ...p, isPrimary: p.id === id })));
     startTransition(async () => {
-      await setPrimaryBoardItemPhoto(boardItemId, id);
+      await setPrimaryBoardItemPhoto(itemId!, id);
     });
     toast("대표 사진으로 지정했어요");
   }

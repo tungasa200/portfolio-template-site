@@ -87,6 +87,36 @@ export async function createBoardItem(
   redirect(`${await getAdminBasePath()}/board/${boardId}/${item.id}`);
 }
 
+// Lets the photo manager attach photos before the user has hit "저장하기" —
+// BoardItemPhoto needs a real boardItemId to attach to, so the first photo
+// pick silently creates the row (named from whatever's in the name field so
+// far, defaulting to "새 항목") instead of forcing a save-first round trip.
+// A normal save afterward goes through updateBoardItem, same as any
+// pre-existing item.
+export async function createDraftBoardItem(
+  boardId: string,
+  name: string
+): Promise<{ id: string } | { error: string }> {
+  const { tenantId } = await getCurrentTenantContext();
+  const db = forTenant(tenantId);
+  const board = await db.board.findUnique({ where: { id: boardId } });
+  if (!board) {
+    return { error: "게시판을 찾을 수 없어요." };
+  }
+  const isMulti = board.kind === "GALLERY_MULTI";
+
+  const trimmedName = name.trim() || "새 항목";
+  const count = await db.boardItem.count({ where: { boardId } });
+  const slug = isMulti ? await uniqueSlug(db, boardId, slugify(trimmedName)) : null;
+
+  const item = await db.boardItem.create({
+    data: { tenantId, boardId, name: trimmedName, slug, order: count },
+  });
+
+  revalidatePath("/admin", "layout");
+  return { id: item.id };
+}
+
 export async function updateBoardItem(
   _prevState: ActionFormState,
   formData: FormData
