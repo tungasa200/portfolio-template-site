@@ -4,8 +4,9 @@ import { forTenant } from "@/lib/db/tenant-scoped-client";
 import { cacheForTenant } from "@/lib/tenant/site-cache";
 import { MessagesInbox } from "@/components/admin/MessagesInbox";
 
-function formatKoreanDate(date: Date): string {
-  return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+function formatKoreanDate(date: Date | string): string {
+  const d = date instanceof Date ? date : new Date(date);
+  return `${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
 export default async function AdminMessagesPage() {
