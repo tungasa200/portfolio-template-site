@@ -215,7 +215,7 @@
 .admin-root textarea { resize: vertical; min-height: 110px; line-height: 1.7; }
 .admin-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 
-.admin-theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+.admin-theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; align-items: start; }
 .admin-theme-card {
   position: relative;
   display: flex; flex-direction: column; align-items: center; gap: 10px;
@@ -227,6 +227,8 @@
 .admin-theme-card-radio { position: absolute; inset: 0; margin: 0; opacity: 0; pointer-events: none; }
 .admin-theme-swatch-pair { display: flex; gap: 4px; }
 .admin-theme-swatch { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line); }
+.admin-theme-custom-pickers { display: flex; gap: 14px; padding-top: 10px; border-top: 1px solid var(--line-soft); width: 100%; justify-content: center; }
+.admin-theme-custom-picker { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; color: var(--muted); }
 
 .admin-month-picker { position: relative; width: 240px; max-width: 100%; }
 .admin-month-picker-trigger {

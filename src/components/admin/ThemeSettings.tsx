@@ -85,31 +85,34 @@ export function ThemeSettings({ themeName, themeCustomInk, themeCustomPaper }: T
               <span className="admin-theme-swatch" style={{ background: customInk }} />
             </span>
             <span>커스텀</span>
+
+            {selected === "custom" && (
+              <span className="admin-theme-custom-pickers">
+                <span className="admin-theme-custom-picker">
+                  <span>배경</span>
+                  <input
+                    type="color"
+                    name="themeCustomPaper"
+                    value={customPaper}
+                    onChange={(e) => setCustomPaper(e.target.value)}
+                    aria-label="배경색"
+                  />
+                </span>
+                <span className="admin-theme-custom-picker">
+                  <span>글씨</span>
+                  <input
+                    type="color"
+                    name="themeCustomInk"
+                    value={customInk}
+                    onChange={(e) => setCustomInk(e.target.value)}
+                    aria-label="글씨색"
+                  />
+                </span>
+              </span>
+            )}
           </label>
         </div>
 
-        {selected === "custom" && (
-          <div className="admin-field-row" style={{ marginTop: 18 }}>
-            <div className="admin-field">
-              <label>배경색</label>
-              <input
-                type="color"
-                name="themeCustomPaper"
-                value={customPaper}
-                onChange={(e) => setCustomPaper(e.target.value)}
-              />
-            </div>
-            <div className="admin-field">
-              <label>글씨색</label>
-              <input
-                type="color"
-                name="themeCustomInk"
-                value={customInk}
-                onChange={(e) => setCustomInk(e.target.value)}
-              />
-            </div>
-          </div>
-        )}
         {selected === "custom" && lowContrast && (
           <p className="admin-section-desc" style={{ color: "var(--danger)", marginTop: 10 }}>
             두 색상이 너무 비슷해서 글씨가 잘 안 보일 수 있어요.
