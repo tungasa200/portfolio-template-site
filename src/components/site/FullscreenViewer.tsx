@@ -21,16 +21,44 @@ interface FullscreenViewerProps {
 // box's height is fixed but its rendered width follows each photo's real
 // aspect ratio), while thumbnails use object-fit: cover (a small fixed
 // tile reads better cropped-to-fill than letterboxed).
+function NavArrow({ direction, onClick }: { direction: "prev" | "next"; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label={direction === "prev" ? "Previous photo" : "Next photo"}
+      onClick={onClick}
+      className="absolute top-1/2 z-10 flex h-[34px] w-[34px] -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-site-ink bg-site-paper"
+      style={direction === "prev" ? { left: "16px" } : { right: "16px" }}
+    >
+      <div
+        style={{
+          width: "8px",
+          height: "8px",
+          borderRight: "1px solid var(--color-site-ink)",
+          borderBottom: "1px solid var(--color-site-ink)",
+          transform: direction === "prev" ? "rotate(135deg)" : "rotate(-45deg)",
+        }}
+      />
+    </button>
+  );
+}
+
 export function FullscreenViewer({ photos, activeIndex, onSelect }: FullscreenViewerProps) {
   const active = photos[activeIndex] ?? photos[0];
 
   return (
     <div className="flex h-full min-h-0 flex-col animate-site-intro-fade" style={{ animationDelay: "0.55s" }}>
       <div
-        className={`relative flex min-h-0 w-full flex-1 items-end overflow-hidden border border-site-ink bg-site-paper ${active?.imageUrl ? "" : "site-placeholder-pattern"}`}
+        className={`relative flex min-h-0 w-full flex-1 items-end overflow-hidden bg-site-paper ${active?.imageUrl ? "" : "site-placeholder-pattern"}`}
       >
         {active?.imageUrl && (
           <Image src={active.imageUrl} alt={active.label} fill sizes="100vw" className="object-contain" />
+        )}
+        {photos.length > 1 && (
+          <>
+            <NavArrow direction="prev" onClick={() => onSelect((activeIndex - 1 + photos.length) % photos.length)} />
+            <NavArrow direction="next" onClick={() => onSelect((activeIndex + 1) % photos.length)} />
+          </>
         )}
         {active && (
           <div className="relative px-6 py-5">
@@ -40,7 +68,7 @@ export function FullscreenViewer({ photos, activeIndex, onSelect }: FullscreenVi
           </div>
         )}
       </div>
-      <div className="mt-5 flex shrink-0 gap-3 overflow-x-auto pb-1">
+      <div className="mt-5 flex shrink-0 justify-center gap-3 overflow-x-auto pb-1">
         {photos.map((photo, index) => {
           const isActive = index === activeIndex;
           return (
