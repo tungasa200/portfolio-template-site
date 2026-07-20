@@ -24,6 +24,7 @@ interface NavVisibilityListProps {
 export function NavVisibilityList({ items: initialItems, draggable = false }: NavVisibilityListProps) {
   const [items, setItems] = useState(initialItems);
   const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const toast = useToast();
 
@@ -37,6 +38,7 @@ export function NavVisibilityList({ items: initialItems, draggable = false }: Na
   }
 
   function handleDrop(targetId: string) {
+    setDragOverId(null);
     if (!dragId || dragId === targetId) return;
     const next = [...items];
     const fromIndex = next.findIndex((n) => n.id === dragId);
@@ -56,16 +58,34 @@ export function NavVisibilityList({ items: initialItems, draggable = false }: Na
       {items.map((item) => (
         <div
           key={item.id}
-          className="admin-reorder-row"
-          onDragOver={draggable ? (e) => e.preventDefault() : undefined}
+          className={`admin-reorder-row ${dragOverId === item.id ? "drag-over" : ""}`}
+          onDragOver={
+            draggable
+              ? (e) => {
+                  e.preventDefault();
+                  if (item.id !== dragId) setDragOverId(item.id);
+                }
+              : undefined
+          }
           onDrop={draggable ? () => handleDrop(item.id) : undefined}
         >
           {draggable && (
             <div
               className="admin-reorder-drag-handle"
               draggable
-              onDragStart={() => setDragId(item.id)}
-              onDragEnd={() => setDragId(null)}
+              onDragStart={(e) => {
+                setDragId(item.id);
+                // draggable=true lives on the handle icon, so the browser's
+                // default drag image would just be that icon -- use the whole row.
+                const row = e.currentTarget.closest(".admin-reorder-row");
+                if (row instanceof HTMLElement) {
+                  e.dataTransfer.setDragImage(row, 20, row.offsetHeight / 2);
+                }
+              }}
+              onDragEnd={() => {
+                setDragId(null);
+                setDragOverId(null);
+              }}
               title="드래그해서 순서 변경"
             >
               ⠿
