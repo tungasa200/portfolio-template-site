@@ -1,10 +1,146 @@
 # Progress
 
-Status as of 2026-07-15. Update this file whenever a phase in
+Status as of 2026-07-20. Update this file whenever a phase in
 [roadmap.md](./roadmap.md) moves forward — it's the fastest way for a fresh
 session (on any machine) to know where things actually stand.
 
 ## Done
+
+**Note on the 2026-07-20 entries below**: backfilled from `git log`/commit
+diffs after the fact (the session's docs updates lagged the actual commits
+that day), not written live during the work. Verification claims are
+limited to what the commit diffs themselves show — none of these carry a
+"checked in a real browser against Neon" note the way earlier entries do,
+so treat that as still open unless a later session confirms it.
+
+**Original-image lightbox, on-image badges removed, INDEX cover true aspect ratio, image:text ratio setting (2026-07-20)**
+- New `ImageLightbox.tsx` (`yet-another-react-lightbox`) opens the original-
+  resolution image with zoom/pan and dimensions/name/date captions, wired
+  into GRID VIEW, SLIDE VIEW, and `GALLERY_SINGLE` list tiles (everywhere
+  else on the public site renders the thumbnail added below, not the
+  original).
+- Removed the "COVER PHOTO"/"PHOTO NN" text badges overlaid on `IndexTab`,
+  `PhotoGridDetail`, and `FullscreenViewer` images.
+- INDEX tab's cover photo now renders at its real aspect ratio (stored
+  `width`/`height`), falling back to the old fixed 4:3 crop only for photos
+  uploaded before this migration.
+- New admin-configurable INDEX image:text column-ratio setting (3:7 through
+  7:3), `src/lib/site/index-image-ratio.ts`.
+- Real migration for the new columns applied to Neon.
+
+**No-scroll page height now derived from the flex layout, not a hardcoded 80px footer offset (2026-07-20)**
+- Home/contact/slide-view sections were sized `calc(100vh-80px)`, assuming
+  `Footer` always renders at exactly 80px. Real footer height (border +
+  padding + line-height) doesn't reliably land on 80px, so the page drifted
+  ~1px past the viewport and showed an unwanted scrollbar with nothing to
+  scroll.
+- Switched to `h-full`/`max-h-full` inheriting the remaining space the
+  layout's own `flex-1` wrapper already computes around `Footer` — correct
+  regardless of `Footer`'s actual rendered height. Touches
+  `board/[seq]/[itemSlug]`, `contact`, and the root tenant `page.tsx`/
+  `loading.tsx`.
+
+**Admin mockup's drag-ghost fix ported to the real NavVisibilityList (2026-07-20)**
+- The full-row drag image + drag-over highlight (added to
+  `design/admin-mockup.html` in an earlier mockup-only pass, commit
+  `f64a209`) had never been ported to the real component — the actual admin
+  Settings nav-order list still dragged just the handle icon with no visual
+  feedback. Ported to `src/components/admin/NavVisibilityList.tsx`.
+
+**Original+thumbnail image pairs, crop editor, parallel uploads (2026-07-20)**
+- Uploads were slow because `PhotoManager` uploaded multiple photos
+  sequentially and every photo write re-fetched/re-revalidated individually.
+- Every upload point (hero, logo, INDEX cover, board item photos) now
+  stores a canvas-generated WebP thumbnail alongside the original, with a
+  default center-crop and an optional `react-easy-crop`-based crop editor
+  (`ThumbnailCropModal.tsx`) for adjusting the crop per upload.
+- `r2.ts` presign now supports an `"original"`/`"thumb"` variant; new
+  `getR2Object()` + `/api/admin/image-proxy` let the crop editor reload an
+  already-uploaded original without needing R2 bucket CORS.
+- `src/lib/admin/thumbnail.ts`: HEIC→JPEG normalization (applied to the
+  stored original too, since non-Safari browsers can't render HEIC at all)
+  plus a canvas crop/resize/WebP pipeline shared by the auto center-crop and
+  the manual editor.
+- Multi-file uploads now run in parallel and persist in one batched DB call
+  instead of one write per photo.
+- Public site prefers the thumbnail everywhere except the SLIDE VIEW's
+  large active image, falling back to the original for photos uploaded
+  before thumbnails existed.
+- Nullable `thumbKey` columns added to `SiteSettings`/`BoardItem`/
+  `BoardItemPhoto`; migration also records pre-existing DB drift as a
+  baseline (large diff — 29 files, see commit `2351848` for the full list).
+
+**SLIDE VIEW redesign: borderless image, centered thumbnails, nav arrows (2026-07-20)**
+- Dropped the border around the main photo (read as a redundant frame),
+  centered the thumbnail strip instead of left-aligning it, and added prev/
+  next arrow buttons over the photo so slides can be navigated without
+  scrolling to the thumbnails. Arrows reuse the sidebar collapse toggle's
+  chevron style. `FullscreenViewer.tsx`.
+
+**Board/about-page empty-state messages (2026-07-20)**
+- Boards and the About page with no content now show a message instead of
+  an empty grid/section (`PhotoGrid.tsx`, `about/page.tsx`). Shipped first
+  as bordered boxes, then simplified same-day to plain centered text at a
+  slightly larger size — the bordered box read as an odd empty card.
+
+**INDEX tab gets its own opt-in cover image (2026-07-20)**
+- Previously the INDEX tab's cover reused the item's primary body photo,
+  with no way to skip it. New `BoardItem.indexImageEnabled`/`indexImageKey`
+  make the cover its own toggle + single-image upload
+  (`IndexImageUpload.tsx`), independent of the body/GRID VIEW photos. Real
+  migration applied to Neon.
+
+**Item title reset bug and empty INDEX cover box fixed (2026-07-20)**
+- The title input reset while editing because the form Server Action's
+  built-in uncontrolled-field reset kept snapping it back to the draft
+  item's name captured at first-photo-upload time (see the draft-item entry
+  below). Fixed by making it a controlled input in `BoardItemEditor.tsx`.
+- The INDEX tab's cover column now only renders when the item actually has
+  a primary photo, instead of always showing an empty "COVER PHOTO"
+  placeholder box (`IndexTab.tsx`, `DetailTabs.tsx`).
+
+**Admin home hero quick-upload inline (2026-07-20)**
+- Replaced the dashboard's hero-image link (which sent the operator to
+  Settings to upload) with an inline quick-upload control
+  (`HeroImageQuickUpload.tsx`) directly on the Home dashboard. "Quick Menu"
+  renamed to "Quick Upload"; the now-redundant About/site-settings shortcut
+  buttons removed.
+
+**New board items sort first, not last; home cover photo's border scoped to the placeholder state (2026-07-20)**
+- New items were assigned `order: count` (the highest value), so they
+  always sorted to the bottom of both the admin list and the public board
+  page (both ordered `asc`). New items now get an `order` below the current
+  minimum instead, so they land first (`board-items.ts`).
+- The home hero's border was meant to frame the empty placeholder box only;
+  it now stops rendering once a real photo is uploaded (`s/[tenant]/page.tsx`).
+
+**New board item's photo manager now works before the first save (2026-07-20)**
+- Previously a brand-new item showed no photo-add UI until the user saved a
+  name first, since `BoardItemPhoto` needs a real `boardItemId` to attach
+  to. Now the first photo picked silently creates the row itself
+  (`createDraftBoardItem`) and the editor syncs its URL/action onto that
+  row, so "저장하기" afterward updates it instead of creating a duplicate.
+
+**Admin messages tab crash fixed; tenant cache switched to tag-only invalidation (2026-07-20)**
+- `unstable_cache` round-trips values through JSON, turning
+  `contactSubmission.createdAt` into a string on cache hits and crashing
+  `formatKoreanDate`'s `Date.getMonth()` call — this made the admin Messages
+  tab inaccessible after the first cold load. Fixed by coercing the cached
+  value back to a `Date`.
+- Also switched the tenant cache to tag-only invalidation (`revalidate:
+  false`) since every write path already calls `updateTag`/
+  `revalidateTenantSite` — the 1h timer was just adding unnecessary
+  staleness on top of that.
+
+**Small polish fixes (2026-07-20)**
+- `.admin-root a { color: inherit }` was outranking the single-class color
+  rule on `admin-hero-edit-btn`/`admin-btn-primary`/`admin-logo-btn`
+  whenever they rendered as a `Link` instead of a `<button>`, making the
+  text invisible against the dark pill background — fixed in `admin.css`.
+- Gmail app-password field restyled to match the other admin inputs
+  (`ReplyEmailSettings.tsx`).
+- Removed hand-holding caption text under the hero/logo previews in
+  Settings that just restated what was already visually obvious.
 
 **Resend removed; contact-form notifications and admin replies both go through the tenant's own Gmail (2026-07-16)**
 - Confirmed with the user: this template is meant to be sold to non-technical

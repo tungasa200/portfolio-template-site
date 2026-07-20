@@ -1,5 +1,11 @@
 # Conventions
 
+## Communication with the operator
+
+When responding in Korean, always use formal speech (존댓말/-습니다·-요체) —
+never 반말, regardless of how the operator phrases their own messages.
+Explicit operator instruction (2026-07-20).
+
 ## Commit messages
 
 Every commit subject line starts with one of these tags:
