@@ -6,6 +6,7 @@ import { cacheForTenant } from "@/lib/tenant/site-cache";
 import { r2PublicUrl } from "@/lib/storage/r2";
 import { resolveNavLabel } from "@/lib/site/nav-items";
 import { NavVisibilityList } from "@/components/admin/NavVisibilityList";
+import { HeroImageQuickUpload } from "@/components/admin/HeroImageQuickUpload";
 
 const TARGET_LABEL: Record<string, string> = {
   HOME: "홈 화면",
@@ -35,7 +36,6 @@ export default async function AdminHomePage() {
     ]);
   });
 
-  const aboutNavItem = navItems.find((n) => n.targetKind === "ABOUT");
   const heroUrl = siteSettings?.heroImageKey ? r2PublicUrl(siteSettings.heroImageKey) : null;
 
   const visibilityItems = navItems
@@ -88,36 +88,18 @@ export default async function AdminHomePage() {
           <div className="admin-browser-url">{siteSettings?.siteName ?? ""}</div>
         </div>
         <div className="admin-hero-preview-body">
-          <div className="admin-hero-photo-wrap">
-            <div className="admin-hero-photo">
-              {heroUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={heroUrl} alt="대표 사진" />
-              ) : (
-                <span className="admin-tag">대표 사진 (1600×1600)</span>
-              )}
-            </div>
-            <Link href={`${adminBasePath}/settings`} className="admin-hero-edit-btn">
-              ✏️ 대표 사진 바꾸기
-            </Link>
-          </div>
+          <HeroImageQuickUpload heroImageUrl={heroUrl} />
         </div>
       </div>
 
       <div className="admin-section-card" style={{ marginTop: 24 }}>
-        <h2>Quick Menu</h2>
+        <h2>Quick Upload</h2>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 20 }}>
           {boards.map((board) => (
             <Link key={board.id} href={`${adminBasePath}/board/${board.id}/new`} className="admin-btn">
               + 새 {board.name} 추가
             </Link>
           ))}
-          <Link href={`${adminBasePath}/about`} className="admin-btn">
-            {aboutNavItem ? resolveNavLabel(aboutNavItem) : "About"} 페이지 수정
-          </Link>
-          <Link href={`${adminBasePath}/settings`} className="admin-btn">
-            사이트 정보 수정
-          </Link>
         </div>
       </div>
 
