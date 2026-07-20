@@ -204,7 +204,7 @@
 .admin-field { margin-bottom: 20px; }
 .admin-field label { display: block; font-size: 15px; font-weight: 700; margin-bottom: 7px; }
 .admin-field .admin-field-help { font-size: 13.5px; color: var(--muted); font-weight: 400; margin-top: 6px; }
-.admin-root input[type="text"], .admin-root input[type="email"], .admin-root textarea {
+.admin-root input[type="text"], .admin-root input[type="email"], .admin-root input[type="password"], .admin-root textarea {
   font-family: inherit; font-size: 16px; color: var(--ink);
   background: var(--panel); border: 1.5px solid var(--line); border-radius: var(--radius-sm);
   padding: 13px 14px; width: 100%;

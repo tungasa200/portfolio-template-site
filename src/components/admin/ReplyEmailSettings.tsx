@@ -50,7 +50,7 @@ export function ReplyEmailSettings({ connectedEmail }: { connectedEmail: string 
             </div>
             <div className="admin-field">
               <label>앱 비밀번호</label>
-              <input type="password" name="appPassword" placeholder="16자리 앱 비밀번호" required />
+              <input type="password" name="appPassword" required />
             </div>
           </div>
           <button type="submit" className="admin-btn admin-btn-primary" disabled={isPending}>
