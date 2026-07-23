@@ -138,9 +138,18 @@ strip.
 Same substance as [roadmap.md](./roadmap.md#phase-5--go-live-as-tenant-1),
 applied per fork rather than just to the original tenant #1.
 
-- [ ] **[auto]** Create the real `Tenant` row — a scriptable insert/seed
-  once the tenant's name/slug are decided (the decision itself is manual;
-  the DB write is not).
+- [ ] **[auto]** Create the real `Tenant` row **and its full bootstrap** —
+  `SiteSettings`, `AboutPage`, the Home/About/Contact `NavItem` rows, and any
+  starting `Board`s — a scriptable insert/seed once the tenant's name/slug/
+  contact email/board list are decided (the decisions themselves are manual;
+  the DB writes are not). **All of these, not just `Tenant`, are required**:
+  the admin sidebar and public nav are both driven entirely by `NavItem`
+  rows (`src/app/admin/(dashboard)/layout.tsx`), and the Settings/About
+  admin forms call Prisma `update` (not `upsert`), so they error with no
+  pre-existing `SiteSettings`/`AboutPage` row. A `Tenant`-only insert leaves
+  an admin panel with only "메시지"/"설정" reachable and a Settings form that
+  can't save. `tools/fork-setup/main.py` generates the whole bootstrap in
+  one SQL block, not just the `Tenant` row.
 - [ ] **[manual]** Point the real domain at the Vercel project — Vercel
   dashboard + domain registrar's DNS settings.
 - [ ] **[manual]** Populate real content through the admin panel — this

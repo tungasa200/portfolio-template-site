@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { auth } from "@/lib/auth/auth";
 import { getCurrentTenantContext } from "@/lib/auth/tenant-context";
 import { getAdminBasePath } from "@/lib/auth/admin-base-path";
-import { ROOT_DOMAIN, getDomainMode } from "@/lib/tenant/domain-mode";
+import { ROOT_DOMAIN } from "@/lib/tenant/domain-mode";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
 import { prisma } from "@/lib/db/client";
 import { cacheForTenant } from "@/lib/tenant/site-cache";
@@ -88,17 +88,19 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
   ];
 
   const protocol = ROOT_DOMAIN.includes("localhost") ? "http" : "https";
-  // {slug}.{ROOT_DOMAIN} only resolves under a real wildcard-DNS custom
-  // domain (getDomainMode() === "custom") -- on the shared *.vercel.app
-  // default domain there's no subdomain to link to, only the bare root
-  // (which is why ROOT_TENANT_SLUG serves there in the first place). See
-  // src/lib/tenant/domain-mode.ts.
+  // Per-customer-fork model (docs/decisions.md): each deployment only ever
+  // has one real tenant, and proxy.ts already treats the bare ROOT_DOMAIN
+  // (and www.ROOT_DOMAIN) as that tenant's canonical address, checked
+  // *before* the {slug}.ROOT_DOMAIN subdomain branch -- so bare ROOT_DOMAIN
+  // is correct here too, not {tenant.slug}.{ROOT_DOMAIN}. The old
+  // slug-subdomain form was leftover from this project's original
+  // multi-tenant-SaaS design (before the fork-per-customer pivot) and,
+  // since nothing in this codebase ever sets tenant.customDomain, always
+  // produced a "내 사이트 보기" link visitors don't need to use.
   const siteUrl = tenant
     ? tenant.customDomain
       ? `${protocol}://${tenant.customDomain}`
-      : getDomainMode() === "custom"
-        ? `${protocol}://${tenant.slug}.${ROOT_DOMAIN}`
-        : `${protocol}://${ROOT_DOMAIN}`
+      : `${protocol}://${ROOT_DOMAIN}`
     : null;
 
   return (

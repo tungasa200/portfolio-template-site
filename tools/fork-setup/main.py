@@ -12,16 +12,24 @@ Handles, all stdlib / no DB connection / no pip install:
   - generating AUTH_SECRET / ENCRYPTION_KEY into .env
   - patching package.json's "name" and layout.tsx's metadata title/description
   - regenerating README.md for the fork
-  - printing a ready-to-run Tenant INSERT statement (paste into psql /
+  - printing a ready-to-run tenant bootstrap SQL script (paste into psql /
     Neon's SQL editor yourself — this tool never connects to a database,
-    same convention as tools/admin-credential-tool)
+    same convention as tools/admin-credential-tool): Tenant + SiteSettings +
+    AboutPage + Home/About/Contact NavItems + any boards you asked for.
+    This is the *whole* bootstrap, not just the Tenant row — the admin
+    sidebar and public nav are both driven entirely by NavItem rows
+    (src/app/admin/(dashboard)/layout.tsx), and Settings/About can't save
+    without their own SiteSettings/AboutPage row already existing (both use
+    Prisma `update`, not `upsert`) — a Tenant-only insert leaves a
+    logged-in-but-empty admin panel with no Home/About/board links at all.
 
 Everything docs/fork-checklist.md marks [manual] (Neon/R2/Vercel account
 provisioning, DNS, real content) is out of scope by design.
 
 Run:
     python main.py
-    python main.py --site-name "Jane Doe Photography" --slug jane-doe --yes
+    python main.py --site-name "Jane Doe Photography" --slug jane-doe \
+        --contact-email jane@example.com --board Work --board "Prints:single" --yes
     python main.py --dry-run
 """
 
@@ -259,6 +267,10 @@ def apply_branding(site_name: str, slug: str, description: str, package_name: st
 
 # ---------------------------------------------------------------- tenant ---
 
+def sql_escape(value: str) -> str:
+    return value.replace("'", "''")
+
+
 def build_tenant_insert_sql(tenant_id: str, slug: str) -> str:
     return (
         'INSERT INTO "Tenant" '
@@ -275,13 +287,128 @@ def build_tenant_insert_sql(tenant_id: str, slug: str) -> str:
     )
 
 
-def print_tenant_sql(slug: str) -> None:
+def build_site_settings_insert(tenant_id: str, site_name: str, photographer_name: str,
+                                contact_email: str) -> str:
+    return (
+        'INSERT INTO "SiteSettings" (id, "tenantId", "siteName", "photographerName", "contactEmail")\n'
+        "VALUES (\n"
+        f"  '{uuid.uuid4()}',\n"
+        f"  '{tenant_id}',\n"
+        f"  '{sql_escape(site_name)}',\n"
+        f"  '{sql_escape(photographer_name)}',\n"
+        f"  '{sql_escape(contact_email)}'\n"
+        ");"
+    )
+
+
+def build_about_page_insert(tenant_id: str) -> str:
+    return (
+        'INSERT INTO "AboutPage" (id, "tenantId", content)\n'
+        "VALUES (\n"
+        f"  '{uuid.uuid4()}',\n"
+        f"  '{tenant_id}',\n"
+        "  ''\n"
+        ");"
+    )
+
+
+def build_nav_item_insert(tenant_id: str, label: str, target_kind: str, order: int,
+                           target_board_id: str | None = None) -> str:
+    target_board_sql = f"'{target_board_id}'" if target_board_id else "NULL"
+    return (
+        'INSERT INTO "NavItem" (id, "tenantId", label, "targetKind", "targetBoardId", "order", "isVisible")\n'
+        "VALUES (\n"
+        f"  '{uuid.uuid4()}',\n"
+        f"  '{tenant_id}',\n"
+        f"  '{sql_escape(label)}',\n"
+        f"  '{target_kind}',\n"
+        f"  {target_board_sql},\n"
+        f"  {order},\n"
+        "  true\n"
+        ");"
+    )
+
+
+def build_board_insert(board_id: str, tenant_id: str, seq: int, name: str, kind: str, order: int) -> str:
+    return (
+        'INSERT INTO "Board" (id, "tenantId", seq, name, kind, "order", "isPublished")\n'
+        "VALUES (\n"
+        f"  '{board_id}',\n"
+        f"  '{tenant_id}',\n"
+        f"  {seq},\n"
+        f"  '{sql_escape(name)}',\n"
+        f"  '{kind}',\n"
+        f"  {order},\n"
+        "  true\n"
+        ");"
+    )
+
+
+def prompt_for_boards() -> list[dict]:
+    # HOME/ABOUT/CONTACT nav entries always get created (site is non-
+    # functional without them — the admin sidebar and public nav both read
+    # NavItem, not a hardcoded list, see src/app/admin/(dashboard)/layout.tsx).
+    # Boards are the one genuinely optional/variable part, so this is the
+    # only piece worth prompting for interactively.
+    boards: list[dict] = []
+    print()
+    print("Boards are how visitors browse your work (e.g. a gallery of shoots).")
+    print("Add as many as you want now, or skip and add more later via SQL.")
+    while True:
+        add = input(f"Add a board? (currently {len(boards)}) [y/N]: ").strip().lower()
+        if add not in ("y", "yes"):
+            break
+        name = input("  Board name (e.g. 'Work'): ").strip()
+        if not name:
+            print("  (empty name, skipping)")
+            continue
+        kind_in = input(
+            "  Kind — [1] multi-photo gallery with its own detail page (default)"
+            "  [2] single-photo grid tile only: "
+        ).strip()
+        kind = "GALLERY_SINGLE" if kind_in == "2" else "GALLERY_MULTI"
+        boards.append({"name": name, "kind": kind})
+    return boards
+
+
+def parse_board_flag(value: str) -> dict:
+    if value.lower().endswith(":single"):
+        return {"name": value[: -len(":single")].strip(), "kind": "GALLERY_SINGLE"}
+    return {"name": value.strip(), "kind": "GALLERY_MULTI"}
+
+
+def print_bootstrap_sql(slug: str, site_name: str, photographer_name: str,
+                         contact_email: str, boards: list[dict]) -> None:
     tenant_id = str(uuid.uuid4())
-    print("Step 4: real Tenant row (run this yourself in psql / Neon's SQL editor —")
-    print("        this tool never connects to a database):")
+    print("Step 4: full tenant bootstrap SQL (run this yourself in psql / Neon's SQL")
+    print("        editor — this tool never connects to a database). The site is a")
+    print("        blank/unreachable admin panel until all of this exists, not just")
+    print("        the Tenant row — the admin sidebar and public nav are both driven")
+    print("        entirely by NavItem rows, and Settings/About can't save without")
+    print("        their own SiteSettings/AboutPage row. Paste the whole block at")
+    print("        once:")
     print()
-    print(build_tenant_insert_sql(tenant_id, slug))
+
+    statements = [
+        build_tenant_insert_sql(tenant_id, slug),
+        build_site_settings_insert(tenant_id, site_name, photographer_name, contact_email),
+        build_about_page_insert(tenant_id),
+        build_nav_item_insert(tenant_id, "Home", "HOME", 0),
+        build_nav_item_insert(tenant_id, "About", "ABOUT", 1),
+        build_nav_item_insert(tenant_id, "Contact", "CONTACT", 2),
+    ]
+
+    for i, board in enumerate(boards, start=1):
+        board_id = str(uuid.uuid4())
+        statements.append(build_board_insert(board_id, tenant_id, i, board["name"], board["kind"], i - 1))
+        statements.append(build_nav_item_insert(tenant_id, board["name"], "BOARD", 2 + i, target_board_id=board_id))
+
+    print("\n\n".join(statements))
     print()
+    if not boards:
+        print("  (0 boards — the site will show Home/About/Contact but no galleries")
+        print("   yet. Add one later by copying this script's Board+NavItem INSERT")
+        print("   pattern, with a new seq/order.)")
     print(f"  tenant id for reference (also needed by tools/admin-credential-tool")
     print(f"  when creating this tenant's admin user, before you delete that tool): {tenant_id}")
 
@@ -312,6 +439,25 @@ def prompt_for_missing(args: argparse.Namespace) -> None:
         ).strip() or f"{args.site_name} — photographer portfolio"
     if not args.package_name:
         args.package_name = args.slug
+    if not args.photographer_name:
+        args.photographer_name = input(
+            "Photographer name (SiteSettings.photographerName, shown on the site): "
+        ).strip() or args.site_name
+    if not args.contact_email:
+        while True:
+            email = input("Contact email (where contact-form submissions reference; required): ").strip()
+            if "@" in email:
+                args.contact_email = email
+                break
+            print("  needs to look like an email address, try again")
+
+
+def collect_boards(args: argparse.Namespace) -> list[dict]:
+    if args.board:
+        return [parse_board_flag(b) for b in args.board]
+    if args.yes:
+        return []
+    return prompt_for_boards()
 
 
 def main() -> None:
@@ -325,6 +471,14 @@ def main() -> None:
     parser.add_argument("--slug", type=validate_slug, help="Tenant slug, e.g. 'jane-doe'")
     parser.add_argument("--description", help="Site description for <meta> tags + README")
     parser.add_argument("--package-name", help="package.json \"name\" override (default: slug)")
+    parser.add_argument("--photographer-name", help="SiteSettings.photographerName (default: --site-name)")
+    parser.add_argument("--contact-email", help="SiteSettings.contactEmail (required, no default)")
+    parser.add_argument(
+        "--board", action="append",
+        help="Add a board to the bootstrap SQL, e.g. --board Work (repeatable). "
+             "Suffix ':single' for a GALLERY_SINGLE board, e.g. --board 'Snapshots:single'. "
+             "If omitted entirely and --yes is set, no boards are created.",
+    )
     parser.add_argument("--yes", action="store_true", help="assume yes on confirmation prompts")
     parser.add_argument("--dry-run", action="store_true", help="print planned changes, write nothing")
     parser.add_argument("--skip-delete", action="store_true", help="skip step 1 (deletions)")
@@ -335,13 +489,17 @@ def main() -> None:
 
     guard_against_master_repo()
     prompt_for_missing(args)
+    boards = collect_boards(args)
 
     print()
-    print(f"Site name:    {args.site_name}")
-    print(f"Slug:         {args.slug}")
-    print(f"Description:  {args.description}")
-    print(f"package name: {args.package_name}")
-    print(f"Repo root:    {REPO_ROOT}")
+    print(f"Site name:         {args.site_name}")
+    print(f"Slug:              {args.slug}")
+    print(f"Description:       {args.description}")
+    print(f"package name:      {args.package_name}")
+    print(f"Photographer name: {args.photographer_name}")
+    print(f"Contact email:     {args.contact_email}")
+    print(f"Boards:            {', '.join(b['name'] for b in boards) or '(none)'}")
+    print(f"Repo root:         {REPO_ROOT}")
     print()
 
     if not args.skip_delete:
@@ -349,7 +507,7 @@ def main() -> None:
     write_secrets(args.dry_run, args.force_secrets)
     apply_branding(args.site_name, args.slug, args.description, args.package_name,
                     args.dry_run, args.yes, args.skip_readme)
-    print_tenant_sql(args.slug)
+    print_bootstrap_sql(args.slug, args.site_name, args.photographer_name, args.contact_email, boards)
 
     print()
     print("Done with the [auto] steps. Still [manual] — see docs/fork-checklist.md:")
