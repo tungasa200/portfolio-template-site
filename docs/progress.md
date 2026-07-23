@@ -835,6 +835,38 @@ so treat that as still open unless a later session confirms it.
 
 ## Incidents
 
+**Schema drift: themeCustomInk/themeCustomPaper never got a migration (2026-07-23)**
+- Reported by the first customer fork: `prisma migrate deploy` on a fresh
+  Neon DB left `/admin` 500ing with `P2022` (`SiteSettings.themeCustomInk`
+  does not exist). Root cause matches the note already on the 2026-07-21
+  theme-picker entry above — those two columns were pushed to the master's
+  own Neon DB via `prisma db push` (this repo's normal local-dev flow, see
+  [conventions.md](./conventions.md#prisma-7-not-56)), and no one
+  separately hand-wrote the matching migration file afterward. `db push`
+  masked it locally (it doesn't check migration history), so it only
+  surfaced on the first `migrate deploy` against a database that had never
+  had it pushed — a fresh fork.
+- Fixed by hand-authoring
+  `prisma/migrations/20260723090000_add_custom_theme_colors/` (same
+  `ALTER TABLE` the fork's own `prisma migrate diff
+  --from-config-datasource --to-schema prisma/schema.prisma --script` run
+  produced) and marking it applied on the master dev DB via `prisma
+  migrate resolve --applied` (the columns already existed there from the
+  original `db push` — same pattern as the earlier
+  `20260717000000_baseline_reply_email_and_index_image` baseline
+  migration). Re-ran the diff afterward: empty, confirmed clean.
+- Checked the rest of `schema.prisma` field-by-field against
+  `prisma/migrations/` — no other drift found. (`migrate diff
+  --from-migrations --to-schema` would double-check this directly, but
+  needs `datasource.shadowDatabaseUrl` set in `prisma.config.ts`, which
+  isn't configured — not set up as part of this fix since it wasn't needed
+  to confirm or resolve this specific drift.)
+- Convention added to prevent a repeat:
+  [conventions.md](./conventions.md#prisma-7-not-56) now calls out running
+  `prisma migrate diff --from-config-datasource --to-schema
+  prisma/schema.prisma --script` before committing any `schema.prisma`
+  change.
+
 **Prisma `startsWith` matched every row (2026-07-20)**
 - While cleaning up throwaway test `BoardItem` rows (created while verifying
   the two admin-editor bug fixes above), ran

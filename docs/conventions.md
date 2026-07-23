@@ -78,6 +78,20 @@ assuming an older API still applies — don't guess from memory.
   but doesn't support a shadow database — use `prisma db push` locally,
   not `prisma migrate dev` (that only works cleanly against real Postgres,
   i.e. Neon).
+- Because local dev uses `db push`, editing `schema.prisma` and pushing it
+  never produces a migration file — nothing forces one to exist before you
+  commit. That's silent locally (`db push` doesn't care whether history
+  matches) but breaks `prisma migrate deploy` on every fresh fork/prod DB
+  with a `P2022` "column does not exist" error, since those run off
+  `prisma/migrations/` alone. **Before committing any `schema.prisma`
+  change, check for drift**: `npx prisma migrate diff
+  --from-config-datasource --to-schema prisma/schema.prisma --script`
+  (diffs the real DB in `prisma.config.ts`'s datasource against the
+  schema — no shadow DB needed) should print `-- This is an empty
+  migration.`; if it prints `ALTER TABLE`/`CREATE`/etc. statements instead,
+  write a matching migration file under `prisma/migrations/` before
+  committing. See
+  [progress.md](./progress.md#incident-schema-drift-themecustomink-themecustompaper-never-got-a-migration-2026-07-23).
 - `startsWith`/`endsWith`/`contains` string filters compile to a Postgres
   `LIKE` pattern, where `_` and `%` are wildcards (`_` = any one char, `%` =
   any run of chars) — NOT escaped automatically. A filter like
