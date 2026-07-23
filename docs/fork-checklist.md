@@ -100,9 +100,9 @@ The values themselves (what to name the site) are a quick business call,
 not an external-account dependency.
 
 - [ ] **[auto]** `package.json` — `"name"` (currently
-  `photographer-portfolio-saas`).
+  `portfolio-saas`).
 - [ ] **[auto]** `src/app/layout.tsx` — `metadata.title` /
-  `metadata.description` (currently "Photographer Portfolio Platform" /
+  `metadata.description` (currently "Portfolio Platform" /
   generic multi-tenant description).
 - [ ] **[auto]** `README.md` — replace the dev-master quick-start/docs-index
   content with whatever's useful for this fork's actual operator.

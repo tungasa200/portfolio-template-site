@@ -48,7 +48,7 @@ export default async function AdminSettingsPage() {
 
       <SettingsForm
         siteName={siteSettings?.siteName ?? ""}
-        photographerName={siteSettings?.photographerName ?? ""}
+        ownerName={siteSettings?.ownerName ?? ""}
         contactEmail={siteSettings?.contactEmail ?? ""}
         footerText={siteSettings?.footerText ?? null}
         heroImage={

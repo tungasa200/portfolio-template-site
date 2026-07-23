@@ -14,7 +14,7 @@ export default async function TenantContactPage({
   const tenant = await requireTenant(tenantKey);
   const action = submitContactForm.bind(null, tenant.id);
 
-  const photographerName = tenant.siteSettings?.photographerName ?? tenant.slug;
+  const ownerName = tenant.siteSettings?.ownerName ?? tenant.slug;
   const contactEmail = tenant.siteSettings?.contactEmail;
   // Attachments only ever go anywhere via the Gmail notification (see
   // src/lib/actions/contact.ts) — no Gmail connection means no destination
@@ -41,9 +41,9 @@ export default async function TenantContactPage({
         <div className="flex flex-col gap-6 pt-1 pl-10">
           <div>
             <div className="mb-1.5 font-site-mono text-[11px] tracking-wide text-site-ink-muted">
-              Photographer
+              OWNER
             </div>
-            <div className="text-base">{photographerName}</div>
+            <div className="text-base">{ownerName}</div>
           </div>
           {contactEmail && (
             <div>

@@ -16,7 +16,7 @@ export default async function TenantHomePage({
   const tenant = await requireTenant(tenantKey);
 
   const heroUrl = resolveDisplayUrl(tenant.siteSettings?.heroImageKey, tenant.siteSettings?.heroThumbKey);
-  const photographerName = tenant.siteSettings?.photographerName ?? tenant.slug;
+  const ownerName = tenant.siteSettings?.ownerName ?? tenant.slug;
 
   return (
     <section className="box-border flex h-full max-h-full items-center overflow-hidden px-16 py-10 md:px-[clamp(64px,6vw,140px)]">
@@ -29,7 +29,7 @@ export default async function TenantHomePage({
         }}
       >
         {heroUrl ? (
-          <Image src={heroUrl} alt={`${photographerName} 대표 사진`} fill sizes="100vw" className="object-cover" />
+          <Image src={heroUrl} alt={`${ownerName} 대표 사진`} fill sizes="100vw" className="object-cover" />
         ) : (
           <span className="relative border border-site-ink bg-site-paper px-3.5 py-1.5 font-site-mono text-xs tracking-wide text-site-ink-muted">
             HERO IMAGE — 1600×1600

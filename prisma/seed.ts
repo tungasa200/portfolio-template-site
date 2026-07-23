@@ -93,7 +93,7 @@ async function main() {
       siteSettings: {
         create: {
           siteName: "Dev Tenant Portfolio",
-          photographerName: "Dev Photographer",
+          ownerName: "Dev Owner",
           contactEmail: "dev@example.com",
         },
       },

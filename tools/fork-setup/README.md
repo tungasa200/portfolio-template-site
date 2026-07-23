@@ -53,9 +53,9 @@ python main.py --dry-run
 |---|---|
 | `--site-name` | Human display name (layout.tsx `<title>`, README, `SiteSettings.siteName`) |
 | `--slug` | Tenant slug — lowercase, hyphens only (e.g. `jane-doe`) |
-| `--description` | Site description (`<meta>` tag + README); defaults to `"{site-name} — photographer portfolio"` |
+| `--description` | Site description (`<meta>` tag + README); defaults to `"{site-name} — portfolio"` |
 | `--package-name` | `package.json` `"name"` override; defaults to `--slug` |
-| `--photographer-name` | `SiteSettings.photographerName`; defaults to `--site-name` |
+| `--owner-name` | `SiteSettings.ownerName`; defaults to `--site-name` |
 | `--contact-email` | `SiteSettings.contactEmail` — required, no default (contact-form recipient) |
 | `--board` | Add a board to the bootstrap SQL, repeatable, e.g. `--board Work --board "Prints:single"`. No suffix = `GALLERY_MULTI` (multi-photo, own detail page); `:single` suffix = `GALLERY_SINGLE` (single photo, grid tile only, no detail page). If omitted and `--yes` is set, no boards are created — add them later by hand. |
 | `--yes` | Assume yes on confirmation prompts |
@@ -64,7 +64,7 @@ python main.py --dry-run
 | `--skip-readme` | Skip regenerating `README.md` |
 | `--force-secrets` | Overwrite `AUTH_SECRET`/`ENCRYPTION_KEY` in `.env` even if already set |
 
-Interactive mode (no `--photographer-name`/`--contact-email`) prompts for
+Interactive mode (no `--owner-name`/`--contact-email`) prompts for
 both; interactive mode with no `--board` flags at all prompts to add boards
 one at a time (name + kind). Pass `--yes` for a non-interactive run — with
 `--yes` and no `--board` flags, the bootstrap SQL creates 0 boards (Home/

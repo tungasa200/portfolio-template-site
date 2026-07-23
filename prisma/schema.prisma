@@ -1,4 +1,4 @@
-// Prisma schema — multi-tenant photographer portfolio SaaS
+// Prisma schema — multi-tenant portfolio SaaS
 // See docs/architecture.md and docs/decisions.md for the reasoning behind
 // this structure.
 
@@ -83,7 +83,7 @@ model SiteSettings {
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   siteName         String
-  photographerName String
+  ownerName        String
   heroImageKey     String?
   // Web-optimized derived thumbnail (cropped to the public hero box's 1:1
   // aspect) — nullable so images uploaded before this column existed keep
@@ -208,13 +208,13 @@ model BoardItem {
   name               String
   dateValue          String? // "YYYY-MM"
   order              Int
-  isPublished        Boolean @default(false)
+  isPublished        Boolean         @default(false)
   // Only meaningful for GALLERY_MULTI.
-  indexEnabled       Boolean @default(false)
-  indexContent       String? @db.Text // trusted admin-authored rich HTML
+  indexEnabled       Boolean         @default(false)
+  indexContent       String?         @db.Text // trusted admin-authored rich HTML
   // INDEX tab's cover image — a single image independent of `photos` below
   // (the body/GRID VIEW photos); admin opts in separately per item.
-  indexImageEnabled  Boolean @default(false)
+  indexImageEnabled  Boolean         @default(false)
   indexImageKey      String?
   // Derived thumbnail cropped to IndexTab's 4:3 cover box — nullable, see
   // SiteSettings.heroThumbKey's comment for why.
@@ -224,12 +224,12 @@ model BoardItem {
   // (see node_modules/next/dist/docs's "Responsive images with a remote
   // URL"). Nullable: rows created before this column existed fall back to a
   // fixed aspect-ratio box instead of breaking.
-  indexImageWidth  Int?
-  indexImageHeight Int?
+  indexImageWidth    Int?
+  indexImageHeight   Int?
   // Image:text column-width split for the INDEX tab, admin-configurable per
   // item. First number is the image weight, second is text (e.g. RATIO_6_4
   // = image 6fr / text 4fr).
-  indexImageRatio IndexImageRatio @default(RATIO_5_5)
+  indexImageRatio    IndexImageRatio @default(RATIO_5_5)
 
   photos BoardItemPhoto[]
 

@@ -18,7 +18,7 @@ import type { HeroImage } from "@/components/admin/HeroImageQuickUpload";
 
 interface SettingsFormProps {
   siteName: string;
-  photographerName: string;
+  ownerName: string;
   contactEmail: string;
   footerText: string | null;
   heroImage: HeroImage | null;
@@ -29,7 +29,7 @@ const initialState: ActionFormState = { status: "idle" };
 
 export function SettingsForm({
   siteName,
-  photographerName,
+  ownerName,
   contactEmail,
   footerText,
   heroImage: initialHeroImage,
@@ -128,7 +128,7 @@ export function SettingsForm({
             </div>
             <div className="admin-field">
               <label>이름</label>
-              <input type="text" name="photographerName" defaultValue={photographerName} required />
+              <input type="text" name="ownerName" defaultValue={ownerName} required />
             </div>
             <div className="admin-field">
               <label>이메일</label>

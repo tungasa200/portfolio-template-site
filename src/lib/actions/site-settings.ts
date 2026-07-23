@@ -29,18 +29,18 @@ export async function updateSiteSettings(
   const { tenantId } = await getCurrentTenantContext();
 
   const siteName = String(formData.get("siteName") ?? "").trim();
-  const photographerName = String(formData.get("photographerName") ?? "").trim();
+  const ownerName = String(formData.get("ownerName") ?? "").trim();
   const contactEmail = String(formData.get("contactEmail") ?? "").trim();
   const footerText = emptyToNull(formData.get("footerText"));
 
-  if (!siteName || !photographerName || !contactEmail) {
+  if (!siteName || !ownerName || !contactEmail) {
     return { status: "error", message: "사이트 이름, 이름, 이메일은 필수예요." };
   }
 
   const db = forTenant(tenantId);
   await db.siteSettings.update({
     where: { tenantId },
-    data: { siteName, photographerName, contactEmail, footerText },
+    data: { siteName, ownerName, contactEmail, footerText },
   });
 
   revalidatePath("/admin", "layout");

@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Photographer Portfolio Platform",
-  description: "Multi-tenant photographer portfolio builder",
+  title: "Portfolio Platform",
+  description: "Multi-tenant portfolio builder",
 };
 
 export default function RootLayout({

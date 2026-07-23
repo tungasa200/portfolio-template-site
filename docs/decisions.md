@@ -172,11 +172,11 @@ query in the app. See [architecture.md](./architecture.md#data-model) and
 ## Multi-tenant SaaS from day one, not a single-tenant site
 
 Started as "just my own portfolio," but there's a concrete plan to sell this
-as a product to other photographers. Retrofitting multi-tenancy onto a
-single-tenant codebase later is far more expensive than designing tenant
-isolation in from the start (schema, routing, and query-scoping habits all
-have to change). So even though tenant #1 is the owner's own site, the
-system is multi-tenant end to end from Phase 1.
+as a product to other operators (not limited to photographers). Retrofitting
+multi-tenancy onto a single-tenant codebase later is far more expensive than
+designing tenant isolation in from the start (schema, routing, and
+query-scoping habits all have to change). So even though tenant #1 is the
+owner's own site, the system is multi-tenant end to end from Phase 1.
 
 ## Next.js monolith, not Spring Boot + Railway split backend
 
@@ -198,7 +198,7 @@ team conventions) would matter more at a scale this product isn't at.
 Shared tables + a `tenantId` column on every tenant-scoped row. Schema- or
 database-per-tenant gives stronger isolation but multiplies operational
 complexity (migrations run N times, connection management per tenant) for a
-benefit this scale (small photographer businesses, not enterprise
+benefit this scale (small independent operators, not enterprise
 customers) doesn't need. The isolation risk this trades away is covered by
 the two-layer guardrail — see [architecture.md](./architecture.md#cross-tenant-isolation-two-layers).
 

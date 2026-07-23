@@ -224,7 +224,7 @@ def generate_readme(site_name: str, slug: str, description: str) -> str:
 
 {description}
 
-Built on the photographer portfolio platform template. If `docs/` was kept
+Built on the portfolio platform template. If `docs/` was kept
 in this fork, see it for architecture notes; if it was dropped per
 `docs/fork-checklist.md`, refer back to the master template's docs.
 
@@ -287,15 +287,15 @@ def build_tenant_insert_sql(tenant_id: str, slug: str) -> str:
     )
 
 
-def build_site_settings_insert(tenant_id: str, site_name: str, photographer_name: str,
+def build_site_settings_insert(tenant_id: str, site_name: str, owner_name: str,
                                 contact_email: str) -> str:
     return (
-        'INSERT INTO "SiteSettings" (id, "tenantId", "siteName", "photographerName", "contactEmail")\n'
+        'INSERT INTO "SiteSettings" (id, "tenantId", "siteName", "ownerName", "contactEmail")\n'
         "VALUES (\n"
         f"  '{uuid.uuid4()}',\n"
         f"  '{tenant_id}',\n"
         f"  '{sql_escape(site_name)}',\n"
-        f"  '{sql_escape(photographer_name)}',\n"
+        f"  '{sql_escape(owner_name)}',\n"
         f"  '{sql_escape(contact_email)}'\n"
         ");"
     )
@@ -377,7 +377,7 @@ def parse_board_flag(value: str) -> dict:
     return {"name": value.strip(), "kind": "GALLERY_MULTI"}
 
 
-def print_bootstrap_sql(slug: str, site_name: str, photographer_name: str,
+def print_bootstrap_sql(slug: str, site_name: str, owner_name: str,
                          contact_email: str, boards: list[dict]) -> None:
     tenant_id = str(uuid.uuid4())
     print("Step 4: full tenant bootstrap SQL (run this yourself in psql / Neon's SQL")
@@ -391,7 +391,7 @@ def print_bootstrap_sql(slug: str, site_name: str, photographer_name: str,
 
     statements = [
         build_tenant_insert_sql(tenant_id, slug),
-        build_site_settings_insert(tenant_id, site_name, photographer_name, contact_email),
+        build_site_settings_insert(tenant_id, site_name, owner_name, contact_email),
         build_about_page_insert(tenant_id),
         build_nav_item_insert(tenant_id, "Home", "HOME", 0),
         build_nav_item_insert(tenant_id, "About", "ABOUT", 1),
@@ -436,12 +436,12 @@ def prompt_for_missing(args: argparse.Namespace) -> None:
     if not args.description:
         args.description = input(
             "Site description (blank ok, used in <meta> tags + README): "
-        ).strip() or f"{args.site_name} — photographer portfolio"
+        ).strip() or f"{args.site_name} — portfolio"
     if not args.package_name:
         args.package_name = args.slug
-    if not args.photographer_name:
-        args.photographer_name = input(
-            "Photographer name (SiteSettings.photographerName, shown on the site): "
+    if not args.owner_name:
+        args.owner_name = input(
+            "Owner name (SiteSettings.ownerName, shown on the site): "
         ).strip() or args.site_name
     if not args.contact_email:
         while True:
@@ -471,7 +471,7 @@ def main() -> None:
     parser.add_argument("--slug", type=validate_slug, help="Tenant slug, e.g. 'jane-doe'")
     parser.add_argument("--description", help="Site description for <meta> tags + README")
     parser.add_argument("--package-name", help="package.json \"name\" override (default: slug)")
-    parser.add_argument("--photographer-name", help="SiteSettings.photographerName (default: --site-name)")
+    parser.add_argument("--owner-name", help="SiteSettings.ownerName (default: --site-name)")
     parser.add_argument("--contact-email", help="SiteSettings.contactEmail (required, no default)")
     parser.add_argument(
         "--board", action="append",
@@ -496,7 +496,7 @@ def main() -> None:
     print(f"Slug:              {args.slug}")
     print(f"Description:       {args.description}")
     print(f"package name:      {args.package_name}")
-    print(f"Photographer name: {args.photographer_name}")
+    print(f"Owner name:        {args.owner_name}")
     print(f"Contact email:     {args.contact_email}")
     print(f"Boards:            {', '.join(b['name'] for b in boards) or '(none)'}")
     print(f"Repo root:         {REPO_ROOT}")
@@ -507,7 +507,7 @@ def main() -> None:
     write_secrets(args.dry_run, args.force_secrets)
     apply_branding(args.site_name, args.slug, args.description, args.package_name,
                     args.dry_run, args.yes, args.skip_readme)
-    print_bootstrap_sql(args.slug, args.site_name, args.photographer_name, args.contact_email, boards)
+    print_bootstrap_sql(args.slug, args.site_name, args.owner_name, args.contact_email, boards)
 
     print()
     print("Done with the [auto] steps. Still [manual] — see docs/fork-checklist.md:")

@@ -1,11 +1,11 @@
-# Photographer Portfolio Platform
+# Portfolio Platform
 
-Multi-tenant photographer portfolio builder — one Next.js deployment serves
-every tenant's public portfolio (including the operator's own site at the
-bare root domain, via `ROOT_TENANT_SLUG`) and a shared admin panel. There is
-no separate public marketing/signup site in this project. Started as a
+Multi-tenant portfolio builder — one Next.js deployment serves every
+tenant's public portfolio (including the operator's own site at the bare
+root domain, via `ROOT_TENANT_SLUG`) and a shared admin panel. There is no
+separate public marketing/signup site in this project. Started as a
 personal portfolio site, designed from day one to be sold as a product to
-other photographers.
+other operators.
 
 **Full project docs live in [`docs/`](./docs/) — read these before making
 architectural changes, especially from a fresh clone/session that doesn't

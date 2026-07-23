@@ -1,6 +1,6 @@
 # Architecture
 
-Multi-tenant photographer portfolio SaaS: one Next.js deployment serves every
+Multi-tenant portfolio SaaS: one Next.js deployment serves every
 tenant's public portfolio (including the operator's own site at the bare
 root domain) and the shared admin panel. There is no separate public
 marketing/signup site in this project.
@@ -96,7 +96,7 @@ See `prisma/schema.prisma` for the authoritative source. Summary:
 ## Cross-tenant isolation (two layers)
 
 This is the single highest-risk area of the whole system — a bug here
-silently leaks one photographer's data to another, which is catastrophic
+silently leaks one tenant's data to another, which is catastrophic
 once this is a paid multi-tenant product.
 
 1. **Application layer — `forTenant()`** (`src/lib/db/tenant-scoped-client.ts`).
@@ -160,7 +160,7 @@ page regardless, since the DB write is the source of truth.
   `ContactSubmission` row first — a visitor's message is never lost even if
   the email step below fails — then best-effort sends a notification to
   the tenant's `SiteSettings.contactEmail`, with `replyTo` set to the
-  visitor's own address so the photographer can just hit reply from their
+  visitor's own address so the site owner can just hit reply from their
   own inbox even without ever opening the admin Messages page. A failed
   send is logged server-side, never surfaced as an error to the (anonymous)
   visitor. The form's `ATTACHMENT` field is read directly out of the
