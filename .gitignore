@@ -28,6 +28,10 @@
 __pycache__/
 *.pyc
 
+# fork-setup's generated tenant bootstrap SQL (contains contact email etc,
+# never commit — see tools/fork-setup/main.py's print_bootstrap_sql)
+/tools/fork-setup/bootstrap-output.sql
+
 # debug
 npm-debug.log*
 yarn-debug.log*

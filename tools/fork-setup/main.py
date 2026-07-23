@@ -12,7 +12,8 @@ Handles, all stdlib / no DB connection / no pip install:
   - generating AUTH_SECRET / ENCRYPTION_KEY into .env
   - patching package.json's "name" and layout.tsx's metadata title/description
   - regenerating README.md for the fork
-  - printing a ready-to-run tenant bootstrap SQL script (paste into psql /
+  - printing (and also saving to tools/fork-setup/bootstrap-output.sql,
+    gitignored) a ready-to-run tenant bootstrap SQL script (paste into psql /
     Neon's SQL editor yourself — this tool never connects to a database,
     same convention as tools/admin-credential-tool): Tenant + SiteSettings +
     AboutPage + Home/About/Contact NavItems + any boards you asked for.
@@ -378,7 +379,7 @@ def parse_board_flag(value: str) -> dict:
 
 
 def print_bootstrap_sql(slug: str, site_name: str, owner_name: str,
-                         contact_email: str, boards: list[dict]) -> None:
+                         contact_email: str, boards: list[dict], dry_run: bool) -> None:
     tenant_id = str(uuid.uuid4())
     print("Step 4: full tenant bootstrap SQL (run this yourself in psql / Neon's SQL")
     print("        editor — this tool never connects to a database). The site is a")
@@ -403,14 +404,29 @@ def print_bootstrap_sql(slug: str, site_name: str, owner_name: str,
         statements.append(build_board_insert(board_id, tenant_id, i, board["name"], board["kind"], i - 1))
         statements.append(build_nav_item_insert(tenant_id, board["name"], "BOARD", 2 + i, target_board_id=board_id))
 
-    print("\n\n".join(statements))
-    print()
+    sql_text = "\n\n".join(statements) + "\n"
+
+    print(sql_text)
     if not boards:
         print("  (0 boards — the site will show Home/About/Contact but no galleries")
         print("   yet. Add one later by copying this script's Board+NavItem INSERT")
         print("   pattern, with a new seq/order.)")
     print(f"  tenant id for reference (also needed by tools/admin-credential-tool")
     print(f"  when creating this tenant's admin user, before you delete that tool): {tenant_id}")
+
+    # Printing alone isn't enough — owner-name/contact-email/board names only
+    # ever existed as prompt input up to this point, and terminal scrollback
+    # is easy to lose (closed window, cleared buffer) before this SQL
+    # actually gets pasted into Neon. Persist it too, gitignored so it never
+    # gets committed even if tools/ isn't deleted before a first commit.
+    output_path = REPO_ROOT / "tools" / "fork-setup" / "bootstrap-output.sql"
+    print()
+    if dry_run:
+        print(f"  [dry-run] would also save this to {output_path.relative_to(REPO_ROOT)}")
+        return
+    output_path.write_text(sql_text, encoding="utf-8")
+    print(f"  Also saved to {output_path.relative_to(REPO_ROOT)} — safe to delete once")
+    print("  you've pasted the SQL into Neon and confirmed it applied.")
 
 
 # ------------------------------------------------------------------ main ---
@@ -507,7 +523,7 @@ def main() -> None:
     write_secrets(args.dry_run, args.force_secrets)
     apply_branding(args.site_name, args.slug, args.description, args.package_name,
                     args.dry_run, args.yes, args.skip_readme)
-    print_bootstrap_sql(args.slug, args.site_name, args.owner_name, args.contact_email, boards)
+    print_bootstrap_sql(args.slug, args.site_name, args.owner_name, args.contact_email, boards, args.dry_run)
 
     print()
     print("Done with the [auto] steps. Still [manual] — see docs/fork-checklist.md:")

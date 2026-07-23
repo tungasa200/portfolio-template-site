@@ -83,10 +83,14 @@ About/Contact only), not an error.
    `metadata.title`/`metadata.description`, and regenerates `README.md` from
    a small fork-specific template (confirmation prompt, skippable with
    `--skip-readme`).
-4. **Prints a full tenant bootstrap SQL script** — copy the whole block into
-   psql / Neon's SQL editor and run it in one go. This is not just a
-   `Tenant` row: it also inserts `SiteSettings`, `AboutPage`, the Home/About/
-   Contact `NavItem` rows, and one `Board` + `NavItem` pair per `--board`.
+4. **Prints, and also saves to `tools/fork-setup/bootstrap-output.sql`
+   (gitignored), a full tenant bootstrap SQL script** — copy the whole block
+   into psql / Neon's SQL editor and run it in one go (or open the saved
+   file — terminal scrollback is easy to lose, and until this is actually
+   pasted into Neon, that file is the only copy of what you typed in for
+   owner-name/contact-email/board names). This is not just a `Tenant` row:
+   it also inserts `SiteSettings`, `AboutPage`, the Home/About/Contact
+   `NavItem` rows, and one `Board` + `NavItem` pair per `--board`.
    **All of these are required for a working admin panel/site, not optional
    extras** — the admin sidebar and public nav are both driven entirely by
    `NavItem` rows (`src/app/admin/(dashboard)/layout.tsx`), and the Settings/
@@ -96,7 +100,9 @@ About/Contact only), not an error.
    "메시지"/"설정" in the sidebar and a Settings form that fails to save.
    Also prints the generated tenant id, which you'll need again in
    `tools/admin-credential-tool` when creating that tenant's first admin user
-   (do that before deleting `tools/`).
+   (do that before deleting `tools/`). Delete `bootstrap-output.sql` once
+   you've pasted it into Neon and confirmed it applied — no reason to leave
+   tenant bootstrap SQL sitting on disk longer than needed.
 
 ## Safety
 
