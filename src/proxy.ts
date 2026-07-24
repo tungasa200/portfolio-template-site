@@ -21,6 +21,13 @@ import { ROOT_DOMAIN as ROOT_DOMAIN_RAW, ROOT_TENANT_SLUG, getDomainMode, stripP
 const ROOT_DOMAIN = stripPort(ROOT_DOMAIN_RAW);
 const RESERVED_SUBDOMAINS = new Set(["www", "admin", "s"]);
 
+// pathname은 최소 "/"이므로 그대로 이어붙이면 루트일 때만
+// "/s/kswoo/" 같은 트레일링 슬래시 변형이 되어 "/s/kswoo"와 다르게
+// 라우팅된다.
+function joinPath(prefix: string, pathname: string): string {
+  return pathname === "/" ? prefix : `${prefix}${pathname}`;
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = stripPort(request.headers.get("host") ?? "");
@@ -39,7 +46,7 @@ export function proxy(request: NextRequest) {
       return NextResponse.next();
     }
     const url = request.nextUrl.clone();
-    url.pathname = `/s/${ROOT_TENANT_SLUG}${pathname}`;
+    url.pathname = joinPath(`/s/${ROOT_TENANT_SLUG}`, pathname);
     return NextResponse.rewrite(url);
   }
 
@@ -51,13 +58,13 @@ export function proxy(request: NextRequest) {
       return NextResponse.next();
     }
     const url = request.nextUrl.clone();
-    url.pathname = `/s/${ROOT_TENANT_SLUG}${pathname}`;
+    url.pathname = joinPath(`/s/${ROOT_TENANT_SLUG}`, pathname);
     return NextResponse.rewrite(url);
   }
 
   if (host === `admin.${ROOT_DOMAIN}`) {
     const url = request.nextUrl.clone();
-    url.pathname = `/admin${pathname}`;
+    url.pathname = joinPath("/admin", pathname);
     return NextResponse.rewrite(url);
   }
 
@@ -68,7 +75,7 @@ export function proxy(request: NextRequest) {
   const tenantKey = subdomain && !RESERVED_SUBDOMAINS.has(subdomain) ? subdomain : host;
 
   const url = request.nextUrl.clone();
-  url.pathname = `/s/${tenantKey}${pathname}`;
+  url.pathname = joinPath(`/s/${tenantKey}`, pathname);
   return NextResponse.rewrite(url);
 }
 
