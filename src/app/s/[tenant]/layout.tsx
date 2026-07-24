@@ -70,7 +70,6 @@ export default async function TenantSiteLayout({
   }));
 
   const siteName = tenant.siteSettings?.siteName ?? tenant.slug;
-  const ownerName = tenant.siteSettings?.ownerName ?? tenant.slug;
   const logoUrl = resolveDisplayUrl(tenant.siteSettings?.logoImageKey, tenant.siteSettings?.logoThumbKey);
   const { ink, paper } = resolveThemeColors(tenant.siteSettings);
 
@@ -82,7 +81,7 @@ export default async function TenantSiteLayout({
       <Nav siteName={siteName} logoUrl={logoUrl} navItems={navItems} socialLinks={socialLinks} />
       <main className="flex min-w-0 flex-1 flex-col">
         <div className="flex-1">{children}</div>
-        <Footer ownerName={ownerName} footerText={tenant.siteSettings?.footerText} />
+        <Footer footerLeftText={tenant.siteSettings?.footerLeftText} footerText={tenant.siteSettings?.footerText} />
       </main>
     </div>
   );

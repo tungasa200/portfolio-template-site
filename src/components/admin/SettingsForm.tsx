@@ -20,6 +20,7 @@ interface SettingsFormProps {
   siteName: string;
   ownerName: string;
   contactEmail: string;
+  footerLeftText: string | null;
   footerText: string | null;
   heroImage: HeroImage | null;
   logoImageUrl: string | null;
@@ -31,6 +32,7 @@ export function SettingsForm({
   siteName,
   ownerName,
   contactEmail,
+  footerLeftText,
   footerText,
   heroImage: initialHeroImage,
   logoImageUrl,
@@ -133,6 +135,12 @@ export function SettingsForm({
             <div className="admin-field">
               <label>이메일</label>
               <input type="email" name="contactEmail" defaultValue={contactEmail} required />
+            </div>
+            <div className="admin-field">
+              <label>
+                푸터 좌측 텍스트 <span style={{ fontWeight: 400, color: "var(--muted)" }}>(선택, 비워두면 표시 안 함)</span>
+              </label>
+              <input type="text" name="footerLeftText" defaultValue={footerLeftText ?? ""} placeholder={ownerName.toUpperCase()} />
             </div>
             <div className="admin-field">
               <label>

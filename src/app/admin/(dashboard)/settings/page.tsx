@@ -50,6 +50,7 @@ export default async function AdminSettingsPage() {
         siteName={siteSettings?.siteName ?? ""}
         ownerName={siteSettings?.ownerName ?? ""}
         contactEmail={siteSettings?.contactEmail ?? ""}
+        footerLeftText={siteSettings?.footerLeftText ?? null}
         footerText={siteSettings?.footerText ?? null}
         heroImage={
           siteSettings?.heroImageKey

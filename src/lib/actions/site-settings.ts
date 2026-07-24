@@ -31,6 +31,7 @@ export async function updateSiteSettings(
   const siteName = String(formData.get("siteName") ?? "").trim();
   const ownerName = String(formData.get("ownerName") ?? "").trim();
   const contactEmail = String(formData.get("contactEmail") ?? "").trim();
+  const footerLeftText = emptyToNull(formData.get("footerLeftText"));
   const footerText = emptyToNull(formData.get("footerText"));
 
   if (!siteName || !ownerName || !contactEmail) {
@@ -40,7 +41,7 @@ export async function updateSiteSettings(
   const db = forTenant(tenantId);
   await db.siteSettings.update({
     where: { tenantId },
-    data: { siteName, ownerName, contactEmail, footerText },
+    data: { siteName, ownerName, contactEmail, footerLeftText, footerText },
   });
 
   revalidatePath("/admin", "layout");

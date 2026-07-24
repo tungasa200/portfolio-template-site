@@ -94,6 +94,7 @@ model SiteSettings {
   // Resized (not cropped — the logo box is object-fit:contain) derived copy.
   logoThumbKey     String?
   contactEmail     String
+  footerLeftText   String? // custom footer left-side text; null/empty means nothing renders there (no ownerName fallback)
   footerText       String?
   themeName        String  @default("editorial-default") // one of THEME_PRESETS' keys (src/lib/site/theme-presets.ts) or "custom"
   // Only set (and only read) when themeName == "custom" — see resolveThemeColors().
