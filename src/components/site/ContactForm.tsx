@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import type { ContactFormState } from "@/lib/actions/contact";
 
 interface ContactFormProps {
@@ -19,6 +19,17 @@ const fieldInputClass =
 
 export function ContactForm({ action, gmailConnected }: ContactFormProps) {
   const [state, formAction, isPending] = useActionState(action, initialState);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function clearFile() {
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setFileName(null);
+  }
+
+  useEffect(() => {
+    if (state.status === "success") clearFile();
+  }, [state.status]);
 
   return (
     <form action={formAction} className="flex flex-col gap-8 pr-10">
@@ -38,13 +49,30 @@ export function ContactForm({ action, gmailConnected }: ContactFormProps) {
         <label className="flex flex-col gap-2">
           <span className={fieldLabelClass}>ATTACHMENT</span>
           <div className="relative flex cursor-pointer flex-col items-center justify-center gap-2 border border-dashed border-site-ink px-6 py-6 hover:bg-site-placeholder-b">
-            <span className="text-sm text-site-ink-soft">파일을 드래그하거나 클릭하여 첨부</span>
-            <span className="font-site-mono text-[11px] text-site-ink-faint">
-              JPG, PNG, PDF up to 10MB
-            </span>
+            {fileName ? (
+              <>
+                <span className="max-w-full truncate text-sm text-site-ink">{fileName}</span>
+                <button
+                  type="button"
+                  onClick={clearFile}
+                  className="relative z-10 font-site-mono text-[11px] text-site-ink-faint underline hover:text-site-ink"
+                >
+                  제거하고 다른 파일 선택
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="text-sm text-site-ink-soft">파일을 드래그하거나 클릭하여 첨부</span>
+                <span className="font-site-mono text-[11px] text-site-ink-faint">
+                  JPG, PNG, PDF up to 10MB
+                </span>
+              </>
+            )}
             <input
+              ref={fileInputRef}
               type="file"
               name="attachment"
+              onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
               className="absolute h-px w-px overflow-hidden opacity-0"
             />
           </div>
