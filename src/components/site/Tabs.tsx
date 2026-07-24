@@ -26,7 +26,7 @@ export function Tabs({ tabs, active, onChange }: TabsProps) {
             key={tab.key}
             type="button"
             onClick={() => onChange(tab.key)}
-            className="cursor-pointer border-0 bg-transparent pb-2 font-site-mono text-[11px] tracking-wide"
+            className="cursor-pointer border-0 bg-transparent px-1 py-3 font-site-mono text-[11px] tracking-wide lg:px-0 lg:py-0 lg:pb-2"
             style={{
               color: isActive ? "var(--color-site-ink)" : "var(--color-site-ink-faint)",
               borderBottom: isActive ? "1px solid var(--color-site-ink)" : "1px solid transparent",

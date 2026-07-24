@@ -30,15 +30,18 @@ export default async function TenantContactPage({
   );
 
   return (
-    <section className="box-border flex h-full max-h-full flex-col overflow-hidden px-16 py-10">
-      <SectionHeader title={navItem?.label ?? "CONTACT"} marginBottom="mb-12" />
+    <section className="box-border flex flex-col px-[var(--site-gutter)] py-6 lg:h-full lg:max-h-full lg:overflow-hidden lg:py-10">
+      <SectionHeader title={navItem?.label ?? "CONTACT"} marginBottom="mb-8 lg:mb-12" />
 
-      <div className="relative grid flex-1 grid-cols-[6fr_4fr] gap-0 animate-site-intro-fade" style={{ animationDelay: "0.5s" }}>
-        <div className="absolute top-0 left-[60%] h-full w-px bg-site-ink" />
+      <div
+        className="relative grid flex-1 grid-cols-1 gap-10 animate-site-intro-fade lg:grid-cols-[6fr_4fr] lg:gap-0"
+        style={{ animationDelay: "0.5s" }}
+      >
+        <div className="absolute top-0 left-[60%] hidden h-full w-px bg-site-ink lg:block" />
 
         <ContactForm action={action} gmailConnected={gmailConnected} />
 
-        <div className="flex flex-col gap-6 pt-1 pl-10">
+        <div className="flex flex-col gap-6 border-t border-site-ink pt-8 lg:border-t-0 lg:pt-1 lg:pl-10">
           <div>
             <div className="mb-1.5 font-site-mono text-[11px] tracking-wide text-site-ink-muted">
               OWNER

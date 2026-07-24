@@ -83,7 +83,7 @@ export default async function BoardItemDetailPage({
     item.indexImageEnabled && item.indexImageKey ? r2PublicUrl(item.indexImageKey) : null;
 
   return (
-    <section className="box-border flex h-full max-h-full flex-col overflow-hidden px-16 py-10">
+    <section className="box-border flex flex-col px-[var(--site-gutter)] py-6 lg:h-full lg:max-h-full lg:overflow-hidden lg:py-10">
       <SectionHeader title={item.name} marginBottom="mb-8" />
       <DetailTabs
         tabs={tabs}

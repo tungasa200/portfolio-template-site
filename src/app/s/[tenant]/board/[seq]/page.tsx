@@ -50,7 +50,7 @@ export default async function BoardPage({
   }
 
   return (
-    <section className="box-border min-h-[calc(100vh-65px)] px-16 py-10">
+    <section className="box-border min-h-[calc(100dvh-65px)] px-[var(--site-gutter)] py-6 lg:py-10">
       <SectionHeader title={board.name} />
       <PhotoGrid
         kind={board.kind}

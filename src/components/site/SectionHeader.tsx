@@ -9,9 +9,12 @@ interface SectionHeaderProps {
 // Animated-underline heading used at the top of every content section.
 export function SectionHeader({ title, delay = "0.35s", marginBottom = "mb-14" }: SectionHeaderProps) {
   return (
-    <div className={`relative -mx-16 ${marginBottom} flex shrink-0 items-center justify-between px-16 pb-5`}>
+    <div
+      className={`relative ${marginBottom} flex shrink-0 items-center justify-between pb-5`}
+      style={{ marginInline: "calc(var(--site-gutter) * -1)", paddingInline: "var(--site-gutter)" }}
+    >
       <h2
-        className="m-0 overflow-hidden text-ellipsis whitespace-nowrap font-site-display text-2xl leading-none font-medium animate-site-intro-fade"
+        className="m-0 overflow-hidden text-ellipsis whitespace-nowrap font-site-display text-xl leading-none font-medium animate-site-intro-fade lg:text-2xl"
         style={{ animationDelay: delay }}
       >
         {title}

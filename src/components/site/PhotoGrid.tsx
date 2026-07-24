@@ -83,7 +83,7 @@ export function PhotoGrid({ items, kind }: PhotoGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-3 gap-4 animate-site-intro-fade" style={{ animationDelay: "0.5s" }}>
+    <div className="grid grid-cols-2 gap-3 animate-site-intro-fade sm:gap-4 lg:grid-cols-3" style={{ animationDelay: "0.5s" }}>
       {items.map((item) => {
         const photoIndex = photoItems.findIndex((p) => p.id === item.id);
         return (
@@ -101,14 +101,14 @@ export function PhotoGrid({ items, kind }: PhotoGridProps) {
                   src={item.imageUrl}
                   alt={item.title}
                   fill
-                  sizes="(min-width: 768px) 33vw, 100vw"
+                  sizes="(min-width: 1024px) 33vw, 50vw"
                   className="object-cover"
                 />
               )}
             </div>
             {showBody && (
-              <div className="flex items-baseline justify-between border-t border-site-ink px-[22px] py-5">
-                <span className="font-site-display text-xl">{item.title}</span>
+              <div className="flex items-baseline justify-between border-t border-site-ink px-[14px] py-3 sm:px-[22px] sm:py-5">
+                <span className="font-site-display text-base lg:text-xl">{item.title}</span>
                 <span className="font-site-mono text-[11px] tracking-wide text-site-ink-muted">
                   {item.meta}
                 </span>

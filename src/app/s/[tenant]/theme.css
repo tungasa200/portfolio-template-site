@@ -57,6 +57,60 @@
   color: var(--color-site-paper);
 }
 
+/* Shared page gutter (left/right padding) — stepped, not fluid, per the
+   editorial print-margin convention: each breakpoint gets a deliberately
+   redrawn margin rather than a smooth clamp() taper. Referenced everywhere
+   the old fixed `px-16` was repeated (page sections, SectionHeader's
+   full-bleed divider, Footer) via the `px-[var(--site-gutter)]` arbitrary
+   value so there's one place to retune the scale. */
+:root {
+  --site-gutter: 20px;
+}
+@media (min-width: 640px) {
+  :root {
+    --site-gutter: 32px;
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --site-gutter: 64px;
+  }
+}
+@media (min-width: 1536px) {
+  :root {
+    --site-gutter: clamp(64px, 6vw, 140px);
+  }
+}
+
+/* IndexTab's text/cover-photo split. Below lg: single column, photo first
+   (DOM order is text-then-image, so column-reverse flips it). At lg+:
+   grid columns sized from the admin-configurable --index-text-track/
+   --index-image-track custom properties (set inline per item, e.g. "3fr"),
+   text left / image right — matching the original fixed 2-column layout. */
+.site-index-split {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2.5rem;
+}
+@media (min-width: 1024px) {
+  .site-index-split {
+    display: grid;
+    grid-template-columns: var(--index-text-track, 1fr) var(--index-image-track, 1fr);
+    gap: 4rem;
+  }
+}
+
+/* Touch-only substitute for the Nav hover-underline: pointer/hover-capable
+   devices get the existing onMouseEnter/onMouseLeave animation, touch
+   devices get an immediate :active flash instead (hover never fires there,
+   so without this the link would look inert until release). */
+@media (hover: none) {
+  .site-nav-link:active {
+    background-size: 100% 1px !important;
+    transition: background-size 0.15s ease;
+  }
+}
+
 .site-placeholder-pattern {
   position: relative;
   overflow: hidden;

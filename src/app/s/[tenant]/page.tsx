@@ -19,11 +19,13 @@ export default async function TenantHomePage({
   const ownerName = tenant.siteSettings?.ownerName ?? tenant.slug;
 
   return (
-    <section className="box-border flex h-full max-h-full items-center overflow-hidden px-16 py-10 md:px-[clamp(64px,6vw,140px)]">
+    <section
+      className="box-border flex items-center px-[var(--site-gutter)] py-6 lg:h-full lg:max-h-full lg:overflow-hidden lg:py-10"
+    >
       <div
         className={`relative mx-auto flex w-full items-center justify-center animate-site-intro-fade ${heroUrl ? "" : "border border-site-ink site-placeholder-pattern"}`}
         style={{
-          maxWidth: "min(100%, calc(100vh - 160px))",
+          maxWidth: "min(100%, calc(100dvh - 160px))",
           aspectRatio: "1 / 1",
           animationDelay: "0.15s",
         }}

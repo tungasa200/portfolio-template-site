@@ -75,7 +75,7 @@ export default async function TenantSiteLayout({
 
   return (
     <div
-      className={`${playfair.variable} ${inter.variable} ${jetbrainsMono.variable} flex min-h-screen bg-site-paper font-site-sans text-site-ink`}
+      className={`${playfair.variable} ${inter.variable} ${jetbrainsMono.variable} flex min-h-dvh flex-col bg-site-paper font-site-sans text-site-ink lg:flex-row`}
       style={themeCssVars(ink, paper) as CSSProperties}
     >
       <Nav siteName={siteName} logoUrl={logoUrl} navItems={navItems} socialLinks={socialLinks} />

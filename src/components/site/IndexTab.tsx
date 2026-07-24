@@ -22,6 +22,13 @@ interface IndexTabProps {
 // board redesign notes). The cover column only renders when the item
 // actually has a photo; an item with no photos gets the text alone at full
 // width instead of an empty placeholder box.
+//
+// Below lg (see .site-index-split in theme.css) this stacks into a single
+// column with the photo shown first — a photographer's portfolio wants the
+// image seen before the text, and the admin-configured left/right column
+// split has no room to work with at phone/tablet widths anyway. Done in
+// pure CSS (custom properties + a media query) rather than a client-side
+// matchMedia hook so this can stay a server component.
 export function IndexTab({
   contentHtml,
   coverPhotoUrl,
@@ -34,11 +41,11 @@ export function IndexTab({
 
   return (
     <div
-      className="animate-site-intro-fade"
+      className={`animate-site-intro-fade ${coverPhotoUrl ? "site-index-split" : ""}`}
       style={{
         animationDelay: "0.55s",
         ...(coverPhotoUrl
-          ? { display: "grid", gridTemplateColumns: `${textWeight}fr ${imageWeight}fr`, gap: "4rem" }
+          ? ({ "--index-text-track": `${textWeight}fr`, "--index-image-track": `${imageWeight}fr` } as React.CSSProperties)
           : {}),
       }}
     >
@@ -54,13 +61,13 @@ export function IndexTab({
               alt=""
               width={coverPhotoWidth}
               height={coverPhotoHeight}
-              sizes="(min-width: 768px) 50vw, 100vw"
+              sizes="(min-width: 1024px) 50vw, 100vw"
               style={{ width: "100%", height: "auto" }}
             />
           </div>
         ) : (
           <div className="relative aspect-[4/3] overflow-hidden border border-site-ink bg-site-paper">
-            <Image src={coverPhotoUrl} alt="" fill sizes="(min-width: 768px) 50vw, 100vw" className="object-cover" />
+            <Image src={coverPhotoUrl} alt="" fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
           </div>
         ))}
     </div>

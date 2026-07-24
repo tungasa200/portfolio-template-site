@@ -15,7 +15,7 @@ const initialState: ContactFormState = { status: "idle" };
 
 const fieldLabelClass = "font-site-mono text-[11px] tracking-wide text-site-ink-muted";
 const fieldInputClass =
-  "border-0 border-b border-site-ink bg-transparent px-0 py-2 font-site-sans text-base outline-none focus:border-b-2";
+  "border-0 border-b border-site-ink bg-transparent px-0 py-3 font-site-sans text-base outline-none focus:border-b-2 lg:py-2";
 
 export function ContactForm({ action, gmailConnected }: ContactFormProps) {
   const [state, formAction, isPending] = useActionState(action, initialState);
@@ -32,7 +32,7 @@ export function ContactForm({ action, gmailConnected }: ContactFormProps) {
   }, [state.status]);
 
   return (
-    <form action={formAction} className="flex flex-col gap-8 pr-10">
+    <form action={formAction} className="flex flex-col gap-8 lg:pr-10">
       <label className="flex flex-col gap-2">
         <span className={fieldLabelClass}>NAME</span>
         <input type="text" name="name" required className={fieldInputClass} />
@@ -48,7 +48,7 @@ export function ContactForm({ action, gmailConnected }: ContactFormProps) {
       {gmailConnected && (
         <label className="flex flex-col gap-2">
           <span className={fieldLabelClass}>ATTACHMENT</span>
-          <div className="relative flex cursor-pointer flex-col items-center justify-center gap-2 border border-dashed border-site-ink px-6 py-6 hover:bg-site-placeholder-b">
+          <div className="relative flex cursor-pointer flex-col items-center justify-center gap-2 border border-dashed border-site-ink px-6 py-6 active:bg-site-placeholder-b hover:bg-site-placeholder-b">
             {fileName ? (
               <>
                 <span className="max-w-full truncate text-sm text-site-ink">{fileName}</span>
@@ -82,7 +82,7 @@ export function ContactForm({ action, gmailConnected }: ContactFormProps) {
       <button
         type="submit"
         disabled={isPending}
-        className="mt-3 w-fit border border-site-ink bg-site-ink px-8 py-3.5 font-site-sans text-sm tracking-wide text-site-paper hover:bg-site-paper hover:text-site-ink disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-3 w-full border border-site-ink bg-site-ink px-8 py-3.5 font-site-sans text-sm tracking-wide text-site-paper active:bg-site-paper active:text-site-ink hover:bg-site-paper hover:text-site-ink disabled:cursor-not-allowed disabled:opacity-60 lg:w-fit"
       >
         {isPending ? "SENDING…" : "SEND MESSAGE"}
       </button>

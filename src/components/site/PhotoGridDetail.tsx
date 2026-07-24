@@ -21,7 +21,7 @@ interface PhotoGridDetailProps {
 // Square-tile grid used inside a Project/Exhibition detail page's GRID VIEW tab.
 export function PhotoGridDetail({ photos, onPhotoClick }: PhotoGridDetailProps) {
   return (
-    <div className="grid grid-cols-3 gap-4 animate-site-intro-fade" style={{ animationDelay: "0.55s" }}>
+    <div className="grid grid-cols-2 gap-3 animate-site-intro-fade sm:gap-4 lg:grid-cols-3" style={{ animationDelay: "0.55s" }}>
       {photos.map((photo, index) => {
         const url = photo.thumbUrl ?? photo.imageUrl;
         return (
@@ -35,7 +35,7 @@ export function PhotoGridDetail({ photos, onPhotoClick }: PhotoGridDetailProps) 
                 src={url}
                 alt={photo.label}
                 fill
-                sizes="(min-width: 768px) 33vw, 100vw"
+                sizes="(min-width: 1024px) 33vw, 50vw"
                 className="object-cover"
               />
             )}

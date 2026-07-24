@@ -33,7 +33,7 @@ export default async function AboutPage({
   const isEmpty = about.content.replace(/<[^>]*>/g, "").trim().length === 0;
 
   return (
-    <section className="box-border min-h-[calc(100vh-65px)] px-16 py-10">
+    <section className="box-border min-h-[calc(100dvh-65px)] px-[var(--site-gutter)] py-6 lg:py-10">
       <SectionHeader title={navItem?.label ?? "ABOUT"} />
       {isEmpty ? (
         <div
