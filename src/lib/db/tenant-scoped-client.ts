@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma as basePrisma } from "./client";
+import { withDbRetry } from "./with-retry";
 
 // Every table listed here carries a `tenantId` column (see prisma/schema.prisma).
 // forTenant() is the ONLY sanctioned way to query them — it auto-injects
@@ -90,10 +91,12 @@ export function forTenant(tenantId: string) {
           // current_setting('app.tenant_id', true) is visible to Postgres
           // Row-Level Security policies (prisma/security/rls.sql) for this
           // statement. Prisma's documented RLS extension recipe.
-          const [, result] = await basePrisma.$transaction([
-            basePrisma.$executeRaw`SELECT set_config('app.tenant_id', ${tenantId}, true)`,
-            query(a),
-          ]);
+          const [, result] = await withDbRetry(() =>
+            basePrisma.$transaction([
+              basePrisma.$executeRaw`SELECT set_config('app.tenant_id', ${tenantId}, true)`,
+              query(a),
+            ])
+          );
           return result;
         },
       },

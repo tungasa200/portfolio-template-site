@@ -1,6 +1,7 @@
 import "server-only";
 import { unstable_cache, updateTag, revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db/client";
+import { withDbRetry } from "@/lib/db/with-retry";
 
 // One tag per tenant, shared by every cached read on the public site
 // (/s/[tenant]/**). Every admin mutation that touches tenant-scoped data
@@ -37,10 +38,12 @@ export function cacheForTenant<T>(
 export async function revalidateTenantSite(tenantId: string): Promise<void> {
   updateTag(tenantCacheTag(tenantId));
 
-  const tenant = await prisma.tenant.findUnique({
-    where: { id: tenantId },
-    select: { slug: true, customDomain: true },
-  });
+  const tenant = await withDbRetry(() =>
+    prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { slug: true, customDomain: true },
+    })
+  );
   if (!tenant) {
     return;
   }

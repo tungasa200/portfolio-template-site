@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/client";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
+import { withDbRetry } from "@/lib/db/with-retry";
 import { cacheForTenant } from "@/lib/tenant/site-cache";
 
 // tenantKey -> {id, slug} is looked up on every request that hits this
@@ -11,10 +12,12 @@ import { cacheForTenant } from "@/lib/tenant/site-cache";
 // tag wiring needed.
 const resolveTenantIdentity = unstable_cache(
   async (tenantKey: string) => {
-    return prisma.tenant.findFirst({
-      where: { OR: [{ slug: tenantKey }, { customDomain: tenantKey }] },
-      select: { id: true, slug: true },
-    });
+    return withDbRetry(() =>
+      prisma.tenant.findFirst({
+        where: { OR: [{ slug: tenantKey }, { customDomain: tenantKey }] },
+        select: { id: true, slug: true },
+      })
+    );
   },
   ["tenant-identity"],
   { revalidate: 60 * 60 * 24 }

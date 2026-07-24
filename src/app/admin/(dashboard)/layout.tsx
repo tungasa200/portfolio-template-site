@@ -5,6 +5,7 @@ import { getAdminBasePath } from "@/lib/auth/admin-base-path";
 import { ROOT_DOMAIN } from "@/lib/tenant/domain-mode";
 import { forTenant } from "@/lib/db/tenant-scoped-client";
 import { prisma } from "@/lib/db/client";
+import { withDbRetry } from "@/lib/db/with-retry";
 import { cacheForTenant } from "@/lib/tenant/site-cache";
 import { ToastProvider } from "@/components/admin/Toast";
 import { AdminShell, type AdminNavEntry } from "@/components/admin/AdminShell";
@@ -25,7 +26,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
   const [tenant, siteSettings, boards, navItems, unreadCount] = await cacheForTenant(["admin-layout"], tenantId, () => {
     const db = forTenant(tenantId);
     return Promise.all([
-      prisma.tenant.findUnique({ where: { id: tenantId }, select: { slug: true, customDomain: true } }),
+      withDbRetry(() => prisma.tenant.findUnique({ where: { id: tenantId }, select: { slug: true, customDomain: true } })),
       db.siteSettings.findUnique({ where: { tenantId } }),
       db.board.findMany({ orderBy: { order: "asc" } }),
       db.navItem.findMany({
