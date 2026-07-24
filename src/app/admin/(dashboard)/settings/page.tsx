@@ -26,7 +26,7 @@ export default async function AdminSettingsPage() {
       db.siteSettings.findUnique({ where: { tenantId } }),
       db.navItem.findMany({
         orderBy: { order: "asc" },
-        include: { targetBoard: { select: { seq: true, name: true } } },
+        include: { targetBoard: { select: { id: true, seq: true, name: true } } },
       }),
       db.socialLink.findMany({ orderBy: { order: "asc" } }),
     ]);
@@ -37,6 +37,8 @@ export default async function AdminSettingsPage() {
     label: resolveNavLabel(n),
     target: TARGET_LABEL[n.targetKind] ?? "",
     visible: n.isVisible,
+    targetKind: n.targetKind,
+    boardId: n.targetBoard?.id,
   }));
 
   return (

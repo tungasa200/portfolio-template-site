@@ -330,6 +330,16 @@
 .admin-reorder-main { flex: 1; min-width: 0; }
 .admin-reorder-main strong { font-size: 15.5px; display: block; }
 .admin-reorder-main span { font-size: 13.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.admin-reorder-name-input {
+  font-size: 15.5px; font-weight: 700; font-family: inherit; border: none; border-bottom: 2px solid var(--accent);
+  background: transparent; color: var(--ink); padding: 0 2px; width: 100%; max-width: 220px; display: block;
+}
+.admin-reorder-name-input:focus { outline: none; }
+.admin-reorder-rename-btn {
+  width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel);
+  display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; font-size: 12px;
+}
+.admin-reorder-rename-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
 .admin-add-row-btn { display: flex; align-items: center; gap: 8px; padding: 13px 16px; border: 1.5px dashed var(--line); border-radius: var(--radius-sm); color: var(--muted); background: none; cursor: pointer; font-size: 15px; font-weight: 600; width: 100%; justify-content: center; }
 .admin-add-row-btn:hover { border-color: var(--accent); color: var(--ink); background: var(--accent-soft); }
 .admin-icon-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink); flex-shrink: 0; }

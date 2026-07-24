@@ -30,7 +30,7 @@ export default async function AdminHomePage() {
       }),
       db.navItem.findMany({
         orderBy: { order: "asc" },
-        include: { targetBoard: { select: { seq: true, name: true } } },
+        include: { targetBoard: { select: { id: true, seq: true, name: true } } },
       }),
       db.contactSubmission.count({ where: { status: "NEW" } }),
     ]);
@@ -51,6 +51,8 @@ export default async function AdminHomePage() {
       label: resolveNavLabel(n),
       target: TARGET_LABEL[n.targetKind] ?? "",
       visible: n.isVisible,
+      targetKind: n.targetKind,
+      boardId: n.targetBoard?.id,
     }));
 
   return (

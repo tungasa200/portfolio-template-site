@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { toggleNavItemVisibility, reorderNavItems } from "@/lib/actions/nav-items";
+import { useRef, useState, useTransition } from "react";
+import { toggleNavItemVisibility, reorderNavItems, renameNavItem } from "@/lib/actions/nav-items";
+import { renameBoard } from "@/lib/actions/boards";
 import { useToast } from "@/components/admin/Toast";
 
 export interface NavVisibilityItem {
@@ -9,6 +10,11 @@ export interface NavVisibilityItem {
   label: string;
   target: string;
   visible: boolean;
+  targetKind: string;
+  /** Only set when targetKind === "BOARD" — routes rename to renameBoard(boardId, …)
+   * instead of renameNavItem(id, …), since Board.name (not NavItem.label) is the
+   * name the public site actually renders for board entries. */
+  boardId?: string;
 }
 
 interface NavVisibilityListProps {
@@ -25,8 +31,10 @@ export function NavVisibilityList({ items: initialItems, draggable = false }: Na
   const [items, setItems] = useState(initialItems);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const toast = useToast();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   function handleToggle(id: string) {
     setItems((prev) => prev.map((n) => (n.id === id ? { ...n, visible: !n.visible } : n)));
@@ -50,6 +58,21 @@ export function NavVisibilityList({ items: initialItems, draggable = false }: Na
     setDragId(null);
     startTransition(async () => {
       await reorderNavItems(next.map((n) => n.id));
+    });
+  }
+
+  function commitRename(item: NavVisibilityItem) {
+    setRenamingId(null);
+    const trimmed = inputRef.current?.value.trim();
+    const finalName = trimmed || item.label;
+    if (finalName === item.label) return;
+    setItems((prev) => prev.map((n) => (n.id === item.id ? { ...n, label: finalName } : n)));
+    startTransition(async () => {
+      const result =
+        item.targetKind === "BOARD" && item.boardId
+          ? await renameBoard(item.boardId, finalName)
+          : await renameNavItem(item.id, finalName);
+      toast(result.message ?? "이름이 바뀌었어요", result.status === "error");
     });
   }
 
@@ -92,9 +115,31 @@ export function NavVisibilityList({ items: initialItems, draggable = false }: Na
             </div>
           )}
           <div className="admin-reorder-main">
-            <strong>{item.label}</strong>
+            {renamingId === item.id ? (
+              <input
+                ref={inputRef}
+                className="admin-reorder-name-input"
+                defaultValue={item.label}
+                maxLength={20}
+                autoFocus
+                onBlur={() => commitRename(item)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
+                }}
+              />
+            ) : (
+              <strong>{item.label}</strong>
+            )}
             <span>{item.target}</span>
           </div>
+          <button
+            type="button"
+            className="admin-reorder-rename-btn"
+            title={`${item.label} 이름 바꾸기`}
+            onClick={() => setRenamingId(item.id)}
+          >
+            ✏️
+          </button>
           <button
             type="button"
             className={`admin-switch ${item.visible ? "on" : ""}`}

@@ -47,7 +47,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
   const dynamicNavItems: AdminNavEntry[] = navItems
     .map((n): AdminNavEntry | null => {
       if (n.targetKind === "HOME")
-        return { id: n.id, href: adminBasePath || "/", matchPath: "/admin", label: "HOME", iconPath: ADMIN_ICON_PATHS.home };
+        return { id: n.id, href: adminBasePath || "/", matchPath: "/admin", label: n.label, iconPath: ADMIN_ICON_PATHS.home };
       if (n.targetKind === "ABOUT")
         return {
           id: n.id,
